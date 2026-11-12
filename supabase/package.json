@@ -1,0 +1,17 @@
+{
+  "name": "@bairmair/supabase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Migrations and Edge Functions. Unit tests for the functions run under Vitest; deploys use the root db:* and functions:* scripts.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "standardwebhooks": "1.1.1",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

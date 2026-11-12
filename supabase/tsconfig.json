@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // Edge Functions run on Deno, which needs explicit .ts extensions in relative imports.
+    "allowImportingTsExtensions": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["functions/**/*.ts"],
+  // Deno entry points use Deno globals and npm: specifiers; they stay thin and untyped here.
+  "exclude": ["functions/**/index.ts"]
+}

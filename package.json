@@ -12,13 +12,18 @@
     "typecheck": "turbo run typecheck",
     "lint": "eslint . && pnpm --filter @bairmair/web lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:remote": "pnpm --filter @bairmair/db test:remote",
+    "db:push": "supabase db push --remote",
+    "db:types": "supabase gen types typescript --schema public --remote > packages/db/src/database.types.ts && prettier --write packages/db/src/database.types.ts",
+    "functions:deploy": "supabase functions deploy send-sms --use-api --no-verify-jwt"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "3.9.10",
+    "supabase": "3.1.0",
     "turbo": "2.11.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2"

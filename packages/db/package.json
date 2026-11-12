@@ -1,0 +1,24 @@
+{
+  "name": "@bairmair/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generated Supabase types, storage paths and database error keys, shared by the apps and the server.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:remote": "vitest run --config vitest.remote.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.119.0"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.119.0",
+    "@types/node": "^24.19.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}
