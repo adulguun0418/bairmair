@@ -1,11 +1,13 @@
 import { applyAnnotations, parseRoomModel, type RoomModelV1 } from '@bairmair/room-model';
 import lShaped from '@bairmair/room-model/samples/l-shaped.json';
+import scanLRoom from '@bairmair/room-model/samples/scan-l-room.json';
 import studio from '@bairmair/room-model/samples/studio.json';
 import twoRoom from '@bairmair/room-model/samples/two-room.json';
 
-// Hand-made sample apartments, until real listings exist (build step 3 onwards).
+// Sample apartments until real listings exist: three hand-made ones and one real iPhone scan,
+// converted from the raw RoomPlan export in packages/room-model/test/fixtures/roomplan/.
 
-export const SAMPLE_NAMES = ['two-room', 'studio', 'l-shaped'] as const;
+export const SAMPLE_NAMES = ['two-room', 'studio', 'l-shaped', 'scan-l-room'] as const;
 export type SampleName = (typeof SAMPLE_NAMES)[number];
 
 export function isSampleName(value: string): value is SampleName {
@@ -22,6 +24,7 @@ const MODELS: Record<SampleName, unknown> = {
   studio,
   'two-room': twoRoom,
   'l-shaped': lShaped,
+  'scan-l-room': scanLRoom,
 };
 
 const photo = (id: string, roomId: string, image: string): SamplePhoto => ({
@@ -50,6 +53,7 @@ const PHOTOS: Record<SampleName, SamplePhoto[]> = {
     photo('l-shaped-2', 'living', 'dining'),
     photo('l-shaped-3', 'kitchen', 'kitchen'),
   ],
+  'scan-l-room': [],
 };
 
 export interface Sample {

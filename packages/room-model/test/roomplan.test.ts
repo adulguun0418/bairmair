@@ -1,10 +1,9 @@
 /**
  * Conversion tests against SYNTHETIC RoomPlan exports.
  *
- * Apple does not document the JSON that RoomPlan exports, so these fixtures follow the expected
- * shape. They pin down the geometry of the conversion (canonical frame, areas, room membership),
- * which does not depend on the exact file format. Once real exports exist (build step 4) they
- * become fixtures here and the reader in src/roomplan/capture.ts is adjusted to match.
+ * They follow the shape of real exports and pin down the geometry of the conversion (canonical
+ * frame, areas, room membership) with exact expected values, including cases no real scan has
+ * covered yet (several rooms). Real exports are tested in real-scans.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import { transformPoint } from '../src/geometry/mat4';
@@ -377,6 +376,35 @@ describe('convertRoomPlan: several rooms', () => {
     expect(model.rooms).toHaveLength(2);
     expect(model.objects).toHaveLength(3);
   });
+
+  it('drops a merged floor that repeats a room floor under a new identifier', () => {
+    const p = DEFAULT_PLACEMENT;
+    // As in real exports: the same outline, but a new identifier and a local frame turned 90°.
+    const copy = (id: string, local: Vec3, dimensions: Vec3) => ({
+      ...floor(p, id, local, dimensions),
+      transform: flat(toScan(local, p), p.yaw + Math.PI / 2),
+    });
+    const input = {
+      ...merged,
+      floors: [copy('merged-1', [0, 0, 0], [3, 4, 0]), copy('merged-2', [3.65, 0, 0], [3, 3, 0])],
+      rooms: [bedroom(), kitchen()],
+    };
+    const { model } = convertRoomPlan(input);
+    expect(model.rooms.map((room) => room.id)).toEqual(['floor-1', 'floor-2']);
+    expect(computeMetrics(model).totalAreaM2).toBe(21);
+  });
+
+  it('drops a merged floor spanning the rooms, and keeps one the rooms do not cover', () => {
+    const p = DEFAULT_PLACEMENT;
+    const spanning = floor(p, 'merged-all', [1.575, 0, 0], [7.15, 3, 0]);
+    const elsewhere = floor(p, 'merged-elsewhere', [10, 0, 0], [3, 3, 0]);
+    const input = { ...merged, floors: [spanning, elsewhere], rooms: [bedroom(), kitchen()] };
+    expect(convertRoomPlan(input).model.rooms.map((room) => room.id)).toEqual([
+      'floor-1',
+      'floor-2',
+      'merged-elsewhere',
+    ]);
+  });
 });
 
 describe('convertRoomPlan: format tolerance', () => {
@@ -514,6 +542,15 @@ describe('convertRoomPlan: warnings', () => {
       expect.objectContaining({ code: 'degenerate-element', elementId: 'wall-zero' }),
     );
     expect(model.walls.map((wall) => wall.id)).not.toContain('wall-zero');
+  });
+
+  it('reports a room with fewer than three walls', () => {
+    const source = bedroom();
+    const { warnings } = convertRoomPlan({ ...source, walls: source.walls.slice(0, 2) });
+    expect(warnings).toContainEqual(
+      expect.objectContaining({ code: 'incomplete-room', elementId: 'floor-1' }),
+    );
+    expect(codes(bedroom())).not.toContain('incomplete-room');
   });
 
   it('reports an object outside every room', () => {

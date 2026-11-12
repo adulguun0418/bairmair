@@ -1,5 +1,19 @@
 import type { RoomModelV1 } from '../src/index';
 
+/**
+ * A sample model as written to samples/*.json: pretty JSON, with arrays of numbers (points,
+ * matrices) kept on one line for readability.
+ */
+export function formatSample(model: unknown): string {
+  const number = '-?[\\d.eE+-]+';
+  const numberArray = new RegExp(`\\[\\s+(${number}(?:,\\s+${number})*)\\s+\\]`, 'g');
+  const json = JSON.stringify(model, null, 2).replace(
+    numberArray,
+    (_match, body: string) => `[${body.replace(/\s+/g, ' ')}]`,
+  );
+  return `${json}\n`;
+}
+
 /** A valid model of one 4 x 3 m bedroom: a wall with a window, and a bed. */
 export function minimalModel(): RoomModelV1 {
   return {

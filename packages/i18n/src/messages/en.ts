@@ -50,12 +50,14 @@ export const en: Messages = {
   },
   samples: {
     title: 'Sample apartments in 3D',
-    intro: 'Hand-made sample models. Real models come from a LiDAR scan with an iPhone Pro.',
+    intro:
+      'Hand-made sample models, plus one real LiDAR scan from an iPhone Pro. Real listings get their models from scans like it.',
     open: 'Open',
     names: {
       studio: 'Studio apartment',
       'two-room': 'Two-room apartment',
       'l-shaped': 'Apartment with an L-shaped living room',
+      'scan-l-room': 'Real scan: L-shaped room',
     },
   },
   scanSupport: {

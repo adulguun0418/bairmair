@@ -26,7 +26,8 @@ describe('scan ids', () => {
 const at = (x: number, y: number, z: number) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
 
 describe('analyzeExport', () => {
-  it('converts a RoomPlan export and counts its contents', () => {
+  it('converts a RoomPlan export and counts its contents and warnings', () => {
+    // One floor and a single wall: converts, and is reported as an incomplete room.
     const raw = {
       floors: [{ identifier: 'floor-1', transform: at(0, 0, 0), dimensions: [4, 0, 3] }],
       walls: [{ identifier: 'wall-1', transform: at(0, 1.3, -1.5), dimensions: [4, 2.6, 0] }],
@@ -35,7 +36,8 @@ describe('analyzeExport', () => {
     if (!analysis.ok) throw new Error(analysis.error);
     expect(analysis.metrics.totalAreaM2).toBe(12);
     expect(analysis.metrics.counts).toMatchObject({ rooms: 1, walls: 1 });
-    expect(analysis.warningCount).toBe(0);
+    expect(analysis.warnings).toEqual({ 'incomplete-room': 1 });
+    expect(analysis.warningCount).toBe(1);
   });
 
   it('reports instead of throwing when the file is not a usable export', () => {
