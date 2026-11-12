@@ -1,0 +1,759 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "kind": "manual",
+    "converterVersion": "samples-1"
+  },
+  "frame": {
+    "fromSource": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+  },
+  "rooms": [
+    {
+      "id": "living",
+      "label": "livingRoom",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [-3.925, -3.675],
+          [0.275, -3.675],
+          [0.275, 0.325],
+          [-3.925, 0.325]
+        ],
+        "y": 0
+      }
+    },
+    {
+      "id": "bedroom",
+      "label": "bedroom",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [0.425, -3.675],
+          [3.925, -3.675],
+          [3.925, 0.325],
+          [0.425, 0.325]
+        ],
+        "y": 0
+      }
+    },
+    {
+      "id": "kitchen",
+      "label": "kitchen",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [-3.925, 0.475],
+          [-0.925, 0.475],
+          [-0.925, 3.675],
+          [-3.925, 3.675]
+        ],
+        "y": 0
+      }
+    },
+    {
+      "id": "hallway",
+      "label": "hallway",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [-0.775, 0.475],
+          [1.725, 0.475],
+          [1.725, 3.675],
+          [-0.775, 3.675]
+        ],
+        "y": 0
+      }
+    },
+    {
+      "id": "bathroom",
+      "label": "bathroom",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [1.875, 0.475],
+          [3.925, 0.475],
+          [3.925, 3.675],
+          [1.875, 3.675]
+        ],
+        "y": 0
+      }
+    }
+  ],
+  "walls": [
+    {
+      "id": "living-wall-1",
+      "roomId": "living",
+      "transform": {
+        "position": [-1.825, 1.35, -3.675],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 4.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "living-wall-2",
+      "roomId": "living",
+      "transform": {
+        "position": [0.275, 1.35, -1.675],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 4,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "living-wall-3",
+      "roomId": "living",
+      "transform": {
+        "position": [-1.825, 1.35, 0.325],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 4.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "living-wall-4",
+      "roomId": "living",
+      "transform": {
+        "position": [-3.925, 1.35, -1.675],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 4,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bedroom-wall-1",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [2.175, 1.35, -3.675],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 3.5,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bedroom-wall-2",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [3.925, 1.35, -1.675],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 4,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bedroom-wall-3",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [2.175, 1.35, 0.325],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 3.5,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bedroom-wall-4",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [0.425, 1.35, -1.675],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 4,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "kitchen-wall-1",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-2.425, 1.35, 0.475],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 3,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "kitchen-wall-2",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-0.925, 1.35, 2.075],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 3.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "kitchen-wall-3",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-2.425, 1.35, 3.675],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 3,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "kitchen-wall-4",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-3.925, 1.35, 2.075],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 3.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "hallway-wall-1",
+      "roomId": "hallway",
+      "transform": {
+        "position": [0.475, 1.35, 0.475],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 2.5,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "hallway-wall-2",
+      "roomId": "hallway",
+      "transform": {
+        "position": [1.725, 1.35, 2.075],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 3.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "hallway-wall-3",
+      "roomId": "hallway",
+      "transform": {
+        "position": [0.475, 1.35, 3.675],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 2.5,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "hallway-wall-4",
+      "roomId": "hallway",
+      "transform": {
+        "position": [-0.775, 1.35, 2.075],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 3.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bathroom-wall-1",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [2.9, 1.35, 0.475],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 2.05,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bathroom-wall-2",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [3.925, 1.35, 2.075],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 3.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bathroom-wall-3",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [2.9, 1.35, 3.675],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 2.05,
+        "height": 2.7,
+        "depth": 0
+      }
+    },
+    {
+      "id": "bathroom-wall-4",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [1.875, 1.35, 2.075],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 3.2,
+        "height": 2.7,
+        "depth": 0
+      }
+    }
+  ],
+  "doors": [
+    {
+      "id": "entrance",
+      "roomId": "hallway",
+      "transform": {
+        "position": [0.475, 1.025, 3.675],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 0.9,
+        "height": 2.05,
+        "depth": 0
+      },
+      "wallId": "hallway-wall-3"
+    },
+    {
+      "id": "living-door-living",
+      "roomId": "living",
+      "transform": {
+        "position": [-0.275, 1, 0.325],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 0.8,
+        "height": 2,
+        "depth": 0
+      },
+      "wallId": "living-wall-3"
+    },
+    {
+      "id": "living-door-hallway",
+      "roomId": "hallway",
+      "transform": {
+        "position": [-0.275, 1, 0.475],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.8,
+        "height": 2,
+        "depth": 0
+      },
+      "wallId": "hallway-wall-1"
+    },
+    {
+      "id": "bedroom-door-bedroom",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [1.075, 1, 0.325],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 0.8,
+        "height": 2,
+        "depth": 0
+      },
+      "wallId": "bedroom-wall-3"
+    },
+    {
+      "id": "bedroom-door-hallway",
+      "roomId": "hallway",
+      "transform": {
+        "position": [1.075, 1, 0.475],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.8,
+        "height": 2,
+        "depth": 0
+      },
+      "wallId": "hallway-wall-1"
+    },
+    {
+      "id": "bathroom-door-hallway",
+      "roomId": "hallway",
+      "transform": {
+        "position": [1.725, 1, 1.825],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 0.7,
+        "height": 2,
+        "depth": 0
+      },
+      "wallId": "hallway-wall-2"
+    },
+    {
+      "id": "bathroom-door-bathroom",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [1.875, 1, 1.825],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.7,
+        "height": 2,
+        "depth": 0
+      },
+      "wallId": "bathroom-wall-4"
+    }
+  ],
+  "windows": [
+    {
+      "id": "living-window",
+      "roomId": "living",
+      "transform": {
+        "position": [-1.825, 1.55, -3.675],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 2,
+        "height": 1.5,
+        "depth": 0
+      },
+      "wallId": "living-wall-1"
+    },
+    {
+      "id": "bedroom-window",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [2.175, 1.55, -3.675],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 1.6,
+        "height": 1.5,
+        "depth": 0
+      },
+      "wallId": "bedroom-wall-1"
+    },
+    {
+      "id": "kitchen-window",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-2.425, 1.55, 3.675],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 1.2,
+        "height": 1.3,
+        "depth": 0
+      },
+      "wallId": "kitchen-wall-3"
+    }
+  ],
+  "openings": [
+    {
+      "id": "kitchen-opening-kitchen",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-0.925, 1.05, 1.325],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 0.9,
+        "height": 2.1,
+        "depth": 0
+      },
+      "wallId": "kitchen-wall-2"
+    },
+    {
+      "id": "kitchen-opening-hallway",
+      "roomId": "hallway",
+      "transform": {
+        "position": [-0.775, 1.05, 1.325],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.9,
+        "height": 2.1,
+        "depth": 0
+      },
+      "wallId": "hallway-wall-4"
+    }
+  ],
+  "objects": [
+    {
+      "id": "sofa",
+      "roomId": "living",
+      "transform": {
+        "position": [-3.425, 0.4, -1.675],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 2.2,
+        "height": 0.8,
+        "depth": 0.9
+      },
+      "category": "sofa"
+    },
+    {
+      "id": "coffee-table",
+      "roomId": "living",
+      "transform": {
+        "position": [-2.025, 0.225, -1.675],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 1,
+        "height": 0.45,
+        "depth": 0.6
+      },
+      "category": "table"
+    },
+    {
+      "id": "television",
+      "roomId": "living",
+      "transform": {
+        "position": [0.195, 1.25, -1.675],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 1.2,
+        "height": 0.7,
+        "depth": 0.08
+      },
+      "category": "television"
+    },
+    {
+      "id": "living-cabinet",
+      "roomId": "living",
+      "transform": {
+        "position": [-1.725, 1, 0.045],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 1.6,
+        "height": 2,
+        "depth": 0.45
+      },
+      "category": "storage"
+    },
+    {
+      "id": "bed",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [2.875, 0.25, -1.675],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 1.8,
+        "height": 0.5,
+        "depth": 2
+      },
+      "category": "bed"
+    },
+    {
+      "id": "wardrobe",
+      "roomId": "bedroom",
+      "transform": {
+        "position": [0.755, 1.05, -2.175],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 1.8,
+        "height": 2.1,
+        "depth": 0.6
+      },
+      "category": "storage"
+    },
+    {
+      "id": "refrigerator",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-3.575, 0.925, 0.825],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.6,
+        "height": 1.85,
+        "depth": 0.65
+      },
+      "category": "refrigerator"
+    },
+    {
+      "id": "stove",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-3.605, 0.45, 1.525],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.6,
+        "height": 0.9,
+        "depth": 0.6
+      },
+      "category": "stove"
+    },
+    {
+      "id": "kitchen-sink",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-3.605, 0.45, 2.225],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.6,
+        "height": 0.9,
+        "depth": 0.6
+      },
+      "category": "sink"
+    },
+    {
+      "id": "dining-table",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-1.925, 0.375, 2.725],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.9,
+        "height": 0.75,
+        "depth": 0.9
+      },
+      "category": "table"
+    },
+    {
+      "id": "chair-1",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-1.925, 0.45, 2.025],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 0.45,
+        "height": 0.9,
+        "depth": 0.45
+      },
+      "category": "chair"
+    },
+    {
+      "id": "chair-2",
+      "roomId": "kitchen",
+      "transform": {
+        "position": [-2.625, 0.45, 2.725],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.45,
+        "height": 0.9,
+        "depth": 0.45
+      },
+      "category": "chair"
+    },
+    {
+      "id": "bathtub",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [3.525, 0.275, 1.425],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 1.7,
+        "height": 0.55,
+        "depth": 0.75
+      },
+      "category": "bathtub"
+    },
+    {
+      "id": "bathroom-sink",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [3.675, 0.425, 2.725],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.6,
+        "height": 0.85,
+        "depth": 0.45
+      },
+      "category": "sink"
+    },
+    {
+      "id": "toilet",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [2.975, 0.4, 3.325],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 0.4,
+        "height": 0.8,
+        "depth": 0.65
+      },
+      "category": "toilet"
+    },
+    {
+      "id": "washer",
+      "roomId": "bathroom",
+      "transform": {
+        "position": [2.225, 0.425, 3.275],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.6,
+        "height": 0.85,
+        "depth": 0.6
+      },
+      "category": "washerDryer"
+    },
+    {
+      "id": "shoe-cabinet",
+      "roomId": "hallway",
+      "transform": {
+        "position": [1.525, 0.5, 3.125],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 1,
+        "height": 1,
+        "depth": 0.35
+      },
+      "category": "storage"
+    }
+  ],
+  "hotspots": []
+}

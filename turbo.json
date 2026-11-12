@@ -1,0 +1,16 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "tasks": {
+    "test": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["src/**", "test/**", "samples/**", "package.json", "tsconfig.json"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}
