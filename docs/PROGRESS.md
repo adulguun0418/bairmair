@@ -1,7 +1,9 @@
 # Progress
 
 ## Current state (2026-11-12)
-**Step 4, part 1 done** and merged to `main` (branch `step-4-roomplan`): `apps/mobile` with the RoomPlan test screen. First EAS development build installed on your iPhone; a test scan of the office worked. Part 2 (finalize the parser against a real scan, add it as a fixture and a sample) starts when the raw JSON is in `packages/room-model/test/fixtures/roomplan/`.
+**Step 4 done**, except one check that needs a multi-room scan (see Next).
+- Part 1 is merged to `main` (branch `step-4-roomplan`).
+- Part 2 is in a pull request (branch `step-4-part-2`) for your review. From now on, each step goes up as a pull request and you merge it on GitHub.
 
 The SMS gateway adapter (step 3) still waits on your gateway details.
 
@@ -20,9 +22,13 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - Step 4, part 1:
   - `apps/mobile`: Expo SDK 58 from the official template, Expo Router, i18n through `@bairmair/i18n`. Screens: device check + saved scans (`/`), scanner (`/scan`), scan review (`/scans/[id]`) with the shared converter, floor plan (SVG in a WebView), areas, warning codes, and share buttons for the raw JSON, USDZ and RoomModel JSON.
   - Scanner: `RoomPlanView` with our own controls; a pure state machine (`scan-state.ts`) handles expo-roomplan's quirks (OK is not completion; wait for the pending room before next/finish; export captured rooms after an error). Files are copied from `tmp/Export` to `Documents/scans/<id>/` with `meta.json` (model + iOS version).
-  - Converter fix: `curve` is optional (Swift omits nil keys; zod 4 made the bare `z.unknown()` key required, so every real export would have failed).
-  - Verified on Windows: `expo export` bundles to Hermes bytecode, `expo-doctor` 20/20, Info.plist and entitlements via `expo config --type introspect`.
-- Tests: 192 unit (room-model 139, mobile 21, i18n 16, send-sms 12, db 4) + 37 integration tests against the dev project.
+  - Converter: `curve` made optional. Defensive only: real exports turned out to write `"curve": null`.
+  - Verified on Windows: `expo export` bundles to Hermes bytecode, `expo-doctor` 20/20, Info.plist and entitlements via `expo config --type introspect`. On the iPhone: first EAS development build installed, scanning and export work.
+- Step 4, part 2:
+  - Two real single-room exports as byte-for-byte fixtures (`packages/room-model/test/fixtures/roomplan/`), tested in `real-scans.test.ts`. Answers to the format questions are in `docs/proposal/00-expo-roomplan-findings.md`.
+  - Converter 0.2.0 fixes: drops the top-level floor copy, which carries a new identifier (each scan had become two rooms, double area); adds an `incomplete-room` warning for rooms with fewer than 3 walls.
+  - The complete L-shaped room is a web sample: `/samples/scan-l-room`.
+- Tests: 211 unit (room-model 158, mobile 21, i18n 16, send-sms 12, db 4) + 37 integration tests against the dev project.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -69,7 +75,8 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - pnpm adds packages younger than its minimum release age to `minimumReleaseAgeExclude` when they are installed explicitly (all of today's Expo patch releases). Prune the list later.
 
 ## Notes for later steps
-- Step 4, part 2: answer the open questions in `docs/proposal/00-expo-roomplan-findings.md` from the real export, finalize `capture.ts`, add the scan as a test fixture and a sample. Check the raw JSON size: `scan-raw` allows 50 MB (free plan limit).
+- Wall height: RoomPlan measures walls behind tall furniture lower (2.39 m vs 2.82 m in the same room). Option: raise walls of a room that are almost as tall as its tallest wall to that height. Not done yet; needs your call.
+- Step 5 review screen: show the `incomplete-room` warning and offer a rescan. Raw exports are small (42–91 KB per room), far under the 50 MB `scan-raw` limit.
 - Step 5: mobile auth. Apple: add the bundle id to Supabase's Apple client IDs, then `signInWithIdToken`. Google: choose native (rebuild) or browser OAuth. Add `bairmair://**` to the Auth redirect URLs. Record the GPS position during a scan (expo-location is in build 1). Uploads: `File.createUploadTask` (expo-file-system) supports background sessions.
 - Step 5: supabase-js sends a Blob's own `type` and ignores `contentType`. Deleting a listing leaves its storage objects; add cleanup.
 - Before an App Store build: real app icon and splash (the Expo placeholders are still in `apps/mobile/assets`).
@@ -79,9 +86,12 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - Mongolian UI copy (`packages/i18n/src/messages/mn.ts`), e.g. "Төлөвлөлт" for floor plan.
 - OTP SMS text: "Bairmair код: 123456. Хэнд ч бүү хэлээрэй." (`supabase/functions/send-sms/handler.ts`).
 - Scanner copy (`scanSupport`, `scan`, `scanResult` in `mn.ts`) and the iOS permission prompts (`apps/mobile/app.json`).
+- Sample name "Бодит скан: Г хэлбэрийн өрөө" and the updated `samples.intro`.
 
 ## Next
-You: scan 2+ rooms at home, put the raw JSON in `packages/room-model/test/fixtures/roomplan/`. Then step 4, part 2.
+- You: review and merge the step 4 part 2 pull request.
+- You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). It answers the last format question (are shared walls duplicated or merged?) and checks the merged-floor handling with several rooms. No code waits on it.
+- Then step 5: listing creation and upload flow (decide first where server-side scan processing runs).
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.

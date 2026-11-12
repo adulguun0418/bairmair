@@ -8,6 +8,7 @@ import {
   pointInPolygon,
   type Aperture,
 } from '../src/index';
+import { formatSample } from './helpers';
 
 // Areas worked out by hand from the room outlines in samples/definitions.ts.
 const EXPECTED: Record<
@@ -38,17 +39,6 @@ const EXPECTED: Record<
     openings: 2,
   },
 };
-
-/** Pretty JSON, with arrays of numbers (points, matrices) kept on one line for readability. */
-function formatSample(model: unknown): string {
-  const number = '-?[\\d.eE+-]+';
-  const numberArray = new RegExp(`\\[\\s+(${number}(?:,\\s+${number})*)\\s+\\]`, 'g');
-  const json = JSON.stringify(model, null, 2).replace(
-    numberArray,
-    (_match, body: string) => `[${body.replace(/\s+/g, ' ')}]`,
-  );
-  return `${json}\n`;
-}
 
 describe.each(Object.keys(SAMPLE_SPECS) as SampleName[])('sample %s', (name) => {
   const model = buildSample(SAMPLE_SPECS[name]);

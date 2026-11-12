@@ -5,10 +5,10 @@ import type { Confidence, Mat4, Vec3 } from '../schema/primitives';
  * Tolerant reader for the JSON that expo-roomplan exports.
  *
  * That file is Apple's own `Codable` encoding of `CapturedStructure` (multi-room, iOS 17+) or
- * `CapturedRoom`. Apple does not document the format, so everything here is the EXPECTED shape,
- * read as leniently as possible. It must be confirmed against a real export (build step 4).
- * Only this file should need to change when the real format is known: the converter works on
- * the neutral `RoomPlanCapture` produced here.
+ * `CapturedRoom`. Apple does not document the format. The shape below is confirmed against real
+ * single-room exports (`test/fixtures/roomplan/`, findings in
+ * `docs/proposal/00-expo-roomplan-findings.md`) and still read leniently, because the format can
+ * change between iOS versions. The converter works on the neutral `RoomPlanCapture` produced here.
  */
 
 export interface CaptureSurface {
@@ -95,8 +95,8 @@ const RawSurface = z.object({
   confidence: KeyedEnum.optional(),
   parentIdentifier: z.string().nullish(),
   polygonCorners: z.array(Vector3).nullish(),
-  // Swift's synthesized Codable leaves out optional keys whose value is nil, so a straight wall
-  // usually has no `curve` key at all. In zod 4 a bare `z.unknown()` key is required.
+  // Real exports write `"curve": null` for straight walls. Optional anyway, because Swift's
+  // synthesized Codable omits nil keys, and in zod 4 a bare `z.unknown()` key is required.
   curve: z.unknown().optional(),
   story: z.number().int().nullish(),
 });

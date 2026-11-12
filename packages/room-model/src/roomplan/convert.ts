@@ -26,7 +26,7 @@ import type { Mat4, Transform, Vec2, Vec3 } from '../schema/primitives';
 import { parseRoomPlanCapture, type CaptureSurface, type RoomPlanCapture } from './capture';
 
 /** Bump when the conversion output changes for the same input. Stored with every model. */
-export const CONVERTER_VERSION = '0.1.0';
+export const CONVERTER_VERSION = '0.2.0';
 
 export type ConversionWarningCode =
   | 'no-floors'
@@ -34,7 +34,8 @@ export type ConversionWarningCode =
   | 'tilted-element'
   | 'curved-wall-flattened'
   | 'orphan-aperture'
-  | 'unassigned-element';
+  | 'unassigned-element'
+  | 'incomplete-room';
 
 export interface ConversionWarning {
   code: ConversionWarningCode;
@@ -59,6 +60,10 @@ const ROOM_SNAP_M = 0.5;
 const WALL_SNAP_M = 0.3;
 /** Elements leaning more than about 5 degrees are flattened and reported. */
 const UPRIGHT_COS = Math.cos((5 * Math.PI) / 180);
+/** How far a merged floor's corner may lie outside the rooms' floors and still count as a copy. */
+const MERGED_FLOOR_SNAP_M = 0.1;
+/** A room with fewer walls than this was not scanned all the way round. */
+const MIN_ROOM_WALLS = 3;
 
 /** RoomPlan section labels that map one-to-one onto ours. Anything else becomes `other`. */
 const SECTION_LABELS: Readonly<Record<string, RoomLabel>> = {
@@ -117,6 +122,34 @@ function sourceFloorPolygon(floor: CaptureSurface): { polygon: Vec2[]; y: number
 }
 
 /**
+ * Drops the merged copies of floors that the export also has per room.
+ *
+ * In a real `CapturedStructure` export (iOS, expo-roomplan 1.3.2), the walls, doors and objects
+ * in the top-level arrays keep the identifiers they have in `rooms[]`, but each floor reappears
+ * under a new identifier and local frame with the same outline. Keeping both would count every
+ * room twice. The per-room floor wins, because it says which room it is. A merged floor is
+ * dropped when all of its corners lie on the per-room floors of its story, which also covers a
+ * merged floor that spans several rooms.
+ */
+function withoutMergedCopies<T extends { floor: CaptureSurface; polygon: Vec2[] }>(
+  floors: readonly T[],
+): T[] {
+  const perRoom = floors.filter(({ floor }) => floor.roomIndex !== null);
+  if (perRoom.length === 0) return [...floors];
+  const onPerRoomFloor = (point: Vec2, story: number) =>
+    perRoom.some(
+      ({ floor, polygon }) =>
+        floor.story === story &&
+        (pointInPolygon(point, polygon) ||
+          distanceToPolygonEdge(point, polygon) <= MERGED_FLOOR_SNAP_M),
+    );
+  return floors.filter(
+    ({ floor, polygon }) =>
+      floor.roomIndex !== null || !polygon.every((point) => onPerRoomFloor(point, floor.story)),
+  );
+}
+
+/**
  * The heading that most wall length agrees with, modulo 90 degrees. Rotating the model by the
  * negative of this puts the dominant walls on the X and Z axes.
  */
@@ -142,7 +175,9 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
   // --- Canonical frame -----------------------------------------------------------------------
   // Rotate the dominant wall direction onto the X axis, put the lowest floor at y = 0, and
   // center the plan bounding box on the origin.
-  const sourceFloors = capture.floors.map((floor) => ({ floor, ...sourceFloorPolygon(floor) }));
+  const sourceFloors = withoutMergedCopies(
+    capture.floors.map((floor) => ({ floor, ...sourceFloorPolygon(floor) })),
+  );
   const wallPoses = capture.walls.map((wall) => ({ wall, pose: sourcePose(wall.transform) }));
 
   const segments =
@@ -291,6 +326,17 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
     });
   }
   const wallsById = new Map(walls.map((wall) => [wall.id, wall]));
+
+  for (const room of rooms) {
+    const count = walls.filter((wall) => wall.roomId === room.id).length;
+    if (count < MIN_ROOM_WALLS) {
+      warn(
+        'incomplete-room',
+        `Room has ${count} wall(s); the scan probably missed part of it, so its area is too small.`,
+        room.id,
+      );
+    }
+  }
 
   // --- Doors, windows, openings ---------------------------------------------------------------
   const convertApertures = (surfaces: readonly CaptureSurface[], isDoor: boolean): Aperture[] => {

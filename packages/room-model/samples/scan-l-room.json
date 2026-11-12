@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "kind": "roomplan",
+    "converterVersion": "0.2.0",
+    "formatVersion": 2
+  },
+  "frame": {
+    "fromSource": [0.915103, 0, 0.403221, 0, 0, 1, 0, 0, -0.403221, 0, 0.915103, 0, 0.550718, 1.5167, -0.041506, 1]
+  },
+  "rooms": [
+    {
+      "id": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "label": "other",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [1.534, 2.107],
+          [-0.025, 2.107],
+          [-0.025, 0.143],
+          [-1.534, 0.143],
+          [-1.534, -2.107],
+          [0.877, -2.107],
+          [0.877, -1.576],
+          [1.534, -1.576]
+        ],
+        "y": 0
+      }
+    }
+  ],
+  "walls": [
+    {
+      "id": "25086092-1E68-4939-B54B-605E475204C3",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [-1.534, 1.41, -0.982],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 2.251,
+        "height": 2.82,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "2D6B3025-7AC6-4255-A3E2-B95231FBF96D",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [-0.025, 1.41, 1.125],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 1.964,
+        "height": 2.82,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "13800B2A-A304-47CA-AA4D-A8CA094C92C6",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [-0.329, 1.196, -2.107],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 2.411,
+        "height": 2.393,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "F3B970E2-9343-4828-B063-751F82DE8E0F",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [0.755, 1.41, 2.107],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 1.559,
+        "height": 2.82,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "4CB10EDB-2E45-419D-B5D2-CCE6A7C330AD",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [1.534, 1.196, 0.266],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 3.683,
+        "height": 2.393,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "383AF787-2C9D-4E17-A680-29C453F5B2EB",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [-0.78, 1.41, 0.143],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 1.509,
+        "height": 2.82,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "435576C4-7E1D-467E-A8DC-FD155A213634",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [1.206, 1.196, -1.576],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.658,
+        "height": 2.393,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "E1C2016C-3D7D-43CD-AA06-453601A9647C",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [0.877, 1.196, -1.841],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 0.531,
+        "height": 2.393,
+        "depth": 0
+      },
+      "confidence": "high"
+    }
+  ],
+  "doors": [
+    {
+      "id": "220477EF-5E45-497F-A2DC-B9A9D8F0DA36",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [-1.534, 1.02, -0.678],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.901,
+        "height": 2.04,
+        "depth": 0
+      },
+      "confidence": "high",
+      "wallId": "25086092-1E68-4939-B54B-605E475204C3",
+      "isOpen": false
+    },
+    {
+      "id": "E045E928-7A0D-48BA-B89F-7A409253CE0C",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [-0.915, 0.96, 0.143],
+        "yaw": -3.1416
+      },
+      "dimensions": {
+        "width": 1.109,
+        "height": 1.92,
+        "depth": 0
+      },
+      "confidence": "medium",
+      "wallId": "383AF787-2C9D-4E17-A680-29C453F5B2EB",
+      "isOpen": false
+    }
+  ],
+  "windows": [],
+  "openings": [],
+  "objects": [
+    {
+      "id": "05F4BF76-FD37-4F47-8275-8BFD78D55110",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [1.226, 1.257, -0.286],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 2.579,
+        "height": 2.514,
+        "depth": 0.616
+      },
+      "confidence": "low",
+      "category": "storage"
+    },
+    {
+      "id": "AACCF953-F266-45B3-ABD9-65233F69D0E9",
+      "roomId": "8BC72EC3-4348-4A55-9138-776F87903864",
+      "transform": {
+        "position": [-0.329, 1.241, -1.802],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 2.411,
+        "height": 2.482,
+        "depth": 0.611
+      },
+      "confidence": "high",
+      "category": "storage"
+    }
+  ],
+  "hotspots": []
+}
