@@ -7,10 +7,11 @@
   },
   "scripts": {
     "dev:web": "pnpm --filter @bairmair/web dev",
+    "dev:mobile": "pnpm --filter @bairmair/mobile dev",
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "lint": "eslint . && pnpm --filter @bairmair/web lint",
+    "lint": "eslint . && pnpm --filter @bairmair/web --filter @bairmair/mobile lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:remote": "pnpm --filter @bairmair/db test:remote",

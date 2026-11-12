@@ -1,9 +1,9 @@
 # Progress
 
 ## Current state (2026-11-12)
-**Step 3 done**, except the SMS gateway adapter, which waits on your gateway details (see Open decisions). Waiting for your go-ahead on step 4.
+**Step 4, part 1 done** and merged to `main` (branch `step-4-roomplan`): `apps/mobile` with the RoomPlan test screen. First EAS development build installed on your iPhone; a test scan of the office worked. Part 2 (finalize the parser against a real scan, add it as a fixture and a sample) starts when the raw JSON is in `packages/room-model/test/fixtures/roomplan/`.
 
-Step 3 is committed and merged to `main` (branch `step-3-supabase`).
+The SMS gateway adapter (step 3) still waits on your gateway details.
 
 ## Done
 - Step 1: monorepo + `@bairmair/room-model` (schema, geometry, areas, annotations, RoomPlan converter, 3 samples).
@@ -17,10 +17,17 @@ Step 3 is committed and merged to `main` (branch `step-3-supabase`).
   - Auth from `supabase/config.toml`: phone OTP through the `send-sms` Edge Function (Send SMS hook). Test number +976 00000001, code 123456 (skips the hook).
   - `@bairmair/db`: generated types, storage paths, database error keys.
   - Verified on the live project: Cyrillic trigrams work (ICU en-US locale); phone auth needs no built-in SMS provider; the caller IP reaches SQL; CLI works on Windows without Docker.
-- Tests: 169 unit (room-model 138, i18n 15, send-sms 12, db 4) + 37 integration tests against the dev project.
+- Step 4, part 1:
+  - `apps/mobile`: Expo SDK 58 from the official template, Expo Router, i18n through `@bairmair/i18n`. Screens: device check + saved scans (`/`), scanner (`/scan`), scan review (`/scans/[id]`) with the shared converter, floor plan (SVG in a WebView), areas, warning codes, and share buttons for the raw JSON, USDZ and RoomModel JSON.
+  - Scanner: `RoomPlanView` with our own controls; a pure state machine (`scan-state.ts`) handles expo-roomplan's quirks (OK is not completion; wait for the pending room before next/finish; export captured rooms after an error). Files are copied from `tmp/Export` to `Documents/scans/<id>/` with `meta.json` (model + iOS version).
+  - Converter fix: `curve` is optional (Swift omits nil keys; zod 4 made the bare `z.unknown()` key required, so every real export would have failed).
+  - Verified on Windows: `expo export` bundles to Hermes bytecode, `expo-doctor` 20/20, Info.plist and entitlements via `expo config --type introspect`.
+- Tests: 192 unit (room-model 139, mobile 21, i18n 16, send-sms 12, db 4) + 37 integration tests against the dev project.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
+- `pnpm dev:mobile` (Metro for the development build). Runs with `--max-workers 2`: with one worker per CPU thread, Metro crashed out of memory on this PC (exit code -1073740791 = 0xC0000409).
+- In `apps/mobile`: `pnpm eas <command>` (EAS CLI 27.7.2 via `pnpm dlx`), `pnpm doctor`
 - `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm format`
 - `pnpm --filter @bairmair/room-model samples` regenerates the sample JSON
 - `pnpm test:remote`: integration tests on the dev project (needs `packages/db/.env`; creates and deletes test users)
@@ -51,18 +58,30 @@ Step 3 is committed and merged to `main` (branch `step-3-supabase`).
 - Rate-limit IP: `cf-connecting-ip` (Cloudflare rejects client-supplied ones), else the last `x-forwarded-for` entry.
 - `send-sms`: errors on signed requests are HTTP 200 + error body, because Auth hides the reason for any other status. Only +976 numbers get SMS; foreign numbers can sign in with Apple/Google but cannot publish.
 - Advisors: 5 accepted warnings. The 3 RPCs are `security definer` and callable on purpose.
+- Mobile build 1 native modules: dev-client, roomplan, device, file-system, sharing, location, image-picker, apple-authentication (+ entitlement), crypto, localization, secure-store, keep-awake, webview, AsyncStorage (Supabase session storage per its Expo docs), plus the template's. **Not in build 1** (each needs a new build later): maps (step 6), native Google sign-in (needs a Google Cloud iOS client ID at build time; a browser OAuth flow needs no rebuild).
+- iOS: deployment target 16.4 (SDK 58 default), so buyers on 16.4+ can install; scanning needs 17+. SDK 58's template uses the scene life cycle that iOS 27 requires. iPhone only (`supportsTablet: false`).
+- Scan gate: LiDAR iPhone allowlist by model ID (`src/scanner/support.ts`). Unknown IDs from a newer generation than the last fully known one are "unverified" and may try; the native check is the backstop. iPads are rejected, per the brief.
+- Mobile UI starts in Mongolian whatever the phone language (iOS has no Mongolian UI language). English through an in-app toggle (not persisted yet). iOS permission prompts are Mongolian only.
+- Permission prompts limited to camera, photo library, location when in use (+ temporary precise). Microphone, Face ID, background location and motion are switched off in the plugins.
+- `app.json` stays static, so `eas init` can write the project id. EAS project `@adulguun0418/bairmair`; development builds use internal (ad hoc) distribution, so a newly registered iPhone needs a new build. `eas.json` pins Node 24.14.1, pnpm 12.18.0 and image `sdk-58` (the default image has Node 22 / pnpm 11).
+- EAS CLI runs through `pnpm dlx`, not as a devDependency: it added ~8,000 lockfile lines and build scripts pnpm 12 refuses until approved.
+- No `.easignore`: EAS then uses `.gitignore`, which keeps `.env` files off the build servers. An `.easignore` would have to exclude them itself.
+- pnpm adds packages younger than its minimum release age to `minimumReleaseAgeExclude` when they are installed explicitly (all of today's Expo patch releases). Prune the list later.
 
 ## Notes for later steps
-- Step 4: Apple and Google sign-in (bundle id, deep-link scheme, Apple/Google developer accounts). Add the app scheme to the redirect URLs. Check the raw RoomPlan JSON size: `scan-raw` allows 50 MB (free plan limit).
+- Step 4, part 2: answer the open questions in `docs/proposal/00-expo-roomplan-findings.md` from the real export, finalize `capture.ts`, add the scan as a test fixture and a sample. Check the raw JSON size: `scan-raw` allows 50 MB (free plan limit).
+- Step 5: mobile auth. Apple: add the bundle id to Supabase's Apple client IDs, then `signInWithIdToken`. Google: choose native (rebuild) or browser OAuth. Add `bairmair://**` to the Auth redirect URLs. Record the GPS position during a scan (expo-location is in build 1). Uploads: `File.createUploadTask` (expo-file-system) supports background sessions.
 - Step 5: supabase-js sends a Blob's own `type` and ignores `contentType`. Deleting a listing leaves its storage objects; add cleanup.
+- Before an App Store build: real app icon and splash (the Expo placeholders are still in `apps/mobile/assets`).
 - Before production: separate project, remove the test OTP number, turn off the email provider (kept on in dev for the tests).
 
 ## To review
 - Mongolian UI copy (`packages/i18n/src/messages/mn.ts`), e.g. "Төлөвлөлт" for floor plan.
 - OTP SMS text: "Bairmair код: 123456. Хэнд ч бүү хэлээрэй." (`supabase/functions/send-sms/handler.ts`).
+- Scanner copy (`scanSupport`, `scan`, `scanResult` in `mn.ts`) and the iOS permission prompts (`apps/mobile/app.json`).
 
 ## Next
-Step 4: integrate expo-roomplan in a minimal test screen (first EAS development build).
+You: scan 2+ rooms at home, put the raw JSON in `packages/room-model/test/fixtures/roomplan/`. Then step 4, part 2.
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.

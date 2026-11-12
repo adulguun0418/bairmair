@@ -432,6 +432,30 @@ describe('convertRoomPlan: format tolerance', () => {
     expect(capture.doors[0]).toMatchObject({ parentId: 'wall-s', isOpen: true });
   });
 
+  it('accepts surfaces whose optional keys are left out, as Swift encodes nil', () => {
+    const reference = convertRoomPlan(bedroom()).model;
+    const strip = (element: Record<string, unknown>) => {
+      const copy = { ...element };
+      for (const key of ['curve', 'parentIdentifier', 'polygonCorners', 'story']) {
+        if (copy[key] === null || (Array.isArray(copy[key]) && copy[key].length === 0)) {
+          delete copy[key];
+        }
+      }
+      return copy;
+    };
+    const source = bedroom();
+    const sparse = {
+      ...source,
+      walls: source.walls.map(strip),
+      doors: source.doors.map(strip),
+      windows: source.windows.map(strip),
+      openings: source.openings.map(strip),
+      floors: source.floors.map(strip),
+    };
+    expect(sparse.walls[0]).not.toHaveProperty('curve');
+    expect(convertRoomPlan(sparse).model).toEqual(reference);
+  });
+
   it('rejects input that is not a RoomPlan export', () => {
     expect(() => convertRoomPlan(null)).toThrow(RoomPlanParseError);
     expect(() => convertRoomPlan('{}')).toThrow(RoomPlanParseError);

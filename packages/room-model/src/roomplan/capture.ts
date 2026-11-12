@@ -95,7 +95,9 @@ const RawSurface = z.object({
   confidence: KeyedEnum.optional(),
   parentIdentifier: z.string().nullish(),
   polygonCorners: z.array(Vector3).nullish(),
-  curve: z.unknown(),
+  // Swift's synthesized Codable leaves out optional keys whose value is nil, so a straight wall
+  // usually has no `curve` key at all. In zod 4 a bare `z.unknown()` key is required.
+  curve: z.unknown().optional(),
   story: z.number().int().nullish(),
 });
 type RawSurface = z.infer<typeof RawSurface>;

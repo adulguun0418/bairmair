@@ -1,0 +1,20 @@
+{
+  "cli": {
+    "version": ">= 27.7.2",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "24.14.1",
+      "pnpm": "12.18.0",
+      "ios": {
+        "image": "sdk-58"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal"
+    }
+  }
+}

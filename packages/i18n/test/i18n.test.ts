@@ -6,6 +6,7 @@ import {
   en,
   formatArea,
   formatDecimal,
+  formatFileSize,
   isLocale,
   localePath,
   mn,
@@ -112,6 +113,16 @@ describe('formatArea', () => {
   it('uses the Cyrillic unit in Mongolian and a no-break space', () => {
     expect(formatArea(54.96, 'mn')).toBe('55 м²');
     expect(formatArea(16.8, 'en')).toBe('16.8 m²');
+  });
+});
+
+describe('formatFileSize', () => {
+  it('uses decimal units, with Cyrillic abbreviations in Mongolian', () => {
+    expect(formatFileSize(512, 'mn')).toBe('512 Б');
+    expect(formatFileSize(840_400, 'mn')).toBe('840 КБ');
+    expect(formatFileSize(2_449_000, 'mn')).toBe('2.4 МБ');
+    expect(formatFileSize(12_000_000, 'en')).toBe('12 MB');
+    expect(formatFileSize(999, 'en')).toBe('999 B');
   });
 });
 

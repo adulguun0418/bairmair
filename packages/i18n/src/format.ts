@@ -30,3 +30,16 @@ export function formatArea(squareMeters: number, locale: Locale): string {
   const unit = locale === 'mn' ? 'м²' : 'm²';
   return `${formatDecimal(squareMeters, 1)}${NBSP}${unit}`;
 }
+
+const FILE_SIZE_UNITS: Record<Locale, readonly [string, string, string]> = {
+  mn: ['Б', 'КБ', 'МБ'],
+  en: ['B', 'KB', 'MB'],
+};
+
+/** A file size such as `840 КБ` or `2.4 MB`, in decimal units like the iOS Files app. */
+export function formatFileSize(bytes: number, locale: Locale): string {
+  const [b, kb, mb] = FILE_SIZE_UNITS[locale];
+  if (bytes < 1000) return `${formatDecimal(bytes, 0)}${NBSP}${b}`;
+  if (bytes < 1_000_000) return `${formatDecimal(bytes / 1000, 0)}${NBSP}${kb}`;
+  return `${formatDecimal(bytes / 1_000_000, 1)}${NBSP}${mb}`;
+}
