@@ -1,0 +1,32 @@
+{
+  "name": "@bairmair/viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "3D viewer (react-three-fiber) and interactive floor plan for RoomModel. Web only.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./3d": "./src/3d/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bairmair/room-model": "workspace:*",
+    "@react-three/drei": "^10.7.0",
+    "@react-three/fiber": "^9.8.0",
+    "three": "^0.187.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "@types/react-dom": "~19.3.0",
+    "@types/three": "^0.187.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "~6.0.3"
+  }
+}

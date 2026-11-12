@@ -11,6 +11,7 @@ import {
   polygonCentroid,
   signedArea,
   wallEndpoints,
+  wallSegments,
   yawFromDirection,
   type Vec2,
 } from '../src/index';
@@ -174,6 +175,53 @@ describe('walls and apertures', () => {
     expect(cutout.width).toBe(1.5);
     expect(cutout.height).toBe(1.4);
     expect(cutout.distance).toBeCloseTo(0, 10);
+  });
+
+  describe('wallSegments', () => {
+    const area = (segments: ReturnType<typeof wallSegments>) =>
+      segments.reduce((sum, s) => sum + (s.u1 - s.u0) * (s.v1 - s.v0), 0);
+
+    it('returns the whole face for a wall without cutouts', () => {
+      expect(wallSegments(4, 2.6, [])).toEqual([{ u0: -2, u1: 2, v0: -1.3, v1: 1.3 }]);
+    });
+
+    it('leaves solid wall on all four sides of a window', () => {
+      const segments = wallSegments(4, 2.6, [{ u: 0.5, v: 0.2, width: 1, height: 1.4 }]);
+      expect(segments).toEqual([
+        { u0: -2, u1: 0, v0: -1.3, v1: 1.3 },
+        { u0: 0, u1: 1, v0: -1.3, v1: expect.closeTo(-0.5, 9) },
+        { u0: 0, u1: 1, v0: expect.closeTo(0.9, 9), v1: 1.3 },
+        { u0: 1, u1: 2, v0: -1.3, v1: 1.3 },
+      ]);
+      expect(area(segments)).toBeCloseTo(4 * 2.6 - 1 * 1.4, 9);
+    });
+
+    it('leaves nothing below a door that reaches the floor', () => {
+      // A 2 m door in a 2.6 m wall: its bottom edge is the bottom of the wall.
+      const segments = wallSegments(3, 2.6, [{ u: 0, v: -0.3, width: 0.9, height: 2 }]);
+      expect(segments).toHaveLength(3);
+      expect(segments.some((s) => s.v0 === -1.3 && s.u0 === -0.45)).toBe(false);
+      expect(area(segments)).toBeCloseTo(3 * 2.6 - 0.9 * 2, 9);
+    });
+
+    it('merges overlapping cutouts', () => {
+      const segments = wallSegments(4, 2.6, [
+        { u: -0.5, v: -0.3, width: 1, height: 2 },
+        { u: 0.2, v: 0.3, width: 1, height: 1 },
+      ]);
+      // One merged hole from -1 to 0.7, spanning the union of both heights.
+      expect(segments.filter((s) => s.v0 === -1.3 && s.v1 === 1.3)).toHaveLength(2);
+      expect(segments.some((s) => s.u0 === -1 && s.u1 === 0.7)).toBe(true);
+    });
+
+    it('clamps cutouts to the wall and ignores those outside it', () => {
+      expect(wallSegments(2, 2.6, [{ u: 5, v: 0, width: 1, height: 1 }])).toEqual([
+        { u0: -1, u1: 1, v0: -1.3, v1: 1.3 },
+      ]);
+      // A door wider than the wall removes the whole lower part.
+      const segments = wallSegments(1, 2.6, [{ u: 0, v: -0.3, width: 3, height: 2 }]);
+      expect(segments).toEqual([{ u0: -0.5, u1: 0.5, v0: expect.closeTo(0.7, 9), v1: 1.3 }]);
+    });
   });
 
   it('projects correctly on a rotated wall and reports the distance from the wall plane', () => {

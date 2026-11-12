@@ -89,3 +89,12 @@ Out for now: payments, in-app chat, mortgage calculator, a custom admin panel (u
   6. search, map and listing pages
   7. WebView embed in the mobile app
 - Write tests for the RoomPlan JSON → RoomModel conversion and the area calculations. Use real exported scans as test fixtures once available.
+
+## Additions
+- Map: use a GL-based map library on web and mobile (MapLibre or Mapbox; compare Ulaanbaatar coverage first). Render price pins as a symbol layer, load listings by viewport bounding box (PostGIS GiST index, lightweight payload), and cluster at low zoom. Labels use local formats ("250 сая", "1.8 сая/сар") with a toggle to ₮/m².
+- Location privacy: public pin = building/complex location. Unit number and floor door stay private.
+- Share: one-tap "share" producing a formatted Mongolian post (price, m², rooms, district) + link with a floor-plan Open Graph image.
+- Trust: record GPS position during a scan; if it matches the listing's building, show a "scanned on-site" badge.
+- Freshness: sellers confirm availability every 14 days; show "updated X days ago"; hide unconfirmed listings.
+- Price per m²: computed from the official area, shown on listings with the district average.
+- Data model: listings.last_confirmed_at, listings.scan_verified, saved_searches (post-MVP, with push alerts).

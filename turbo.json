@@ -8,6 +8,10 @@
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
+    "build": {
+      "dependsOn": ["^typecheck"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

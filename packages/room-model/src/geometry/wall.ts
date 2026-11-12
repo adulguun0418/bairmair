@@ -63,3 +63,68 @@ export function apertureCutout(aperture: Placed, wall: Placed): ApertureCutout {
     distance: Math.abs(offsetX * -dz + offsetZ * dx),
   };
 }
+
+/** A solid rectangle of a wall face, in wall-local meters from the wall center. */
+export interface WallSegment {
+  /** Along the wall (local +X). */
+  u0: number;
+  u1: number;
+  /** Up (local +Y). */
+  v0: number;
+  v1: number;
+}
+
+/**
+ * Splits a wall face into solid rectangles around its doors, windows and openings, so a
+ * renderer can draw a wall with holes as a few boxes.
+ *
+ * Cutouts are clamped to the wall. Cutouts whose spans along the wall overlap are merged into
+ * one, which covers the realistic cases (a door next to a window) without polygon clipping.
+ */
+export function wallSegments(
+  width: number,
+  height: number,
+  cutouts: readonly Pick<ApertureCutout, 'u' | 'v' | 'width' | 'height'>[],
+  minSize = 0.01,
+): WallSegment[] {
+  const left = -width / 2;
+  const right = width / 2;
+  const bottom = -height / 2;
+  const top = height / 2;
+
+  const holes = cutouts
+    .map((cutout) => ({
+      u0: Math.max(left, cutout.u - cutout.width / 2),
+      u1: Math.min(right, cutout.u + cutout.width / 2),
+      v0: Math.max(bottom, cutout.v - cutout.height / 2),
+      v1: Math.min(top, cutout.v + cutout.height / 2),
+    }))
+    .filter((hole) => hole.u1 - hole.u0 >= minSize && hole.v1 - hole.v0 >= minSize)
+    .sort((a, b) => a.u0 - b.u0);
+
+  const merged: WallSegment[] = [];
+  for (const hole of holes) {
+    const last = merged[merged.length - 1];
+    if (last && hole.u0 < last.u1) {
+      last.u1 = Math.max(last.u1, hole.u1);
+      last.v0 = Math.min(last.v0, hole.v0);
+      last.v1 = Math.max(last.v1, hole.v1);
+    } else {
+      merged.push({ ...hole });
+    }
+  }
+
+  const segments: WallSegment[] = [];
+  const add = (u0: number, u1: number, v0: number, v1: number) => {
+    if (u1 - u0 >= minSize && v1 - v0 >= minSize) segments.push({ u0, u1, v0, v1 });
+  };
+  let cursor = left;
+  for (const hole of merged) {
+    add(cursor, hole.u0, bottom, top);
+    add(hole.u0, hole.u1, bottom, hole.v0);
+    add(hole.u0, hole.u1, hole.v1, top);
+    cursor = hole.u1;
+  }
+  add(cursor, right, bottom, top);
+  return segments;
+}

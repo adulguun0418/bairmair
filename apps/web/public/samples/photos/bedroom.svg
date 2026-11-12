@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6c38f"/>
+      <stop offset="1" stop-color="#fbe7d0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="#e8e3ef"/>
+  <rect y="570" width="1200" height="230" fill="#c9ad8a"/>
+  <rect x="820" y="140" width="260" height="300" fill="url(#sky)" stroke="#fff" stroke-width="14"/>
+  <rect x="250" y="300" width="460" height="200" rx="18" fill="#8e7a62"/>
+  <rect x="210" y="450" width="540" height="170" rx="20" fill="#f1ede6"/>
+  <rect x="210" y="520" width="540" height="100" rx="20" fill="#9fb3c8"/>
+  <rect x="270" y="410" width="170" height="70" rx="22" fill="#fff"/>
+  <rect x="520" y="410" width="170" height="70" rx="22" fill="#fff"/>
+  <rect x="800" y="490" width="130" height="120" rx="10" fill="#a68a64"/>
+  <rect x="845" y="430" width="40" height="60" fill="#3a3f44"/>
+  <path d="M820 390h90l-20 45h-50z" fill="#f2d48c"/>
+</svg>

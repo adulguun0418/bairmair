@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <pattern id="tiles" width="80" height="80" patternUnits="userSpaceOnUse">
+      <rect width="80" height="80" fill="#e4f0f4"/>
+      <path d="M80 0H0v80" fill="none" stroke="#c8dbe2" stroke-width="3"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="800" fill="url(#tiles)"/>
+  <rect y="620" width="1200" height="180" fill="#9fb0b8"/>
+  <rect x="120" y="440" width="560" height="200" rx="40" fill="#f5f7f8" stroke="#d4dde1" stroke-width="6"/>
+  <rect x="160" y="300" width="20" height="150" fill="#b8c2c7"/>
+  <path d="M170 300h70v24" fill="none" stroke="#b8c2c7" stroke-width="14"/>
+  <rect x="820" y="160" width="220" height="250" rx="110" fill="#d6e7ee" stroke="#b8c2c7" stroke-width="10"/>
+  <rect x="780" y="440" width="300" height="60" rx="14" fill="#f5f7f8" stroke="#d4dde1" stroke-width="6"/>
+  <rect x="800" y="500" width="260" height="140" fill="#a68a64"/>
+  <rect x="915" y="410" width="30" height="40" fill="#b8c2c7"/>
+</svg>

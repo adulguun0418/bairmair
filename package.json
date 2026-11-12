@@ -6,15 +6,18 @@
     "node": ">=24.3.0"
   },
   "scripts": {
+    "dev:web": "pnpm --filter @bairmair/web dev",
+    "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "lint": "eslint .",
+    "lint": "eslint . && pnpm --filter @bairmair/web lint",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "3.9.10",
     "turbo": "2.11.10",
     "typescript": "~6.0.3",

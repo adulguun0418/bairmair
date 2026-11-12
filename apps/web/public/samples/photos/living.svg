@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fc8ee"/>
+      <stop offset="1" stop-color="#e2f1fb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="#efe6d8"/>
+  <rect y="560" width="1200" height="240" fill="#c7a57b"/>
+  <rect x="120" y="130" width="380" height="320" fill="url(#sky)" stroke="#fff" stroke-width="16"/>
+  <line x1="310" y1="130" x2="310" y2="450" stroke="#fff" stroke-width="10"/>
+  <ellipse cx="760" cy="690" rx="380" ry="70" fill="#b4473a" opacity="0.55"/>
+  <rect x="560" y="360" width="480" height="120" rx="28" fill="#7f97b2"/>
+  <rect x="540" y="440" width="520" height="140" rx="30" fill="#8fa5bd"/>
+  <rect x="560" y="575" width="22" height="40" fill="#5b4a3a"/>
+  <rect x="1018" y="575" width="22" height="40" fill="#5b4a3a"/>
+  <rect x="620" y="420" width="120" height="70" rx="16" fill="#e8d7a8"/>
+  <rect x="860" y="420" width="120" height="70" rx="16" fill="#d9a48f"/>
+  <rect x="160" y="600" width="70" height="90" rx="10" fill="#9a7650"/>
+  <ellipse cx="195" cy="560" rx="70" ry="90" fill="#5f8f5a"/>
+</svg>
