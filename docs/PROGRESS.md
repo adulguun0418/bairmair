@@ -3,7 +3,7 @@
 ## Current state (2026-11-13)
 **All seven build steps are merged and running without your PC:** the web is live at https://bairmair-bairmair.vercel.app (Vercel Hobby, dev Supabase project), and the iOS **preview build** (standalone, ad hoc, pointing at Vercel) is installed on your iPhone and works. Everything still runs on the dev Supabase project.
 
-The SMS gateway adapter (step 3) still waits on your gateway details: real phone numbers get no code yet.
+SMS OTP goes through **WeSend** (`SMS_GATEWAY=wesend`, adapter in `supabase/functions/send-sms/gateways.ts`). Live once you set the two function secrets and deploy (see Next).
 
 Fix after going live: the Open Graph image returned 500 on Vercel (fonts read through `node_modules/@fontsource`, a pnpm link that is not deployed). The fonts now live in `apps/web/assets/og-fonts/` (OFL) and the `@fontsource` dependency is gone.
 
@@ -208,6 +208,10 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - 7 copy: `browse.view3d` "3D-ээр үзэх", `browse.model3dFailed`, `viewer.noModel` "Энэ зарт 3D загвар алга.".
 
 ## Next
+- You, WeSend live (repo root; Claude Code may not change hosted secrets for you):
+  - `pnpm supabase secrets set SMS_GATEWAY=wesend WESEND_API_KEY=<your ws_ key> --yes`
+  - `pnpm functions:deploy`
+  - Sign in with a real number that is **not** in `DEV_TEST_OTP` (test numbers skip the hook and get no SMS). The SMS arrives as "Bairmair код: …"; the WeSend dashboard shows the send and the balance. On failure: Supabase dashboard → Edge Functions → send-sms → Logs.
 - You: EAS development build 3 (MapLibre). In `apps/mobile`: `pnpm eas build --profile development --platform ios`, install it on the iPhone, then restart Metro (`pnpm dev:mobile`) and keep `pnpm dev:web` running. Then check:
   - Хайх: listings load; search bar text, sale/rent, filters (count on the button), list ↔ map.
   - Map: pins and clusters, ₮ ↔ ₮/м², tapping a pin opens a card, a cluster zooms in; Mongolian street names without traditional-script letters; English labels after switching language in Бүртгэл.
@@ -224,6 +228,12 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Then, beyond the seven steps (your call on the order): web hosting (the phone then stops depending on your PC), SMS gateway, web sign-in (favorites and reports on the web), production project and App Store preparation.
 
 ## Open decisions
-- SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.
+- SMS gateway: decided, WeSend (https://wesend.mn/docs). Notes:
+  - Plain `POST /v1/sms` with our own text; Supabase Auth makes and checks the code (WeSend's `/v1/verify` would make a second one). `to` = the 8 local digits; `Idempotency-Key` = hash of number + text, so Auth's retry after a timeout does not text twice.
+  - Cyrillic → unicode, 65 characters per part, 80₮ per part; the OTP text is one part. Mobicom, Unitel, Skytel, G-Mobile, ONDO and Lime prefixes; others get `unsupported_number` (no charge).
+  - Secrets (Edge Function only, never in the repo): `SMS_GATEWAY=wesend`, `WESEND_API_KEY=ws_...`. A `ws_test_` key is WeSend's sandbox (sends and charges nothing).
+  - Keep the key's IP allowlist empty in WeSend: Edge Functions have no fixed IP.
+  - Failures show in the function logs as `sms_send_failed` with `wesend <status> <code>` (e.g. `insufficient_credits`, `recipient_rate_limited`).
+  - To check after the first real send: whether WeSend puts the project brand in front of plain `/v1/sms` texts (its docs say so only for `/v1/verify`); if it does, drop "Bairmair" from `otpMessage`.
 - Google sign-in credentials (Google Cloud OAuth web client), whenever you want Google on.
 - Web hosting. Until then the phone reaches the scan-processing API on your PC (`pnpm dev:web`, same Wi-Fi).

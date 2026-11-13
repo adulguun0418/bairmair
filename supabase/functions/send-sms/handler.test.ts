@@ -138,8 +138,8 @@ describe('payload and message', () => {
     expect(parseOtpRequest({ user: {}, sms: { otp: '123456' } })).toBeNull();
   });
 
-  it('keeps the SMS in one UCS-2 segment (70 characters)', () => {
-    expect(otpMessage('12345678').length).toBeLessThanOrEqual(70);
+  it('keeps the SMS in one unicode part (WeSend: 65 characters)', () => {
+    expect(otpMessage('12345678').length).toBeLessThanOrEqual(65);
   });
 
   it('masks phone numbers for logs', () => {

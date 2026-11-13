@@ -52,8 +52,9 @@ export function isMongolianNumber(e164: string): boolean {
 }
 
 /**
- * The SMS text. Mongolian Cyrillic is sent as UCS-2, which fits 70 characters in one segment;
- * keep it under that. iOS and Android offer the code for autofill when the text says "код".
+ * The SMS text. Cyrillic makes the whole message unicode, and WeSend fits 65 unicode characters
+ * in one part (each part is billed); keep it under that. iOS and Android offer the code for
+ * autofill when the text says "код".
  */
 export function otpMessage(otp: string): string {
   return `Bairmair код: ${otp}. Хэнд ч бүү хэлээрэй.`;
