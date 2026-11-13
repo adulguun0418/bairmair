@@ -636,6 +636,22 @@ describe('convertRoomPlan: one session through several rooms', () => {
     expect(computeMetrics(model).rooms.map((room) => room.areaM2)).toEqual([12, 6]);
   });
 
+  it('splits at a thick dividing wall scanned from both sides', () => {
+    // A 0.4 m partition: one wall face per room, 1.2 m² of floor under the wall itself.
+    const input = oneSession();
+    const room = input.rooms[0]!;
+    room.walls = [
+      ...room.walls.filter((wall) => wall.identifier !== 's-divider'),
+      surface(p, 's-divider-w', 'wall', [0.8, 1.3, 0], Math.PI / 2, [3, 2.6, 0]),
+      surface(p, 's-divider-e', 'wall', [1.2, 1.3, 0], -Math.PI / 2, [3, 2.6, 0]),
+    ];
+    room.doors = [];
+    const { model, warnings } = convertRoomPlan(input);
+    expect(warnings).toEqual([]);
+    expect(model.rooms.map((candidate) => candidate.label)).toEqual(['livingRoom', 'bedroom']);
+    expect(computeMetrics(model).rooms.map((candidate) => candidate.areaM2)).toEqual([11.4, 5.4]);
+  });
+
   it('keeps one room, without a warning, when the dividing wall leaves a passage', () => {
     const { model, warnings } = convertRoomPlan(oneSession({ divider: [-1.5, 0.5] }));
     expect(model.rooms.map((room) => room.id)).toEqual(['s-floor']);

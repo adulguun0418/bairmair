@@ -29,7 +29,7 @@ import type { Mat4, Transform, Vec2, Vec3 } from '../schema/primitives';
 import { parseRoomPlanCapture, type CaptureSurface, type RoomPlanCapture } from './capture';
 
 /** Bump when the conversion output changes for the same input. Stored with every model. */
-export const CONVERTER_VERSION = '0.3.0';
+export const CONVERTER_VERSION = '0.3.1';
 
 export type ConversionWarningCode =
   | 'no-floors'
@@ -210,20 +210,22 @@ function splitFloor(floor: readonly Vec2[], walls: readonly PlacedWall[]): Floor
   const segments = walls
     .map((wall) => wallEndpoints(wall))
     .filter(([a, b]) => nearFloor(a) && nearFloor(b));
-  const parts = enclosedFaces(segments).filter((face) => {
+  // Everything the walls close off on this floor, rooms or not.
+  const closed = enclosedFaces(segments).filter(
+    (face) => pointInPolygon(polygonCentroid(face), floor) && face.every(nearFloor),
+  );
+  // Small or narrow areas are not rooms: the inside of a thick wall scanned from both sides,
+  // a column, the reveal of a passage. They still count as covered, because RoomPlan's floor
+  // runs under the walls (a 0.4 m partition between two rooms is about 1 m² of floor).
+  const parts = closed.filter((face) => {
     const area = polygonArea(face);
     let perimeter = 0;
     for (const [a, b] of polygonEdges(face)) perimeter += Math.hypot(b[0] - a[0], b[1] - a[1]);
-    return (
-      area >= MIN_SPLIT_ROOM_AREA_M2 &&
-      (2 * area) / perimeter >= MIN_SPLIT_ROOM_WIDTH_M &&
-      pointInPolygon(polygonCentroid(face), floor) &&
-      face.every(nearFloor)
-    );
+    return area >= MIN_SPLIT_ROOM_AREA_M2 && (2 * area) / perimeter >= MIN_SPLIT_ROOM_WIDTH_M;
   });
   if (parts.length === 0) return { kind: 'whole' };
   const floorArea = polygonArea(floor);
-  const coverage = parts.reduce((sum, part) => sum + polygonArea(part), 0) / floorArea;
+  const coverage = closed.reduce((sum, face) => sum + polygonArea(face), 0) / floorArea;
   if (Math.abs(coverage - 1) > SPLIT_COVERAGE_TOLERANCE) {
     return { kind: 'uncovered', parts: parts.length, coverage };
   }
