@@ -57,6 +57,7 @@ export const en: Messages = {
     rooms: 'Rooms',
     totalArea: 'Total area',
     approximateScanned: 'Approximate, from the scan',
+    noModel: 'This listing has no 3D model.',
   },
   samples: {
     title: 'Sample apartments in 3D',
@@ -674,6 +675,8 @@ export const en: Messages = {
     yourListing: 'This is your listing.',
     edit: 'Edit',
     openOnWeb: 'View the 3D model in the browser',
+    view3d: 'View in 3D',
+    model3dFailed: 'The 3D model could not be loaded. Check your internet connection.',
   },
   favorites: {
     title: 'Saved listings',

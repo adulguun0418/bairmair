@@ -1,14 +1,11 @@
 # Progress
 
 ## Current state (2026-11-13)
-**Step 6c done** (pull request `step-6c-mobile-browse`): the app is now a buyer app too (tabs: search with list and map, saved listings, my listings, account), with a public listing screen, favorites and reports. **Needs EAS development build 3** (MapLibre native module). Until build 3 is installed, everything except the two maps works on build 2.
+**Step 7 done** (pull request `step-7-embed`, stacked on `step-6c-mobile-browse`: merge #9 first). The app shows a listing's 3D model through the web's `/embed/listings/[id]` page in a WebView, so the 3D view is built once. **No new EAS build for step 7** (react-native-webview is in build 1). The brand logo (icons, splash, web header) went into the 6c pull request.
 
-Step 6 is split in three:
-- 6a: public listing page (web). Done.
-- 6b: search, map, agent pages, freshness. Done.
-- 6c: mobile browse/search/map + favorites + report. Done.
+Step 6c still **needs EAS development build 3** (MapLibre native module). Until build 3 is installed, everything except the two maps works on build 2.
 
-The SMS gateway adapter (step 3) still waits on your gateway details.
+All seven build steps of the brief are done. The SMS gateway adapter (step 3) still waits on your gateway details.
 
 ## Done
 - Step 1: monorepo + `@bairmair/room-model` (schema, geometry, areas, annotations, RoomPlan converter, 3 samples).
@@ -79,8 +76,17 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
     - Sign-in and verify return to the screen that opened them (a listing, the Saved tab, account) instead of always going to the account. The editor's "verify phone" opens the add-phone flow directly.
   - Dev test numbers: `pnpm auth:diff` / `pnpm auth:push` (`supabase/scripts/auth-config.mjs`) run `supabase config diff|push` on a temporary copy of `config.toml` with the numbers from `DEV_TEST_OTP` added.
   - Verified: typecheck, lint, tests, web production build, web search/listing pages and OG image against the dev project, `expo-doctor` 20/20, the MapLibre config plugin in the resolved config (its Podfile hook applied to a sample Podfile). Live against the dev project with the fake test number: signed-in search, viewport pins, saving (a repeat save returns 23505, treated as success), the favorites-to-listings embed under RLS, removing. Not verified: anything on the iPhone (needs build 3).
-- Tests: 384 unit (room-model 160, mobile 131, browse 36, i18n 27, send-sms 12, web 11, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
-- Tests before 6c: 368 unit + 74 integration.
+- Brand (in the 6c pull request): app icons, splash and web icons from `assets/brand/logo.svg`; the web header shows the horizontal logo (see notes).
+- Step 7:
+  - `apps/web`: `/embed/listings/[id]` (and `/en/...`), `noindex`, no site chrome: the 3D view fills the viewport, 3D ↔ floor plan toggle, a strip of rooms with areas, total area marked approximate, photos open from hotspots. Same cached loader as the listing page. No page zoom (pinch belongs to the 3D view); the room strip pads above the home indicator.
+  - The site header moved to the route group `app/[lang]/(site)/layout.tsx` (all pages moved into it, URLs unchanged); `app/[lang]/layout.tsx` is only the document shell, so embed pages have no header.
+  - `ListingScene` and the embed share `components/viewer/` (`useViewerText`, `useSceneState`, `PhotoDialog`).
+  - `@bairmair/browse` `embed.ts`: `listingEmbedPath`, the page → app messages (`ready`, `missing`, `no-model`; JSON with `source: 'bairmair-embed'`, `version: 1`, listing id), `parseEmbedMessage`, `isEmbedNavigation`.
+  - `apps/mobile`: the listing screen's 3D section shows the floor plan and "3D-ээр үзэх", which opens `/listing/[id]/model`: the embed page full screen in a WebView. Loading spinner until `ready`; messages for missing / no model / failed load (retry, open in browser); a WebView process ended by iOS reloads; navigation away from the embed opens in the browser.
+  - `next.config.ts`: `allowedDevOrigins` for private LAN ranges, so the phone on Wi-Fi gets the dev server's HMR socket and chunks.
+  - Verified: typecheck, lint, tests, web production build; headless Chrome against the dev project: embed with a real scan (mn and en), no-model and missing listings, header on every site page and not on the embed; Metro bundles the new screen. Not verified: the WebView on the iPhone.
+- Tests: 389 unit (room-model 160, mobile 131, browse 41, i18n 27, send-sms 12, web 11, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
+- Tests before 7: 384 unit + 74 integration.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -130,6 +136,11 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - Map pins are PNG pills stretched around the label. MapLibre Native's `Images` cannot mark stretchable areas the way the web canvas pins do, so the base image is close to a typical label size to keep the corners round.
   - Search filters live for the app session only (not saved between launches).
   - Your own dev test number is kept out of the public repo (`DEV_TEST_OTP` in `supabase/.env` + `pnpm auth:push`): with a fixed code in a public file, anyone could sign in as you on the dev project.
+- Step 7 choices (mine, for your review):
+  - The 3D view opens full screen instead of sitting inline in the listing screen: one-finger orbit drags inside a scrolling page fight the scroll, and a live WebGL view inside the page costs battery. The native floor plan stays inline.
+  - The embed reads as `anon` like the website, so it shows live listings only. A seller's draft keeps the native floor plan (no 3D preview before publishing).
+  - The embed keeps its own photo dialog instead of handing photos to a native viewer.
+  - Web header: a horizontal lockup (mark + wordmark from the logo's own paths), since the stacked logo's wordmark would be ~8 px tall at header height.
 - Changes from proposal 03:
   - exact location is `lat`/`lng` in `listing_private`; the public pin is snapped to the centre of a 0.0025° cell unless the owner opts in
   - added `unit_number`, `last_confirmed_at` (+ `confirm_listing_available()`), `scan_verified`
@@ -189,6 +200,7 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - 6a copy (`listingPage` in `mn.ts`) and the share post format (`packages/i18n/src/listing-post.ts`), e.g. "Зарна: 2 өрөө байр, Хан-Уул дүүрэг".
 - 6b copy (`search`, `map`, `listingCard`, `agentPage`, `home`, `account.agent`, `listingStatus.freshness` in `mn.ts`), e.g. "Зарагдах байр" / "Түрээсийн байр", "Санал болгох", "Байр боломжтой хэвээр байна".
 - 6c copy (`tabs`, `browse`, `favorites`, `report` in `mn.ts`), e.g. "Хадгалсан", "Зөрчилтэй зар мэдээлэх", "Мэдээлэл нь буруу", "Зар харах".
+- 7 copy: `browse.view3d` "3D-ээр үзэх", `browse.model3dFailed`, `viewer.noModel` "Энэ зарт 3D загвар алга.".
 
 ## Next
 - You: EAS development build 3 (MapLibre). In `apps/mobile`: `pnpm eas build --profile development --platform ios`, install it on the iPhone, then restart Metro (`pnpm dev:mobile`) and keep `pnpm dev:web` running. Then check:
@@ -198,8 +210,13 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - ♡ on a card and in the listing header; Хадгалсан lists it. Signed out, ♡ and "Зөрчилтэй зар мэдээлэх" offer sign-in and come back to the listing.
   - Report a listing twice: the second time says it was already reported.
   - Your own listing shows "Энэ таны зар" with no contact or report.
+- You, step 7 on the iPhone (works on build 2 or 3; restart `pnpm dev:web` once so `allowedDevOrigins` applies): open a listing with a 3D badge → "3D-ээр үзэх":
+  - spinner, then the model; drag rotates, pinch zooms, the page itself never zooms or scrolls; "Анхны харагдац" resets.
+  - 3D ↔ Төлөвлөлт; tapping a room chip highlights it in both; a photo hotspot opens the photo.
+  - the room strip sits above the home indicator; back swipe returns to the listing.
+  - with the web server stopped: the failed message, "Дахин оролдох" and "3D загварыг хөтөч дээр үзэх".
 - You, still open: 5c and 6b checks on the iPhone (now on build 3), and one scan of two neighbouring rooms in a single session (shared walls duplicated or merged?).
-- Then step 7: the WebView embed (`/embed/listings/[id]`) for the 3D view in the app.
+- Then, beyond the seven steps (your call on the order): web hosting (the phone then stops depending on your PC), SMS gateway, web sign-in (favorites and reports on the web), production project and App Store preparation.
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.

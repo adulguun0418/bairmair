@@ -55,6 +55,7 @@ export const mn = {
     rooms: 'Өрөөнүүд',
     totalArea: 'Нийт талбай',
     approximateScanned: 'Сканаар хэмжсэн, ойролцоо',
+    noModel: 'Энэ зарт 3D загвар алга.',
   },
   samples: {
     title: '3D жишээ байрууд',
@@ -671,6 +672,8 @@ export const mn = {
     yourListing: 'Энэ таны зар.',
     edit: 'Засах',
     openOnWeb: '3D загварыг хөтөч дээр үзэх',
+    view3d: '3D-ээр үзэх',
+    model3dFailed: '3D загварыг ачаалж чадсангүй. Интернэт холболтоо шалгана уу.',
   },
   favorites: {
     title: 'Хадгалсан зарууд',
