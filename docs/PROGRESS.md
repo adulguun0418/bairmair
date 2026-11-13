@@ -125,7 +125,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm format`
 - `pnpm --filter @bairmair/room-model samples` regenerates the sample JSON
 - `pnpm test:remote`: integration tests on the dev project (needs `packages/db/.env` and `apps/web/.env.local`; mobile's reads `packages/db/.env`; creates and deletes test users)
-- Env files (gitignored, copy from each `.env.example`): `packages/db/.env`, `apps/web/.env.local`, `apps/mobile/.env` (`EXPO_PUBLIC_API_URL` = your PC's Wi-Fi IP, port 3000; restart Metro after changes)
+- Env files (gitignored, copy from each `.env.example`): `packages/db/.env`, `apps/web/.env.local`, `apps/mobile/.env` (`EXPO_PUBLIC_API_URL` = `https://bairmair-bairmair.vercel.app` by default, so scans are processed even when the PC is off or its Wi-Fi address changed; use `http://<PC Wi-Fi IP>:3000` only while testing web/API changes from this PC; restart Metro after changes)
 - `pnpm run doctor` in `apps/mobile` (plain `pnpm doctor` runs pnpm's own check)
 - Route types for the mobile app (`.expo/types/router.d.ts`) are regenerated only by starting Metro; start it once after adding a screen, before `pnpm typecheck`. A Metro that was already running while screens were added keeps writing a stale copy (new dynamic routes typed as static): restart it.
 - `pnpm db:push` (new migrations), then `pnpm db:types`; `pnpm functions:deploy`
