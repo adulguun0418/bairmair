@@ -1,10 +1,30 @@
-import type { Hotspot, RoomLabel, RoomModelV1 } from './schema/model';
+import { ROOM_LABELS, type Hotspot, type RoomLabel, type RoomModelV1 } from './schema/model';
 
 /** A user's correction to one room. Stored in `room_scans.room_labels`, keyed by room id. */
 export interface RoomLabelOverride {
   label?: RoomLabel;
   /** A string sets a custom name; `null` or an empty string removes it. */
   name?: string | null;
+}
+
+const LABELS: ReadonlySet<string> = new Set(ROOM_LABELS);
+
+/**
+ * Reads `room_scans.room_labels`, JSON written by phones, keeping only well-formed entries: a
+ * known label and a non-blank name. Anything else in an entry is dropped.
+ */
+export function parseRoomLabelOverrides(value: unknown): Record<string, RoomLabelOverride> {
+  const labels: Record<string, RoomLabelOverride> = {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return labels;
+  for (const [roomId, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    const { label, name } = entry as { label?: unknown; name?: unknown };
+    const override: RoomLabelOverride = {};
+    if (typeof label === 'string' && LABELS.has(label)) override.label = label as RoomLabel;
+    if (typeof name === 'string' && name.trim() !== '') override.name = name;
+    labels[roomId] = override;
+  }
+  return labels;
 }
 
 /** A photo and the room the user assigned it to (`listing_photos.id` and `.room_id`). */

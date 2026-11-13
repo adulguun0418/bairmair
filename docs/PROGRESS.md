@@ -1,10 +1,12 @@
 # Progress
 
 ## Current state (2026-11-13)
-**Step 5 done** with part 5c (pull request `step-5c-scan-publish`): scan from a listing, upload and process the scan, review room labels, assign photos to rooms, publish. 5c needs no new native module and runs on **build 2**. The placeholder icon (pull request `app-icon-placeholder`, which 5c is based on) appears only with the next EAS build.
-- 5a (merged): sign-in, account screen, `POST /api/scans/{id}/process`.
-- 5b (merged): create/edit a listing (draft), location (GPS + district fields), photos resized on the phone, background upload with retry.
-- 5c: scan → listing, room labels, photo rooms, publishing and status changes, "scanned on-site".
+**Step 5 merged** (5a, 5b, 5c + placeholder icon). **Step 6a done** (pull request `step-6a-listing-pages`): the public web listing page with its Facebook preview image, plus a privacy fix for 5c's scan locations. No mobile rebuild needed (the mobile change is JS only).
+
+Step 6 is split in three:
+- 6a: public listing page (web). Done.
+- 6b: search RPC + web search with filters, map (MapLibre), agent pages, freshness ("confirm available" in the app, stale listings hidden).
+- 6c: mobile browse/search/map + favorites + report (**EAS build 3**: MapLibre native module).
 
 The SMS gateway adapter (step 3) still waits on your gateway details.
 
@@ -48,7 +50,14 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - Screens: editor sections "3D скан" (floor plan, area, progress, incomplete-room warning, location note, review rooms, assign photos, rescan, remove) and "Нийтлэх" (checklist, verified-phone check, publish / mark sold or rented / hide / publish again, refused change with try again or cancel). `/listings/[id]/scan` (scanner + GPS watch, best fix kept), `/listings/[id]/rooms` (labels and names, opened after a scan), `/listings/[id]/photo-rooms`. The editor moved to `listings/[id]/index.tsx`. Home shows the server status and a 3D badge.
   - Status-aware validation: while live, an edit that empties a required field waits (`incompleteForLive`) instead of failing at the database.
   - Integration tests run the web server's real `processScan` behind a fake `fetch`.
-- Tests: 330 unit (room-model 158, mobile 126, i18n 19, send-sms 12, web 11, db 4) + 62 integration tests against the dev project (db 45, mobile 11, web 6).
+- Step 6a:
+  - Migration 10 (`20261115100000_listing_pages.sql`): **privacy fix**: `room_scans` had a table-wide SELECT grant, so 5c's `scan_lat/scan_lng/scan_accuracy_m` (the phone's position during the scan, i.e. the exact location) were readable by anyone for live listings. Now a column grant without them; the owner reads them through `scan_location(scan_id)` (mobile "download to edit" uses it). Plus view `district_price_stats` (median price per official m² of fresh live listings by type/district/currency).
+  - `@bairmair/db`: `LISTING_FRESHNESS` (14 days), `isListingFresh`, `daysSince`, `DISTRICT_STATS_MIN_LISTINGS` (3). `@bairmair/room-model`: `parseRoomLabelOverrides` (moved from mobile). `@bairmair/i18n`: `formatListingPrice` (`1.8 сая ₮/сар`), `formatPricePerArea` (`3.8 сая ₮/м²`), `formatListingPost` (share text), `listingPage` catalog.
+  - `apps/web`: `/listings/[id]` (and `/en/...`): badges (type, 3D, scanned on-site), price + per m² + district median, summary, "updated X days ago", stale notice, sold/rented banner, photo mosaic + viewer, 3D/floor plan (`ListingScene` with the seller's room labels and photo rooms), description, location (no map yet), details, seller card, tap-to-reveal phone with call/SMS, share (system sheet, copy post, Facebook), view counter. Data via the publishable key (RLS decides), one cached loader (`'use cache'`, 1 min, tag `listing:<id>`) shared by page, metadata and image.
+  - Open Graph image at `/api/og/listings/[id]` (`?lang=en`): floor plan (or cover photo) + price, rooms, area, district; Noto Sans from `@fontsource/noto-sans` (one family per subset, otherwise Satori drops ₮ and bold Cyrillic). Under `/api` so the URL gets no `/mn` redirect.
+  - Verified on a production build against the dev project: OG tags, image, missing listing → not-found with `noindex`, phone not in the HTML.
+- Tests: 344 unit (room-model 160, mobile 125, i18n 25, web 18, send-sms 12, db 4) + 66 integration tests against the dev project (db 49, mobile 11, web 6).
+- Tests before 6a: 330 unit (room-model 158, mobile 126, i18n 19, send-sms 12, web 11, db 4) + 62 integration tests against the dev project (db 45, mobile 11, web 6).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -77,6 +86,11 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - `react-hooks/immutability` is off for `packages/viewer/src/3d` (three.js objects are mutated by design).
 - Supabase CLI pinned at 3.1.0. In v3, hosted commands need `--remote` (last) and `--yes` when non-interactive. `supabase/.env` (gitignored) must exist: config.toml reads the hook URI and secret from it.
 - Migrations are append-only once applied.
+- Map (your choice, step 6): **MapLibre** on web (`maplibre-gl`) and mobile (`@maplibre/maplibre-react-native`), tiles from **OpenFreeMap** (free, commercial use, no key). OSM `name` in Mongolia also carries traditional script, so the style must label from `name:mn` / strip it; before launch, consider our own Mongolia PMTiles with `name:mn`. OSM has district boundaries in Ulaanbaatar but no khoroo boundaries: khoroo stays a seller-filled field.
+- Freshness: a published listing is "fresh" for 14 days after publish or the last `confirm_listing_available()`. Unfresh listings stay reachable by link (with a notice) but will be hidden from search (6b).
+- Price per m² always uses the official area; the district median is shown only with ≥ 3 listings.
+- Web listing pages stream: a missing listing renders the not-found page with HTTP 200 + `noindex` (Next 16 Cache Components behaviour). A real 404 would need a DB lookup in the proxy.
+- Web images use `next/image` with `unoptimized` (no `sharp`: `allowBuilds: sharp: false`). Photos are 2048 px JPEGs; thumbnails need an optimizer once hosting is chosen.
 - Changes from proposal 03:
   - exact location is `lat`/`lng` in `listing_private`; the public pin is snapped to the centre of a 0.0025° cell unless the owner opts in
   - added `unit_number`, `last_confirmed_at` (+ `confirm_listing_available()`), `scan_verified`
@@ -132,14 +146,15 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - Listing form copy (`listings`, `listingForm` in `mn.ts`), e.g. "Цутгамал" for monolithic, "Байршлын цэг" for the map pin, "Тоот" for the apartment number.
 - 5c copy (`listingScan`, `roomReview`, `photoRooms`, `listingStatus` in `mn.ts`), e.g. "Зарыг нуух" for archive.
 - The 150 m / 100 m thresholds for "scanned on-site".
+- 6a copy (`listingPage` in `mn.ts`) and the share post format (`packages/i18n/src/listing-post.ts`), e.g. "Зарна: 2 өрөө байр, Хан-Уул дүүрэг".
 
 ## Next
-- You: merge `app-icon-placeholder`, then test 5c on the iPhone (build 2 + `pnpm dev:web` on the same Wi-Fi; instructions in the PR), then review and merge `step-5c-scan-publish`.
-- You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). It answers the last format question (are shared walls duplicated or merged?). No code waits on it.
-- Then step 6: search, map and listing pages (needs the map library decision).
+- You: review and merge `step-6a-listing-pages`. Look at a listing on the web: `pnpm dev:web`, then http://localhost:3000/listings/<id> of a published listing (one with a scan shows the 3D view). Add `NEXT_PUBLIC_SITE_URL` to `apps/web/.env.local` (see `.env.example`).
+- You, still open from 5c: test 5c on the iPhone (build 2 + `pnpm dev:web` on the same Wi-Fi). Note: "download to edit" now reads the scan location through the new RPC.
+- You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). Answers whether shared walls are duplicated or merged. No code waits on it.
+- Then 6b: search RPC, web search + MapLibre map, agent pages, freshness.
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.
 - Google sign-in credentials (Google Cloud OAuth web client), whenever you want Google on.
-- Map library: MapLibre vs Mapbox, compare Ulaanbaatar coverage first (brief "Additions"), needed at step 6.
 - Web hosting. Until then the phone reaches the scan-processing API on your PC (`pnpm dev:web`, same Wi-Fi).

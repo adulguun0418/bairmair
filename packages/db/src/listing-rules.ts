@@ -32,6 +32,33 @@ export const LISTING_LIMITS = {
  */
 export const SCAN_ON_SITE = { maxAccuracyM: 100, maxDistanceM: 150 } as const;
 
+/**
+ * Freshness: a published listing stays in search while its seller has confirmed it is still
+ * available within this many days (`listings.last_confirmed_at`, set on publish and by
+ * `confirm_listing_available()`). Mirrored in `district_price_stats` (migration 10).
+ */
+export const LISTING_FRESHNESS = { confirmEveryDays: 14 } as const;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Whether a listing confirmed at `lastConfirmedAt` is still fresh at `now`. */
+export function isListingFresh(lastConfirmedAt: string | null, now: Date): boolean {
+  if (!lastConfirmedAt) return false;
+  const confirmed = Date.parse(lastConfirmedAt);
+  if (Number.isNaN(confirmed)) return false;
+  return now.getTime() - confirmed <= LISTING_FRESHNESS.confirmEveryDays * DAY_MS;
+}
+
+/** Whole days from `then` to `now` (0 on the same day or for a date in the future). */
+export function daysSince(then: string, now: Date): number {
+  const time = Date.parse(then);
+  if (Number.isNaN(time)) return 0;
+  return Math.max(0, Math.floor((now.getTime() - time) / DAY_MS));
+}
+
+/** A district median price per m² is shown only when at least this many listings back it. */
+export const DISTRICT_STATS_MIN_LISTINGS = 3;
+
 /** listing_private.lat/lng must fall inside this box (Mongolia). */
 export const MONGOLIA_BOUNDS = {
   minLat: 41.5,

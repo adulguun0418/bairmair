@@ -410,6 +410,8 @@ describe('listing sync against the dev project', () => {
       files: null,
       processing: 'ready',
       totalAreaM2: local.scan!.totalAreaM2,
+      // Through the owner-only scan_location() RPC: the column is not readable.
+      location: { lat: ZAISAN.lat, lng: ZAISAN.lng, accuracyM: 8 },
     });
     expect(isSynced(copy)).toBe(true);
   });
