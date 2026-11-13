@@ -3,8 +3,12 @@
 // Real phones must not appear in config.toml (the repo is public: a fixed code would let
 // anyone sign in as that number). DEV_TEST_OTP="97699112233=123456,..." in supabase/.env is
 // merged into [auth.sms.test_otp] of a temporary copy under supabase/.temp/ (gitignored),
-// and the CLI runs against that copy with --workdir. config push sends the whole map, so a
-// plain `supabase config push` would drop these numbers again.
+// and the CLI runs against that copy with --workdir.
+//
+// Supabase CLI 3.1 leaves remote settings that the config does not declare unchanged, so this
+// can add test numbers but not remove them: a number taken out of DEV_TEST_OTP stays a test
+// number until it is deleted in the dashboard (Authentication → Sign In / Providers → Phone →
+// test phone numbers). `diff` lists such leftovers as "remote_only".
 //
 // Usage: node supabase/scripts/auth-config.mjs diff|push [extra CLI flags]
 import { spawnSync } from 'node:child_process';

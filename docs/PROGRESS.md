@@ -88,8 +88,13 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Fixes after the iPhone test (JS only):
     - 3D screen: iOS 26 made a swipe right anywhere on the screen go back, which took the model's drags. It is now off on that screen (`fullScreenGestureEnabled: false`); the swipe from the left edge still goes back.
     - Search toolbar: on iOS the header is translucent (search bar, Liquid Glass), so the fixed toolbar was drawn under it. It now starts below the header (`useHeaderHeight`). The list/map toggle took the whole row (growing segments in an unsized row) and pushed "Газрын зураг" off screen; only the sale/rent control stretches now, and labels keep to one line.
-- Tests: 389 unit (room-model 160, mobile 131, browse 41, i18n 27, send-sms 12, web 11, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
-- Tests before 7: 384 unit + 74 integration.
+- Account deletion (store requirement):
+  - `DELETE /api/account` (`apps/web/src/app/api/account/route.ts`, Bearer token, the user comes from the token only). `src/server/delete-account.ts`: lists the user's listings, removes their Storage files (`listing-photos`, `scan-raw`, `scan-models` under each listing id, plus `avatars/{userId}`; nested scan folders included, 1000 per request), then deletes the Auth user. The database cascade removes profile, agent profile, favorites, reports they filed, and their listings with private location, photos, scans, views, reports and reveals. Their phone reveals on other listings stay, viewer cleared. Files go first because afterwards nothing says which folders were theirs; a failed request can be repeated.
+  - `@bairmair/db`: `ACCOUNT_PATH`, `DeleteAccountResponse`.
+  - App: "Бүртгэл устгах" at the bottom of Бүртгэл → confirmation (what is deleted, cannot be undone) → server call → this user's listings removed from the phone (`forgetListingsOf`) → local sign-out → "Таны бүртгэл устгагдлаа." JS only, but the installed preview builds need a new build to get it (no `expo-updates` yet).
+  - Verified: unit tests with a fake store; integration test on the dev project (user with listing, photo, raw scan, model, avatar and a favorite: all gone, another user's listing and photo kept, the old token refused afterwards).
+- Tests: 400 unit (room-model 160, mobile 131, browse 41, i18n 27, send-sms 18, web 16, db 7) + 76 integration tests against the dev project (db 57, mobile 11, web 8).
+- Tests before account deletion: 389 unit + 74 integration.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -102,7 +107,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - `pnpm run doctor` in `apps/mobile` (plain `pnpm doctor` runs pnpm's own check)
 - Route types for the mobile app (`.expo/types/router.d.ts`) are regenerated only by starting Metro; start it once after adding a screen, before `pnpm typecheck`. A Metro that was already running while screens were added keeps writing a stale copy (new dynamic routes typed as static): restart it.
 - `pnpm db:push` (new migrations), then `pnpm db:types`; `pnpm functions:deploy`
-- Auth settings: `pnpm auth:diff`, then `pnpm auth:push --yes`. Not a plain `supabase config push`: it would drop the test numbers from `DEV_TEST_OTP` (`supabase/.env`, `phone=code,phone=code`, phone without +).
+- Auth settings: `pnpm auth:diff`, then `pnpm auth:push --yes`; it adds the test numbers from `DEV_TEST_OTP` (`supabase/.env`, `phone=code,phone=code`, phone without +). A push cannot remove a test number (CLI 3.1 leaves undeclared remote settings alone; `auth:diff` shows them as `remote_only`): delete it in the dashboard, Authentication → Sign In / Providers → Phone.
 - `node apps/mobile/scripts/pin-images.mjs` regenerates the map pin images.
 - Web on Vercel (Hobby, team `bairmair`, project `bairmair`, root `apps/web`, functions in Seoul `icn1` via `apps/web/vercel.json`): https://bairmair-bairmair.vercel.app, deployed from `main`, against the dev Supabase project. Env vars (Production): the four in `apps/web/.env.example`, with `NEXT_PUBLIC_SITE_URL` = that URL. Vercel builds with `turbo run build`, which hides env vars not listed in `turbo.json` (`build.env`): add new ones there. CLI: `pnpm dlx vercel <command>` (repo root is linked).
 - Standalone iOS app (no Metro): `pnpm eas build --profile preview --platform ios` in `apps/mobile`; its `EXPO_PUBLIC_*` come from the EAS `preview` environment (`pnpm eas env:list --environment preview`). Same bundle id as the development build: installing one replaces the other.

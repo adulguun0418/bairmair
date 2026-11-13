@@ -181,6 +181,14 @@ export const en: Messages = {
     signOut: 'Sign out',
     signOutTitle: 'Sign out of your account?',
     cancel: 'Cancel',
+    deleteAccount: 'Delete account',
+    deleteTitle: 'Delete your account for good?',
+    deleteBody:
+      'All your listings, photos, 3D scans, saved listings and your agent page will be deleted. This cannot be undone.',
+    deleteConfirm: 'Delete',
+    deleting: 'Deleting your account…',
+    deleted: 'Your account has been deleted.',
+    deleteFailed: 'Could not delete your account. Check your connection and try again.',
     agent: {
       title: 'Agent',
       intro:
