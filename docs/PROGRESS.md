@@ -103,14 +103,20 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Shared with the app through `@bairmair/browse` (moved from `apps/mobile`, with their tests): `normalizeMongolianPhone`/`formatMongolianPhone`, `authErrorKey` (now also `captcha_failed` → "Робот биш гэдгээ…"), the favorites store, and new `supabaseFavoritesRemote` + `fetchFavoriteCards`.
   - Captcha limits (your choice: web form now, Supabase-wide later): Turnstile guards our form only. Auth's own endpoint stays reachable with the public key, so the 30 SMS/hour project cap and WeSend's per-number limits bound abuse. Before the public launch: Supabase captcha for every client (the app solves Turnstile in a WebView; the password-based integration tests need a workaround). Code requests from the website reach Supabase from Vercel's IPs, so Auth's per-IP limits count all web visitors together.
   - Verified: production build; locally against the dev project with Turnstile's test keys: bad number and missing captcha refused, the test number gets a code, `verifyOtp` gives a session, a favorite saved and removed under it; pages `/sign-in`, `/account`, `/saved` answer 200. Not verified: the forms in a real browser, and real Turnstile keys.
-- Web "Миний зарууд" (part A; part B = the app refreshing its copy, next):
+- Web "Миний зарууд" (part A):
   - `/my-listings` (all statuses), `/my-listings/new`, `/my-listings/[id]` (`noindex`, client-rendered, signed out → sign-in). Header and account page link to it.
   - Editor: the app's form, moved to `@bairmair/browse` (`listing-form.ts`, with its tests: same validation, number parsing and publish checklist on both). Fields save with "Хадгалах" (a new listing gets its client id on the first save); map pin picker (MapLibre, click or drag, "use my location", Mongolia only) + unit number in `listing_private`; photos save at once (resized in the browser to 2048 px JPEG 0.8 through a canvas, which drops EXIF/GPS; make cover, move, remove; 40 max); publishing (checklist, verified phone, no unsaved changes), still available, sold/rented, hide, publish again, delete (files first, then the row). 3D scans stay in the app; the editor says so.
   - `src/lib/my-listings.ts`: the same tables, paths and order of operations as the app's sync remote, run directly (the website is online).
-  - Until part B ships, edit a listing in one place: the app still sends its whole copy and would overwrite web edits.
   - Verified: integration test on the dev project (`apps/web/test-remote/my-listings.test.ts`: draft → filled in → pin/unit insert then update → publish refused without a photo → photos added, reordered, removed → published → still available → sold → deleted with files; another user's listing neither loads nor saves); production build; pages answer 200. Not verified: the editor in a real browser (map clicks, photo picking).
-- Tests: 407 unit (room-model 160, browse 104, mobile 69, i18n 27, web 22, send-sms 18, db 7) + 78 integration tests against the dev project (db 57, mobile 11, web 10).
-- Tests before web listings: 407 unit + 76 integration.
+- The app takes web edits (part B; JS only, ships as an OTA update):
+  - `apps/mobile/src/listings/refresh.ts`: `ListingRefresher` checks the server for the signed-in seller's listings that have nothing left to send (`isSynced`). `mergeServerCopy` takes the server's version where it differs: fields (compared by what they write, so "250 000 000" vs "250000000" is no change), unit number, pin, status, photos (added, removed, reordered; files already on the phone are kept, removed ones deleted), room labels, and a scan replaced elsewhere (old raw files deleted). The same scan keeps the phone's raw files and GPS fix. Revisions stay as they are, so the merged copy counts as synced.
+  - Content is compared, not `updated_at`: photo and unit-number changes do not bump `listings.updated_at`, so a timestamp check would miss them (fixing that needs a migration).
+  - Safety: an edit or sync step on the phone during the check wins (the server's answer is dropped if the local copy changed meanwhile). A listing missing on the server is removed from the phone only if the same user is still signed in after the check (an ended session reads as anonymous, and drafts would look deleted).
+  - `server-listings.ts`: `fetchServerCopies` reads up to 50 listings per round (one query per table); `downloadListing` now uses it. `scan_location` is called only for scans the phone does not have yet.
+  - When: app start (after the first sync pass), app back in the foreground, "Миний зарууд" tab focused (each listing at most every 30 s), editor opened (5 s).
+  - Still last write wins: a phone edit sent before the phone saw a web edit overwrites it.
+  - Verified: unit tests (merge cases; refresher: unsent changes, edit during the check, deleted elsewhere, ended session, throttling, other owners); integration test on the dev project (web-style edits of title, price, unit number and a new photo reach the phone copy; the scan and the phone's photo file are kept; another user gets no copy). Not verified: on the iPhone.
+- Tests: 425 unit (room-model 160, browse 104, mobile 87, i18n 27, web 22, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -232,6 +238,10 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - 7 copy: `browse.view3d` "3D-ээр үзэх", `browse.model3dFailed`, `viewer.noModel` "Энэ зарт 3D загвар алга.".
 
 ## Next
+- You: ship part B to the preview builds after merging: `pnpm update:preview -m "App takes listing edits from the website"` in `apps/mobile`. It reaches builds made with `expo-updates` (Бүртгэл shows a version line). On the iPhone, close and reopen the app twice (download, then run). Then check:
+  - Edit a listing on the website (title, add a photo, move the pin) → "Миний зарууд" in the app shows the new title and photo; the editor has the website's values.
+  - Delete a listing on the website → it disappears from the app.
+  - Edit on the phone in airplane mode, then edit the same listing on the website, then go back online: the phone's edit is kept (sent, last write wins).
 - You: rotate the WeSend API key (the first one was pasted into a chat): new key in the WeSend dashboard, `pnpm supabase secrets set WESEND_API_KEY=<new key> --yes`, then revoke the old one. No redeploy needed.
 - You: EAS development build 3 (MapLibre). In `apps/mobile`: `pnpm eas build --profile development --platform ios`, install it on the iPhone, then restart Metro (`pnpm dev:mobile`) and keep `pnpm dev:web` running. Then check:
   - Хайх: listings load; search bar text, sale/rent, filters (count on the button), list ↔ map.

@@ -2,7 +2,7 @@ import type { Tables, TypedSupabaseClient } from '@bairmair/db';
 import { parseRoomLabelOverrides } from '@bairmair/room-model';
 import { formFromRow } from '@bairmair/browse';
 import type { LocalListing, LocalPhoto, LocalScan } from './model';
-import { classifyPostgrestError } from './sync-errors';
+import { classifyPostgrestError, SyncError } from './sync-errors';
 
 export type ServerListingSummary = Pick<
   Tables<'listings'>,
@@ -68,46 +68,102 @@ export async function downloadListing(
   ownerId: string,
   now: string,
 ): Promise<LocalListing> {
-  const [listing, privateRow, photos, scans] = await Promise.all([
-    client.from('listings').select('*').eq('id', id).eq('owner_id', ownerId).single(),
-    client
-      .from('listing_private')
-      .select('lat, lng, unit_number, updated_at')
-      .eq('listing_id', id)
-      .maybeSingle(),
-    client
-      .from('listing_photos')
-      .select('id, width, height, sort_order, scan_id, room_id')
-      .eq('listing_id', id)
-      .order('sort_order')
-      .order('created_at'),
-    // The current scan, else the newest (still processing, or failed).
-    client
-      .from('room_scans')
-      .select(
-        'id, status, metrics, room_labels, created_at, device_model, ios_version, app_version',
-      )
-      .eq('listing_id', id)
-      .order('is_current', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(1),
-  ]);
-  for (const result of [listing, privateRow, photos, scans]) {
-    if (result.error) throw classifyPostgrestError(result.error, result.status);
-  }
-  const row = listing.data!;
-  const location = privateRow.data;
-  const scanRow = scans.data?.[0];
-  let scan: LocalScan | null = null;
-  if (scanRow) {
-    // The scan's GPS fix is not readable from the table (it is close to the exact location);
-    // the owner gets it through an RPC.
-    const fix = await client.rpc('scan_location', { p_scan_id: scanRow.id }).maybeSingle();
-    if (fix.error) throw classifyPostgrestError(fix.error, fix.status);
-    scan = scanFromRow(scanRow, fix.data);
-  }
+  const copy = (await fetchServerCopies(client, ownerId, [id], new Map(), now)).get(id);
+  if (!copy) throw new SyncError('permanent', 'listingMissing');
+  return copy;
+}
 
-  const localPhotos = (photos.data ?? []).map((photo, index): LocalPhoto => ({
+/** How many listings one round of queries covers (keeps the `in (...)` URLs short). */
+const COPY_CHUNK = 50;
+
+/**
+ * The server's version of the owner's listings `ids`, as local copies (see `downloadListing`).
+ * Listings that are not on the server (or not this owner's) are absent from the result.
+ *
+ * `knownScans` maps a listing id to the scan the phone already has: that scan's GPS fix is not
+ * fetched again (the phone keeps its own); any other scan's fix comes from `scan_location`.
+ */
+export async function fetchServerCopies(
+  client: TypedSupabaseClient,
+  ownerId: string,
+  ids: readonly string[],
+  knownScans: ReadonlyMap<string, string>,
+  now: string,
+): Promise<Map<string, LocalListing>> {
+  const copies = new Map<string, LocalListing>();
+  for (let start = 0; start < ids.length; start += COPY_CHUNK) {
+    const chunk = ids.slice(start, start + COPY_CHUNK);
+    const [listings, privateRows, photos, scans] = await Promise.all([
+      client.from('listings').select('*').eq('owner_id', ownerId).in('id', chunk),
+      client
+        .from('listing_private')
+        .select('listing_id, lat, lng, unit_number, updated_at')
+        .in('listing_id', chunk),
+      client
+        .from('listing_photos')
+        .select('id, listing_id, width, height, sort_order, scan_id, room_id')
+        .in('listing_id', chunk)
+        .order('sort_order')
+        .order('created_at'),
+      // Per listing: the current scan first, else the newest (still processing, or failed).
+      client
+        .from('room_scans')
+        .select(
+          'id, listing_id, status, metrics, room_labels, created_at, device_model, ios_version, app_version',
+        )
+        .in('listing_id', chunk)
+        .order('is_current', { ascending: false })
+        .order('created_at', { ascending: false }),
+    ]);
+    for (const result of [listings, privateRows, photos, scans]) {
+      if (result.error) throw classifyPostgrestError(result.error, result.status);
+    }
+
+    for (const row of listings.data ?? []) {
+      const scanRow = scans.data?.find((scan) => scan.listing_id === row.id);
+      let fix: ScanFix | null = null;
+      if (scanRow && knownScans.get(row.id) !== scanRow.id) {
+        // The scan's GPS fix is not readable from the table (it is close to the exact
+        // location); the owner gets it through an RPC.
+        const result = await client.rpc('scan_location', { p_scan_id: scanRow.id }).maybeSingle();
+        if (result.error) throw classifyPostgrestError(result.error, result.status);
+        fix = result.data;
+      }
+      copies.set(
+        row.id,
+        localCopy({
+          row,
+          location: privateRows.data?.find((p) => p.listing_id === row.id) ?? null,
+          photos: (photos.data ?? []).filter((photo) => photo.listing_id === row.id),
+          scan: scanRow ? scanFromRow(scanRow, fix) : null,
+          ownerId,
+          now,
+        }),
+      );
+    }
+  }
+  return copies;
+}
+
+function localCopy({
+  row,
+  location,
+  photos,
+  scan,
+  ownerId,
+  now,
+}: {
+  row: Tables<'listings'>;
+  location: Pick<Tables<'listing_private'>, 'lat' | 'lng' | 'unit_number' | 'updated_at'> | null;
+  photos: Pick<
+    Tables<'listing_photos'>,
+    'id' | 'width' | 'height' | 'sort_order' | 'scan_id' | 'room_id'
+  >[];
+  scan: LocalScan | null;
+  ownerId: string;
+  now: string;
+}): LocalListing {
+  const localPhotos = photos.map((photo, index): LocalPhoto => ({
     id: photo.id,
     file: null,
     width: photo.width ?? 0,
