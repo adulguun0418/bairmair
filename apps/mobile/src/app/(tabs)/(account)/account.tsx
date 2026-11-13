@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { AgentSection } from '@/account/agent-section';
+import { deleteAccount } from '@/account/delete-account';
 import { signOut } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
 import { authErrorKey } from '@/auth/errors';
@@ -40,6 +41,7 @@ export default function AccountScreen() {
   const [savedName, setSavedName] = useState('');
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -103,6 +105,29 @@ export default function AccountScreen() {
       setMessage({ text: t('account.saved'), error: false });
     }
   };
+
+  const removeAccount = async () => {
+    setDeleting(true);
+    setMessage(null);
+    try {
+      await deleteAccount();
+      Alert.alert(t('account.deleted'));
+    } catch {
+      setMessage({ text: t('account.deleteFailed'), error: true });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const confirmDelete = () =>
+    Alert.alert(t('account.deleteTitle'), t('account.deleteBody'), [
+      { text: t('account.cancel'), style: 'cancel' },
+      {
+        text: t('account.deleteConfirm'),
+        style: 'destructive',
+        onPress: () => void removeAccount(),
+      },
+    ]);
 
   const confirmSignOut = () =>
     Alert.alert(t('account.signOutTitle'), undefined, [
@@ -177,8 +202,24 @@ export default function AccountScreen() {
 
       <AgentSection userId={user.id} />
 
-      <Button title={t('account.signOut')} variant="danger" onPress={confirmSignOut} />
+      <Button
+        title={t('account.signOut')}
+        variant="danger"
+        onPress={confirmSignOut}
+        disabled={deleting}
+      />
       <AppSettings />
+      <Pressable
+        accessibilityRole="button"
+        onPress={confirmDelete}
+        disabled={deleting}
+        style={({ pressed }) => [styles.deleteRow, { opacity: pressed || deleting ? 0.6 : 1 }]}
+      >
+        {deleting && <ActivityIndicator />}
+        <Text style={[styles.body, { color: colors.danger }]}>
+          {deleting ? t('account.deleting') : t('account.deleteAccount')}
+        </Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -226,6 +267,13 @@ const styles = StyleSheet.create({
   line: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   languages: { flexDirection: 'row', gap: 12, marginTop: 8 },
   grow: { flex: 1 },
+  deleteRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
   row: {
     borderRadius: 12,
     padding: 16,

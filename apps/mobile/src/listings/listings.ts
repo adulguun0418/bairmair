@@ -141,6 +141,20 @@ export function deleteListing(id: string): void {
 }
 
 /**
+ * Removes this owner's listings from the phone without touching the server: after their
+ * account was deleted, the server copies are already gone and the files here must go too.
+ */
+export async function forgetListingsOf(ownerId: string): Promise<void> {
+  const mine = listingStore.all().filter((listing) => listing.ownerId === ownerId);
+  for (const listing of mine) {
+    deletedIds.add(listing.id);
+    listingStore.remove(listing.id);
+  }
+  await listingStore.flush();
+  for (const listing of mine) listingFiles.removeFolder(listing.id);
+}
+
+/**
  * Resizes the picked photos into the listing folder and adds them in order. Returns how many
  * could not be read. Source files from the picker (in caches) are removed afterwards.
  */

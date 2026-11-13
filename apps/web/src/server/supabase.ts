@@ -1,6 +1,7 @@
 import { BUCKETS, CONTENT_TYPES, type TypedSupabaseClient } from '@bairmair/db';
 import type { Database, Json } from '@bairmair/db';
 import { createClient } from '@supabase/supabase-js';
+import type { AccountStore } from './delete-account';
 import type { ScanStore } from './process-scan';
 
 /**
@@ -33,6 +34,50 @@ export async function userIdFromRequest(request: Request): Promise<string | null
   if (!match) return null;
   const { data, error } = await adminClient().auth.getUser(match[1]);
   return error || !data.user ? null : data.user.id;
+}
+
+/** Objects per `list` page (Storage's maximum). */
+const LIST_PAGE = 1000;
+
+export function supabaseAccountStore(client: TypedSupabaseClient): AccountStore {
+  async function listFiles(bucket: string, prefix: string): Promise<string[]> {
+    const files: string[] = [];
+    for (let offset = 0; ; offset += LIST_PAGE) {
+      const { data, error } = await client.storage
+        .from(bucket)
+        .list(prefix, { limit: LIST_PAGE, offset });
+      if (error) throw error;
+      for (const entry of data) {
+        const path = `${prefix}/${entry.name}`;
+        // Folders (a scan's `{scanId}/`) come back without an id.
+        if (entry.id === null) files.push(...(await listFiles(bucket, path)));
+        else files.push(path);
+      }
+      if (data.length < LIST_PAGE) return files;
+    }
+  }
+
+  return {
+    async ownedListingIds(userId) {
+      const { data, error } = await client.from('listings').select('id').eq('owner_id', userId);
+      if (error) throw error;
+      return data.map((row) => row.id);
+    },
+
+    listFiles,
+
+    async removeFiles(bucket, paths) {
+      if (paths.length === 0) return;
+      const { error } = await client.storage.from(bucket).remove(paths);
+      if (error) throw error;
+    },
+
+    async deleteUser(userId) {
+      const { error } = await client.auth.admin.deleteUser(userId);
+      // Already gone (a repeated request): the goal is reached.
+      if (error && error.status !== 404) throw error;
+    },
+  };
 }
 
 export function supabaseScanStore(client: TypedSupabaseClient): ScanStore {
