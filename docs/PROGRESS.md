@@ -97,8 +97,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - `app.json`: `updates.url` (EAS project) and `runtimeVersion` policy `appVersion` (= `version`, now `0.1.0`). `eas.json`: channels `development` and `preview` on their profiles.
   - Publish: `pnpm update:preview -m "<what changed>"` in `apps/mobile` (= `eas update --channel preview --environment preview`). The `EXPO_PUBLIC_*` values come from the EAS `preview` environment; checked that they win over the local `.env` (an export with the shell values had them, not the Wi-Fi address).
   - The app checks on every launch, downloads in the background, and runs the update from the next launch (close the app fully, open it again). Бүртгэл shows the version and "суулгасан хувилбар" or "шинэчлэл <time>".
-- Tests: 400 unit (room-model 160, mobile 131, browse 41, i18n 27, send-sms 18, web 16, db 7) + 76 integration tests against the dev project (db 57, mobile 11, web 8).
-- Tests before account deletion: 389 unit + 74 integration.
+- Web sign-in, account, favorites and reports:
+  - `/sign-in` (and `/en/...`, `noindex`): phone + Cloudflare Turnstile → `POST /api/auth/otp` (`src/server/request-code.ts`: valid +976 number, Turnstile checked with Cloudflare, then Supabase `signInWithOtp` → SMS through the send-sms hook) → the browser checks the 6-digit code with `verifyOtp` and keeps the session (localStorage). New numbers get an account, as in the app. Returns to `?next=` (same site only).
+  - The session lives in the browser only, so the cached listing/search pages stay cached; the parts that depend on the visitor are client components: header links (Нэвтрэх, or Хадгалсан + Бүртгэл), ♡ on cards and on the listing page, "Зөрчилтэй зар мэдээлэх" (hidden on your own listing), `/account` (phone, name, agent registration with a link to the agent page, sign-out, account deletion through `DELETE /api/account`), `/saved`.
+  - Shared with the app through `@bairmair/browse` (moved from `apps/mobile`, with their tests): `normalizeMongolianPhone`/`formatMongolianPhone`, `authErrorKey` (now also `captcha_failed` → "Робот биш гэдгээ…"), the favorites store, and new `supabaseFavoritesRemote` + `fetchFavoriteCards`.
+  - Captcha limits (your choice: web form now, Supabase-wide later): Turnstile guards our form only. Auth's own endpoint stays reachable with the public key, so the 30 SMS/hour project cap and WeSend's per-number limits bound abuse. Before the public launch: Supabase captcha for every client (the app solves Turnstile in a WebView; the password-based integration tests need a workaround). Code requests from the website reach Supabase from Vercel's IPs, so Auth's per-IP limits count all web visitors together.
+  - Verified: production build; locally against the dev project with Turnstile's test keys: bad number and missing captcha refused, the test number gets a code, `verifyOtp` gives a session, a favorite saved and removed under it; pages `/sign-in`, `/account`, `/saved` answer 200. Not verified: the forms in a real browser, and real Turnstile keys.
+- Tests: 407 unit (room-model 160, mobile 99, browse 74, i18n 27, web 22, send-sms 18, db 7) + 76 integration tests against the dev project (db 57, mobile 11, web 8).
+- Tests before web sign-in: 400 unit + 76 integration.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -116,6 +122,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Web on Vercel (Hobby, team `bairmair`, project `bairmair`, root `apps/web`, functions in Seoul `icn1` via `apps/web/vercel.json`): https://bairmair-bairmair.vercel.app, deployed from `main`, against the dev Supabase project. Env vars (Production): the four in `apps/web/.env.example`, with `NEXT_PUBLIC_SITE_URL` = that URL. Vercel builds with `turbo run build`, which hides env vars not listed in `turbo.json` (`build.env`): add new ones there. CLI: `pnpm dlx vercel <command>` (repo root is linked).
 - OTA update to the preview builds: `pnpm update:preview -m "..."` in `apps/mobile`. Only for JS/asset changes: a new native module or a native config change needs a new build **and** a `version` bump in `app.json` (the runtime version), so old builds never get JS they cannot run.
 - Standalone iOS app (no Metro): `pnpm eas build --profile preview --platform ios` in `apps/mobile`; its `EXPO_PUBLIC_*` come from the EAS `preview` environment (`pnpm eas env:list --environment preview`). Same bundle id as the development build: installing one replaces the other.
+- Turnstile (web sign-in): `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` in `apps/web/.env.local` (Cloudflare's always-pass test keys are in `.env.example` for local development) and in Vercel (Production + Preview) with the real widget's keys.
 - Mobile env: `EXPO_PUBLIC_SITE_URL` (optional) is the public site for share links; it defaults to `EXPO_PUBLIC_API_URL`.
 - SQL: `pnpm supabase db query --read-only "<sql>" --remote`
 
@@ -233,7 +240,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - the room strip sits above the home indicator; back swipe returns to the listing.
   - with the web server stopped: the failed message, "Дахин оролдох" and "3D загварыг хөтөч дээр үзэх".
 - You, still open: 5c and 6b checks on the iPhone (now on build 3), and one scan of two neighbouring rooms in a single session (shared walls duplicated or merged?).
-- Then (your call on the order): error reporting (Sentry) before others test; production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Later: web sign-in (favorites and reports on the web).
+- Then (your call on the order): error reporting (Sentry) before others test; production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Before launch: Supabase-wide captcha (see web sign-in).
 
 ## SMS (WeSend, live since 2026-11-13)
 - Verified: a real number gets "Bairmair код: 780190. Хэнд ч бүү хэлээрэй." and signs in. WeSend adds no brand prefix to plain `/v1/sms` texts.

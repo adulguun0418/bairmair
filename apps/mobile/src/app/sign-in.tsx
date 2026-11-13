@@ -10,8 +10,7 @@ import {
   type SignInResult,
 } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
-import { authErrorKey } from '@/auth/errors';
-import { normalizeMongolianPhone } from '@/auth/phone';
+import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createFavoritesStore,
-  SignedOutError,
-  type FavoritesRemote,
-} from '../src/browse/favorites-store';
+import { createFavoritesStore, SignedOutError, type FavoritesRemote } from '../src/favorites-store';
 
 /** A remote whose calls wait until the test settles them. */
 function controlledRemote(saved: string[] = []) {

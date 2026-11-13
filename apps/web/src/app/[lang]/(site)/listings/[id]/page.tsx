@@ -23,6 +23,8 @@ import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 import { ContactButtons } from '@/components/listing/ContactButtons';
 import { ListingGallery } from '@/components/listing/ListingGallery';
+import { FavoriteButton } from '@/components/listing/FavoriteButton';
+import { ReportListing } from '@/components/listing/ReportListing';
 import { ShareActions } from '@/components/listing/ShareActions';
 import { ViewCounter } from '@/components/listing/ViewCounter';
 import { ListingScene } from '@/components/ListingScene';
@@ -146,7 +148,12 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
 
         <aside className="space-y-4 self-start rounded-2xl bg-white p-5 shadow-sm">
           {live && <ContactButtons listingId={listing.id} locale={locale} />}
-          <ShareActions post={post} url={url} locale={locale} />
+          <div className="flex items-start gap-3">
+            <FavoriteButton listingId={listing.id} locale={locale} className="shrink-0" />
+            <div className="flex-1">
+              <ShareActions post={post} url={url} locale={locale} />
+            </div>
+          </div>
           <div className="border-t border-stone-100 pt-4">
             <h2 className="text-sm text-stone-500">{t('listingPage.sections.seller')}</h2>
             <p className="mt-1 font-medium">
@@ -169,6 +176,11 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
               </Link>
             )}
           </div>
+          {live && (
+            <div className="border-t border-stone-100 pt-4">
+              <ReportListing listingId={listing.id} ownerId={listing.owner_id} locale={locale} />
+            </div>
+          )}
         </aside>
       </header>
 

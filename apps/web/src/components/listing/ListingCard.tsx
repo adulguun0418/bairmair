@@ -9,10 +9,12 @@ import {
 } from '@bairmair/i18n';
 import Link from 'next/link';
 import { coverUrl, type ListingCardData } from '@bairmair/browse';
+import { FavoriteButton } from './FavoriteButton';
 
 /**
  * One listing in a grid or on the map: cover photo, badges, price, rooms, area and district.
- * Has no hooks, so server pages and the (client) map both render it.
+ * Has no hooks, so server pages and the (client) map both render it. The ♡ sits over the photo,
+ * beside the link rather than inside it (a button inside a link is invalid HTML).
  */
 export function ListingCard({
   card,
@@ -44,55 +46,62 @@ export function ListingCard({
     .join(' · ');
 
   return (
-    <Link
-      href={localePath(locale, `/listings/${card.id}`)}
-      className={`group flex w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70 transition hover:shadow-md ${
-        compact ? 'flex-row' : 'flex-col'
-      }`}
-    >
-      <div className={`relative shrink-0 bg-stone-200 ${compact ? 'w-32' : 'aspect-[4/3] w-full'}`}>
-        {cover ? (
-          // Photos are 2048 px JPEGs; there is no image optimizer yet (see PROGRESS).
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={cover}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <span className="absolute inset-0 flex items-center justify-center text-sm text-stone-500">
-            {t('listingCard.noPhoto')}
-          </span>
-        )}
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1 text-xs font-medium">
-          {card.has_3d && (
-            <span className="rounded-full bg-amber-300 px-2 py-0.5 text-amber-950">
-              {t('listingCard.has3d')}
+    <div className="relative flex w-full">
+      <Link
+        href={localePath(locale, `/listings/${card.id}`)}
+        className={`group flex w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70 transition hover:shadow-md ${
+          compact ? 'flex-row' : 'flex-col'
+        }`}
+      >
+        <div
+          className={`relative shrink-0 bg-stone-200 ${compact ? 'w-32' : 'aspect-[4/3] w-full'}`}
+        >
+          {cover ? (
+            // Photos are 2048 px JPEGs; there is no image optimizer yet (see PROGRESS).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={cover}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <span className="absolute inset-0 flex items-center justify-center text-sm text-stone-500">
+              {t('listingCard.noPhoto')}
             </span>
           )}
-          {card.scan_verified && !compact && (
-            <span className="rounded-full bg-white/90 px-2 py-0.5 text-stone-800">
-              {t('listingCard.scanVerified')}
-            </span>
+          <div className="absolute left-2 top-2 flex flex-wrap gap-1 text-xs font-medium">
+            {card.has_3d && (
+              <span className="rounded-full bg-amber-300 px-2 py-0.5 text-amber-950">
+                {t('listingCard.has3d')}
+              </span>
+            )}
+            {card.scan_verified && !compact && (
+              <span className="rounded-full bg-white/90 px-2 py-0.5 text-stone-800">
+                {t('listingCard.scanVerified')}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className={`min-w-0 space-y-1 ${compact ? 'p-3' : 'p-4'}`}>
+          <p className="text-lg font-semibold">
+            {formatListingPrice(card.price, card.currency, card.type, locale)}
+          </p>
+          {perArea && !compact && (
+            <p className="text-xs text-stone-500">{t('listingCard.perArea', { price: perArea })}</p>
+          )}
+          <p className="text-sm text-stone-700">{summary}</p>
+          <p className="line-clamp-2 text-sm text-stone-600 group-hover:underline">{card.title}</p>
+          {card.complex_name && !compact && (
+            <p className="truncate text-xs text-stone-500">{card.complex_name}</p>
           )}
         </div>
-      </div>
-      <div className={`min-w-0 space-y-1 ${compact ? 'p-3' : 'p-4'}`}>
-        <p className="text-lg font-semibold">
-          {formatListingPrice(card.price, card.currency, card.type, locale)}
-        </p>
-        {perArea && !compact && (
-          <p className="text-xs text-stone-500">{t('listingCard.perArea', { price: perArea })}</p>
-        )}
-        <p className="text-sm text-stone-700">{summary}</p>
-        <p className="line-clamp-2 text-sm text-stone-600 group-hover:underline">{card.title}</p>
-        {card.complex_name && !compact && (
-          <p className="truncate text-xs text-stone-500">{card.complex_name}</p>
-        )}
-      </div>
-    </Link>
+      </Link>
+      {!compact && (
+        <FavoriteButton listingId={card.id} locale={locale} className="absolute right-2 top-2" />
+      )}
+    </div>
   );
 }
 

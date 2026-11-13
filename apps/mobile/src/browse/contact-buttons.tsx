@@ -1,7 +1,7 @@
 import { dbErrorKey } from '@bairmair/db';
 import { useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
-import { formatMongolianPhone } from '@/auth/phone';
+import { formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';

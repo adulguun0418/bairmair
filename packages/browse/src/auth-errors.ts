@@ -20,6 +20,8 @@ export function authErrorKey(error: unknown): AuthErrorKey {
     case 'hook_timeout':
     case 'hook_timeout_after_retry':
       return 'smsFailed';
+    case 'captcha_failed':
+      return 'captcha';
     case 'phone_exists':
       return 'phoneTaken';
   }

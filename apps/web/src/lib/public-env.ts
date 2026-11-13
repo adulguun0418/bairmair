@@ -18,6 +18,10 @@ export const publicEnv = {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     );
   },
+  /** Cloudflare Turnstile site key for the sign-in form (public by design). */
+  get turnstileSiteKey(): string {
+    return required('NEXT_PUBLIC_TURNSTILE_SITE_KEY', process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  },
   /** Origin of shared links and Open Graph URLs, without a trailing slash. */
   get siteUrl(): string {
     return (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
