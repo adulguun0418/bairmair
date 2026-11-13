@@ -383,6 +383,19 @@ describe('contact and views', () => {
     expect(data?.[0]?.ip_hash).not.toBe(unknownHash);
   });
 
+  it('a repeat reveal of the same listing within the hour is free (not logged again)', async () => {
+    const again = await anon.rpc('reveal_listing_contact', { p_listing_id: listingId });
+    expect(again.data).toBe(alice.phone);
+    const bobAgain = await bob.client.rpc('reveal_listing_contact', { p_listing_id: listingId });
+    expect(bobAgain.data).toBe(alice.phone);
+
+    const { count } = await admin
+      .from('contact_reveals')
+      .select('*', { count: 'exact', head: true })
+      .eq('listing_id', listingId);
+    expect(count).toBe(2);
+  });
+
   it('forged IP headers do not change the rate-limit key', async () => {
     const forged = '203.0.113.7';
     const forgedHash = createHash('sha256').update(forged).digest('hex');
@@ -411,28 +424,53 @@ describe('contact and views', () => {
       .eq('listing_id', listingId)
       .is('viewer_id', null)
       .order('id');
+    // Same key as the first anonymous reveal, so these count as repeats and add no row; a
+    // forged key would have logged a new row under the forged hash.
+    void cf;
     const hashes = data?.map((r) => r.ip_hash) ?? [];
-    expect(hashes).toHaveLength(cf.error ? 2 : 3);
-    expect(new Set(hashes).size).toBe(1);
+    expect(hashes).toHaveLength(1);
     expect(hashes).not.toContain(forgedHash);
   });
 
-  it('rate-limits anonymous reveals per IP (10 an hour)', async () => {
-    // The budget is per IP across all listings, so reveals made from this network in the last
-    // hour (someone trying a listing page) use it up too: expect at most 10 to get through.
-    let lastError: string | undefined;
-    for (let i = 0; i <= 10; i++) {
-      const { error } = await anon.rpc('reveal_listing_contact', { p_listing_id: listingId });
-      lastError = error?.message;
-      if (error) break;
+  it('rate-limits anonymous reveals of other listings per IP (10 an hour)', async () => {
+    // Repeats are free, so the budget is filled with reveals of another listing (a draft is
+    // enough for the foreign key): this network's IP hash, up to 10 in the last hour.
+    const first = await admin
+      .from('contact_reveals')
+      .select('ip_hash')
+      .eq('listing_id', listingId)
+      .is('viewer_id', null)
+      .single();
+    const ipHash = first.data?.ip_hash;
+    expect(ipHash).toMatch(/^[0-9a-f]{64}$/);
+    const padId = randomUUID();
+    const pad = await admin.from('listings').insert({ ...draft, id: padId, owner_id: alice.id });
+    expect(pad.error).toBeNull();
+
+    // This listing's own earlier reveal would make the next one a free repeat: remove it (before
+    // counting the budget, so the padding below fills it exactly).
+    await admin.from('contact_reveals').delete().eq('listing_id', listingId).is('viewer_id', null);
+
+    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const used = await admin
+      .from('contact_reveals')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_hash', ipHash!)
+      .gt('created_at', since);
+    const missing = Math.max(0, 10 - (used.count ?? 0));
+    if (missing > 0) {
+      const rows = Array.from({ length: missing }, () => ({ listing_id: padId, ip_hash: ipHash! }));
+      expect((await admin.from('contact_reveals').insert(rows)).error).toBeNull();
     }
-    expect(lastError).toBe('rate_limited');
+
+    const { error } = await anon.rpc('reveal_listing_contact', { p_listing_id: listingId });
+    expect(error?.message).toBe('rate_limited');
     const { count } = await admin
       .from('contact_reveals')
       .select('*', { count: 'exact', head: true })
       .eq('listing_id', listingId)
       .is('viewer_id', null);
-    expect(count).toBeLessThanOrEqual(10);
+    expect(count).toBe(0);
   });
 
   it('counts views from others, not the owner; only the owner reads them', async () => {
