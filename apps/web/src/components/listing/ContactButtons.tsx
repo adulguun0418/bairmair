@@ -3,7 +3,7 @@
 import { dbErrorKey } from '@bairmair/db';
 import { createTranslator, type Locale } from '@bairmair/i18n';
 import { useMemo, useState } from 'react';
-import { MessageIcon, PhoneIcon } from '@/components/icons';
+import { CheckIcon, CopyIcon, MessageIcon, PhoneIcon } from '@/components/icons';
 import { publicClient } from '@/lib/supabase-public';
 
 type State =
@@ -19,12 +19,14 @@ export function formatPhone(e164: string): string {
 }
 
 /**
- * Tap to reveal the seller's number (rate-limited by `reveal_listing_contact`), then call or SMS.
+ * Tap to reveal the seller's number (rate-limited by `reveal_listing_contact`). The button turns
+ * into the number in place (tap to call), with SMS and copy beside it: same height, no jump.
  * The number is never in the page HTML, so it cannot be scraped from it.
  */
 export function ContactButtons({ listingId, locale }: { listingId: string; locale: Locale }) {
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [state, setState] = useState<State>({ kind: 'idle' });
+  const [copied, setCopied] = useState(false);
 
   const reveal = async () => {
     setState({ kind: 'loading' });
@@ -49,52 +51,74 @@ export function ContactButtons({ listingId, locale }: { listingId: string; local
     });
   };
 
+  // Both states are one row of the same height, so revealing the number moves nothing.
+  const row = 'flex h-13 items-center gap-2';
   const primary =
-    'flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60';
-  const secondary =
-    'flex flex-1 items-center justify-center gap-2 rounded-xl border border-line-2 px-4 py-3 font-medium transition-colors hover:bg-surface-2';
-
-  const call =
-    'flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-medium text-on-primary transition-colors hover:bg-primary-hover';
+    'flex h-full flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60';
+  const square =
+    'flex aspect-square h-full shrink-0 items-center justify-center rounded-xl border border-line-2 text-fg-2 transition-colors hover:bg-surface-2 hover:text-fg';
 
   if (state.kind === 'shown') {
+    const copy = async () => {
+      try {
+        await navigator.clipboard.writeText(state.phone);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } catch {
+        setCopied(false);
+      }
+    };
     return (
-      <div className="space-y-3">
+      <div className={row}>
         <a
           href={`tel:${state.phone}`}
-          className="block rounded-xl bg-surface-2 px-4 py-3 text-center text-xl font-semibold tracking-wide tabular-nums transition-colors hover:bg-surface-3"
+          title={`${t('listingPage.contact.call')} · ${t('listingPage.contact.mention')}`}
+          className={`${primary} whitespace-nowrap px-3 font-semibold tabular-nums sm:text-[17px]`}
         >
+          <PhoneIcon className="size-[18px] shrink-0" />
           {formatPhone(state.phone)}
+          <span className="sr-only">
+            {t('listingPage.contact.call')}. {t('listingPage.contact.mention')}
+          </span>
         </a>
-        <div className="flex gap-2">
-          <a href={`tel:${state.phone}`} className={call}>
-            <PhoneIcon className="size-4" />
-            {t('listingPage.contact.call')}
-          </a>
-          <a href={`sms:${state.phone}`} className={secondary}>
-            <MessageIcon className="size-4" />
-            {t('listingPage.contact.sms')}
-          </a>
-        </div>
-        <p className="text-center text-xs text-fg-subtle">{t('listingPage.contact.mention')}</p>
+        <a
+          href={`sms:${state.phone}`}
+          aria-label={t('listingPage.contact.sms')}
+          title={t('listingPage.contact.sms')}
+          className={square}
+        >
+          <MessageIcon className="size-5" />
+        </a>
+        <button
+          type="button"
+          onClick={() => void copy()}
+          aria-label={copied ? t('listingPage.share.copied') : t('listingPage.contact.copy')}
+          title={copied ? t('listingPage.share.copied') : t('listingPage.contact.copy')}
+          aria-live="polite"
+          className={square}
+        >
+          {copied ? <CheckIcon className="size-5 text-success" /> : <CopyIcon className="size-5" />}
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <button
-        type="button"
-        onClick={() => void reveal()}
-        disabled={state.kind === 'loading'}
-        aria-busy={state.kind === 'loading'}
-        className={primary}
-      >
-        <PhoneIcon className="size-[18px]" />
-        {state.kind === 'loading'
-          ? t('listingPage.contact.loading')
-          : t('listingPage.contact.show')}
-      </button>
+      <div className={row}>
+        <button
+          type="button"
+          onClick={() => void reveal()}
+          disabled={state.kind === 'loading'}
+          aria-busy={state.kind === 'loading'}
+          className={primary}
+        >
+          <PhoneIcon className="size-[18px]" />
+          {state.kind === 'loading'
+            ? t('listingPage.contact.loading')
+            : t('listingPage.contact.show')}
+        </button>
+      </div>
       {state.kind === 'error' && (
         <p role="alert" className="text-center text-sm text-danger">
           {t(`listingPage.contact.errors.${state.message}`)}

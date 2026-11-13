@@ -618,6 +618,7 @@ export const en: Messages = {
       loading: 'Loading…',
       call: 'Call',
       sms: 'Send SMS',
+      copy: 'Copy number',
       mention: 'Mention that you found the listing on bairmair.',
       errors: {
         rateLimited: 'Too many numbers viewed. Wait a while and try again.',
