@@ -2,7 +2,7 @@ import { DISTRICTS, LISTING_LIMITS } from '@bairmair/db';
 import { formatMoney, formatMoneyCompact } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -49,6 +49,11 @@ import { useColors } from '@/ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
 
 const nowIso = () => new Date().toISOString();
+
+/** Loaded on first use, like the other maps (MapLibre's native module). */
+const LocationMap = lazy(() =>
+  import('@/browse/location-map').then((module) => ({ default: module.LocationMap })),
+);
 
 /** The editor checks the server again when reopened after this long. */
 const EDITOR_REFRESH_MS = 5_000;
@@ -380,6 +385,7 @@ function Editor({ listing }: { listing: LocalListing }) {
 function LocationPin({ listing }: { listing: LocalListing }) {
   const { t } = useI18n();
   const colors = useColors();
+  const router = useRouter();
   const [locating, setLocating] = useState(false);
   const [failure, setFailure] = useState<Extract<LocateResult, { ok: false }> | null>(null);
 
@@ -412,7 +418,17 @@ function LocationPin({ listing }: { listing: LocalListing }) {
             : t('listingForm.pinnedNoAccuracy')
           : t('listingForm.notPinned')}
       </Text>
+      {location && (
+        <Suspense fallback={<ActivityIndicator />}>
+          <LocationMap lat={location.lat} lng={location.lng} exact />
+        </Suspense>
+      )}
       <Text style={[styles.small, { color: colors.textMuted }]}>{t('listingForm.pinHint')}</Text>
+      <Button
+        title={location ? t('listingForm.moveOnMap') : t('listingForm.pickOnMap')}
+        variant="secondary"
+        onPress={() => router.push({ pathname: '/listings/[id]/pin', params: { id: listing.id } })}
+      />
       {locating ? (
         <View style={styles.inline}>
           <ActivityIndicator />
@@ -420,7 +436,7 @@ function LocationPin({ listing }: { listing: LocalListing }) {
         </View>
       ) : (
         <Button
-          title={location ? t('listingForm.updateLocation') : t('listingForm.useCurrentLocation')}
+          title={t('listingForm.useCurrentLocation')}
           variant="secondary"
           onPress={() => void locate()}
         />

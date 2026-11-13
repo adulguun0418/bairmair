@@ -1,4 +1,4 @@
-import { LISTING_LIMITS } from '@bairmair/db';
+import { isInMongolia, LISTING_LIMITS } from '@bairmair/db';
 import type { RoomLabelOverride } from '@bairmair/room-model';
 import { EMPTY_FORM, PRIVATE_FIELDS, type ListingForm, type ListingStatus } from '@bairmair/browse';
 
@@ -166,6 +166,19 @@ export function betterFix(
   if (!current) return candidate;
   const accuracy = (fix: PinnedLocation) => fix.accuracyM ?? Number.POSITIVE_INFINITY;
   return accuracy(candidate) < accuracy(current) ? candidate : current;
+}
+
+/** Six decimals ≈ 0.1 m: plenty, and keeps the saved numbers short (as on the website). */
+const roundCoordinate = (value: number) => Math.round(value * 1e6) / 1e6;
+
+/**
+ * A pin the seller placed on the map (no GPS, so no accuracy). Null outside Mongolia, which the
+ * database refuses.
+ */
+export function mapPin(lat: number, lng: number, now: string): PinnedLocation | null {
+  const pin = { lat: roundCoordinate(lat), lng: roundCoordinate(lng) };
+  if (!isInMongolia(pin.lat, pin.lng)) return null;
+  return { ...pin, accuracyM: null, capturedAt: now };
 }
 
 /** Untouched and never sent: safe to drop when the seller backs out of "new listing". */
