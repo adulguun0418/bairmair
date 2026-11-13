@@ -27,3 +27,6 @@ supabase/.branches/
 *.log
 .DS_Store
 Thumbs.db
+
+# Vercel CLI link (`vercel link`)
+.vercel

@@ -19,6 +19,7 @@
     },
     "build": {
       "dependsOn": ["^typecheck"],
+      "env": ["NEXT_PUBLIC_*", "SUPABASE_SECRET_KEY"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "dev": {

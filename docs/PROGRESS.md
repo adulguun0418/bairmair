@@ -104,6 +104,8 @@ All seven build steps of the brief are done. The SMS gateway adapter (step 3) st
 - `pnpm db:push` (new migrations), then `pnpm db:types`; `pnpm functions:deploy`
 - Auth settings: `pnpm auth:diff`, then `pnpm auth:push --yes`. Not a plain `supabase config push`: it would drop the test numbers from `DEV_TEST_OTP` (`supabase/.env`, `phone=code,phone=code`, phone without +).
 - `node apps/mobile/scripts/pin-images.mjs` regenerates the map pin images.
+- Web on Vercel (Hobby, team `bairmair`, project `bairmair`, root `apps/web`, functions in Seoul `icn1` via `apps/web/vercel.json`): https://bairmair-bairmair.vercel.app, deployed from `main`, against the dev Supabase project. Env vars (Production): the four in `apps/web/.env.example`, with `NEXT_PUBLIC_SITE_URL` = that URL. Vercel builds with `turbo run build`, which hides env vars not listed in `turbo.json` (`build.env`): add new ones there. CLI: `pnpm dlx vercel <command>` (repo root is linked).
+- Standalone iOS app (no Metro): `pnpm eas build --profile preview --platform ios` in `apps/mobile`; its `EXPO_PUBLIC_*` come from the EAS `preview` environment (`pnpm eas env:list --environment preview`). Same bundle id as the development build: installing one replaces the other.
 - Mobile env: `EXPO_PUBLIC_SITE_URL` (optional) is the public site for share links; it defaults to `EXPO_PUBLIC_API_URL`.
 - SQL: `pnpm supabase db query --read-only "<sql>" --remote`
 
