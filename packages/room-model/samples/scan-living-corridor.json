@@ -1,0 +1,439 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "kind": "roomplan",
+    "converterVersion": "0.3.0",
+    "formatVersion": 2
+  },
+  "frame": {
+    "fromSource": [0.850321, 0, -0.526265, 0, 0, 1, 0, 0, 0.526265, 0, 0.850321, 0, 0.97893, 1.518048, 0.398152, 1]
+  },
+  "rooms": [
+    {
+      "id": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "label": "livingRoom",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [2.612, 2.569],
+          [-0.798, 2.573],
+          [-0.804, -2.569],
+          [2.606, -2.573]
+        ],
+        "y": 0
+      }
+    },
+    {
+      "id": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "label": "other",
+      "story": 0,
+      "floor": {
+        "polygon": [
+          [-2.399, 1.286],
+          [-2.401, 0.269],
+          [-0.801, 0.267],
+          [-0.798, 2.203],
+          [-2.611, 2.177],
+          [-2.613, 1.286]
+        ],
+        "y": 0
+      }
+    }
+  ],
+  "walls": [
+    {
+      "id": "FC9B4367-D212-44FF-9AB6-477AC85BBFB1",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [0.907, 1.325, 2.571],
+        "yaw": -3.1404
+      },
+      "dimensions": {
+        "width": 3.41,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "676ED628-F2FF-47AF-8723-2710016173AC",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-2.4, 1.325, 0.777],
+        "yaw": 1.572
+      },
+      "dimensions": {
+        "width": 1.016,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "BCEEA727-347E-40A1-A8D6-630A0E3B554C",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-2.506, 1.325, 1.286],
+        "yaw": 0.0012
+      },
+      "dimensions": {
+        "width": 0.213,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "45784A00-C64D-43B4-88B1-68031D6E5445",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-2.612, 1.325, 1.731],
+        "yaw": 1.572
+      },
+      "dimensions": {
+        "width": 0.891,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "6DDFEED9-1040-492C-ACB5-D03987E94642",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-1.705, 1.325, 2.19],
+        "yaw": 3.1274
+      },
+      "dimensions": {
+        "width": 1.813,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "FD201789-8D47-4DF9-A16F-95796F9777A3",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [0.901, 1.325, -2.571],
+        "yaw": 0.0012
+      },
+      "dimensions": {
+        "width": 3.41,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "4FDE4C0A-9BDA-46AF-838D-45D1E61FD9C6",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [2.609, 1.325, -0.002],
+        "yaw": -1.5696
+      },
+      "dimensions": {
+        "width": 5.142,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "B7C4CE92-5F47-415E-8ECA-E9BB5F80EB2F",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-1.6, 1.325, 0.268],
+        "yaw": 0.0012
+      },
+      "dimensions": {
+        "width": 1.6,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "id": "7E800A76-7F07-4243-AAE0-A9FC2DE6D46B",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [-0.801, 1.325, 0.002],
+        "yaw": 1.572
+      },
+      "dimensions": {
+        "width": 5.142,
+        "height": 2.65,
+        "depth": 0
+      },
+      "confidence": "high"
+    }
+  ],
+  "doors": [
+    {
+      "id": "D3F3C6F9-9BAE-46BF-B56F-88129346A680",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-2.612, 1.056, 1.746],
+        "yaw": 1.572
+      },
+      "dimensions": {
+        "width": 0.733,
+        "height": 2.113,
+        "depth": 0
+      },
+      "confidence": "high",
+      "wallId": "45784A00-C64D-43B4-88B1-68031D6E5445",
+      "isOpen": false
+    },
+    {
+      "id": "BAABA2E8-EDA4-4D80-B756-CFF15C1EB109",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-2.4, 1.059, 0.653],
+        "yaw": 1.572
+      },
+      "dimensions": {
+        "width": 0.607,
+        "height": 2.119,
+        "depth": 0
+      },
+      "confidence": "high",
+      "wallId": "676ED628-F2FF-47AF-8723-2710016173AC",
+      "isOpen": false
+    },
+    {
+      "id": "9022E582-3C47-4F19-8DF5-F0DABE0A63B5",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-1.633, 1.042, 0.268],
+        "yaw": 0.0012
+      },
+      "dimensions": {
+        "width": 0.758,
+        "height": 2.083,
+        "depth": 0
+      },
+      "confidence": "medium",
+      "wallId": "B7C4CE92-5F47-415E-8ECA-E9BB5F80EB2F",
+      "isOpen": true
+    },
+    {
+      "id": "6F9558B0-AB3D-47DA-BE72-8237E8EC1F4F",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [-0.799, 1.05, 1.748],
+        "yaw": 1.572
+      },
+      "dimensions": {
+        "width": 0.839,
+        "height": 2.101,
+        "depth": 0
+      },
+      "confidence": "medium",
+      "wallId": "7E800A76-7F07-4243-AAE0-A9FC2DE6D46B",
+      "isOpen": true
+    }
+  ],
+  "windows": [
+    {
+      "id": "3E1369C3-F1E0-4647-9B30-8226E1B8A226",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [0.821, 1.537, -2.571],
+        "yaw": 0.0012
+      },
+      "dimensions": {
+        "width": 1.804,
+        "height": 1.408,
+        "depth": 0
+      },
+      "confidence": "medium",
+      "wallId": "FD201789-8D47-4DF9-A16F-95796F9777A3"
+    }
+  ],
+  "openings": [
+    {
+      "id": "E57AB6B2-45DA-462D-9FDE-23B6A73AE1D9",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [2.61, 1.13, 1.086],
+        "yaw": -1.5696
+      },
+      "dimensions": {
+        "width": 1.574,
+        "height": 2.26,
+        "depth": 0
+      },
+      "confidence": "high",
+      "wallId": "4FDE4C0A-9BDA-46AF-838D-45D1E61FD9C6"
+    }
+  ],
+  "objects": [
+    {
+      "id": "DCFD285E-E753-40F8-BF93-A497142C6624",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [0.56, 0.498, -0.892],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.668,
+        "height": 0.996,
+        "depth": 1.021
+      },
+      "confidence": "medium",
+      "category": "sofa"
+    },
+    {
+      "id": "1AE65DD3-F693-46A3-B040-2D9BE77CFF12",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [0.821, 0.494, 1.802],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.559,
+        "height": 0.989,
+        "depth": 0.646
+      },
+      "confidence": "low",
+      "category": "chair"
+    },
+    {
+      "id": "833F1D37-51DB-4925-A5E7-00D24BF88433",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [0.595, 0.494, 2.137],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.559,
+        "height": 0.989,
+        "depth": 0.646
+      },
+      "confidence": "low",
+      "category": "chair"
+    },
+    {
+      "id": "8A2BF34D-26BC-4C11-A699-4AEB28D6CE3D",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [-0.449, 1.08, -1.846],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 0.933,
+        "height": 2.16,
+        "depth": 0.703
+      },
+      "confidence": "low",
+      "category": "storage"
+    },
+    {
+      "id": "8DF06C1A-0D41-4318-B302-E15ACD4E2FFF",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [2.117, 0.516, -2.4],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.692,
+        "height": 1.033,
+        "depth": 0.342
+      },
+      "confidence": "high",
+      "category": "storage"
+    },
+    {
+      "id": "AE9FAF14-C6BE-4D96-9226-F0FA6A1AD1DE",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-1.632, 1.287, 2.154],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 1.315,
+        "height": 2.575,
+        "depth": 0.071
+      },
+      "confidence": "low",
+      "category": "storage"
+    },
+    {
+      "id": "DCAFB79A-00A8-4700-95F7-FC17B3DDC064",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [1.144, 0.398, 2.137],
+        "yaw": 3.1416
+      },
+      "dimensions": {
+        "width": 1.293,
+        "height": 0.796,
+        "depth": 0.865
+      },
+      "confidence": "high",
+      "category": "table"
+    },
+    {
+      "id": "1118CBAC-6BB2-4605-A168-2ED5FDB5619C",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [1.694, 0.494, 2.137],
+        "yaw": -1.5713
+      },
+      "dimensions": {
+        "width": 0.559,
+        "height": 0.989,
+        "depth": 0.646
+      },
+      "confidence": "medium",
+      "category": "chair"
+    },
+    {
+      "id": "5E2894E4-768C-47FD-85FA-A8AE2EDDC1BD",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [1.467, 0.494, 1.802],
+        "yaw": 0
+      },
+      "dimensions": {
+        "width": 0.559,
+        "height": 0.989,
+        "depth": 0.646
+      },
+      "confidence": "low",
+      "category": "chair"
+    },
+    {
+      "id": "D70CBC3F-9EE1-4507-BF3B-F8147802C122",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-813df304",
+      "transform": {
+        "position": [-0.291, 0.498, -0.079],
+        "yaw": 1.5708
+      },
+      "dimensions": {
+        "width": 2.604,
+        "height": 0.996,
+        "depth": 1.019
+      },
+      "confidence": "medium",
+      "category": "sofa"
+    },
+    {
+      "id": "ADE3C98E-223E-442F-9E1E-9D7052D66FDE",
+      "roomId": "EE292534-D7B5-4C6E-AFBE-4DAF6091AB23-70b6d0ba",
+      "transform": {
+        "position": [-1.074, 0.546, 0.793],
+        "yaw": -1.5708
+      },
+      "dimensions": {
+        "width": 1.05,
+        "height": 1.092,
+        "depth": 0.405
+      },
+      "confidence": "low",
+      "category": "storage"
+    }
+  ],
+  "hotspots": []
+}

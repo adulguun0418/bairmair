@@ -13,6 +13,7 @@ import {
   apertureCutout,
   computeMetrics,
   convertRoomPlan,
+  incompleteRoomIds,
   parseRoomModel,
   pointInPolygon,
   type ConversionWarningCode,
@@ -137,4 +138,73 @@ describe.each(Object.entries(FIXTURES))('real scan %s', (name, expected) => {
       await expect(formatSample(model)).toMatchFileSnapshot(file);
     },
   );
+});
+
+// One scan session through a living room (with a dining area) and the corridor next to it.
+// RoomPlan exports ONE floor for both; the corridor's walls end on the living room's west
+// wall, so the converter splits the floor there.
+describe('real scan apartment-living-corridor (one session, two rooms)', () => {
+  const raw = loadFixture('apartment-living-corridor');
+  const { model, warnings } = convertRoomPlan(raw);
+  const floorId = 'EE292534-D7B5-4C6E-AFBE-4DAF6091AB23';
+  const [living, corridor] = model.rooms;
+
+  it('becomes two rooms, split from the one floor', () => {
+    expect(model.rooms).toHaveLength(2);
+    for (const room of model.rooms) expect(room.id.startsWith(`${floorId}-`)).toBe(true);
+    // RoomPlan marked the living room; the corridor's section was "unidentified".
+    expect(model.rooms.map((room) => room.label)).toEqual(['livingRoom', 'other']);
+  });
+
+  it('has the expected areas, adding up to the whole floor', () => {
+    const metrics = computeMetrics(model);
+    expect(metrics.rooms.map((room) => room.areaM2)).toEqual([17.53, 3.27]);
+    expect(metrics.totalAreaM2).toBe(20.8);
+  });
+
+  it('reports no warnings and no incomplete rooms', () => {
+    expect(warnings).toEqual([]);
+    expect(incompleteRoomIds(model)).toEqual([]);
+  });
+
+  it('puts each wall, door and object in the right room', () => {
+    const roomOf = (id: string) =>
+      [...model.walls, ...model.doors].find((element) => element.id === id)!.roomId;
+    // The corridor's own walls, and the doors leading off it.
+    for (const id of [
+      'B7C4CE92-5F47-415E-8ECA-E9BB5F80EB2F',
+      '676ED628-F2FF-47AF-8723-2710016173AC',
+      'BCEEA727-347E-40A1-A8D6-630A0E3B554C',
+      '45784A00-C64D-43B4-88B1-68031D6E5445',
+      '6DDFEED9-1040-492C-ACB5-D03987E94642',
+      'D3F3C6F9-9BAE-46BF-B56F-88129346A680',
+      'BAABA2E8-EDA4-4D80-B756-CFF15C1EB109',
+      '9022E582-3C47-4F19-8DF5-F0DABE0A63B5',
+    ]) {
+      expect(roomOf(id), id).toBe(corridor!.id);
+    }
+    // The wall between them runs the whole length of the living room; its door goes with it.
+    expect(roomOf('7E800A76-7F07-4243-AAE0-A9FC2DE6D46B')).toBe(living!.id);
+    expect(roomOf('6F9558B0-AB3D-47DA-BE72-8237E8EC1F4F')).toBe(living!.id);
+
+    for (const object of model.objects) {
+      const room = model.rooms.find((candidate) => candidate.id === object.roomId)!;
+      const [x, , z] = object.transform.position;
+      expect(pointInPolygon([x, z], room.floor.polygon), object.id).toBe(true);
+    }
+    expect(model.objects.filter((object) => object.roomId === corridor!.id)).toHaveLength(2);
+  });
+
+  it('is deterministic, ids included', () => {
+    expect(convertRoomPlan(raw).model).toEqual(model);
+  });
+
+  it('is a valid RoomModel v1 after a JSON round trip', () => {
+    expect(parseRoomModel(JSON.parse(JSON.stringify(model)))).toEqual(model);
+  });
+
+  it('has an up-to-date sample file (run `pnpm samples` to regenerate)', async () => {
+    const file = fileURLToPath(new URL('../samples/scan-living-corridor.json', import.meta.url));
+    await expect(formatSample(model)).toMatchFileSnapshot(file);
+  });
 });

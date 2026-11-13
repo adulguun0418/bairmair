@@ -563,3 +563,90 @@ describe('convertRoomPlan: warnings', () => {
     expect(byId(model.objects, 'chair-out').roomId).toBeNull();
   });
 });
+
+describe('convertRoomPlan: one session through several rooms', () => {
+  const p = DEFAULT_PLACEMENT;
+  /**
+   * A 6 x 3 m floor as one RoomPlan room: a 4 x 3 living room and a 2 x 3 bedroom east of it,
+   * divided by a wall with a door. `divider` sets that wall's ends along z.
+   */
+  function oneSession({ divider = [-1.5, 1.5], west = true } = {}) {
+    const [z0, z1] = divider as [number, number];
+    const walls = [
+      surface(p, 's-wall-n', 'wall', [0, 1.3, -1.5], 0, [6, 2.6, 0]),
+      surface(p, 's-wall-s', 'wall', [0, 1.3, 1.5], Math.PI, [6, 2.6, 0]),
+      surface(p, 's-wall-e', 'wall', [3, 1.3, 0], Math.PI / 2, [3, 2.6, 0]),
+      surface(p, 's-divider', 'wall', [1, 1.3, (z0 + z1) / 2], Math.PI / 2, [z1 - z0, 2.6, 0]),
+    ];
+    if (west) walls.push(surface(p, 's-wall-w', 'wall', [-3, 1.3, 0], -Math.PI / 2, [3, 2.6, 0]));
+    return {
+      version: 2,
+      rooms: [
+        {
+          version: 2,
+          walls,
+          doors: [
+            surface(p, 's-door', 'door', [1, 1, 0], Math.PI / 2, [0.8, 2, 0], {
+              category: { door: { isOpen: true } },
+              parentIdentifier: 's-divider',
+            }),
+          ],
+          windows: [],
+          openings: [],
+          floors: [floor(p, 's-floor', [0, 0, 0], [6, 3, 0])],
+          objects: [
+            object(p, 's-sofa', 'sofa', [-1, 0.4, 0], 0, [2, 0.8, 0.9]),
+            object(p, 's-bed', 'bed', [2, 0.25, 0], 0, [1.4, 0.5, 2]),
+          ],
+          sections: [
+            { label: 'livingRoom', story: 0, center: toScan([-1, 1, 0], p) },
+            { label: 'bedroom', story: 0, center: toScan([2, 1, 0.5], p) },
+          ],
+        },
+      ],
+    };
+  }
+
+  it('splits the floor into the rooms its walls close off', () => {
+    const { model, warnings } = convertRoomPlan(oneSession());
+    expect(warnings).toEqual([]);
+    expect(model.rooms.map((room) => room.label)).toEqual(['livingRoom', 'bedroom']);
+    expect(computeMetrics(model).rooms.map((room) => room.areaM2)).toEqual([12, 6]);
+    expect(computeMetrics(model).totalAreaM2).toBe(18);
+
+    const [living, bedroom] = model.rooms;
+    for (const room of model.rooms) expect(room.id).toMatch(/^s-floor-[0-9a-f]{8}$/);
+    expect(byId(model.objects, 's-sofa').roomId).toBe(living!.id);
+    expect(byId(model.objects, 's-bed').roomId).toBe(bedroom!.id);
+    expect(byId(model.walls, 's-wall-e').roomId).toBe(bedroom!.id);
+    expect(byId(model.walls, 's-wall-w').roomId).toBe(living!.id);
+    // The dividing wall runs along both rooms; its door goes with it.
+    expect(byId(model.doors, 's-door').roomId).toBe(byId(model.walls, 's-divider').roomId);
+  });
+
+  it('gives split rooms the same ids every time', () => {
+    const first = convertRoomPlan(oneSession()).model.rooms.map((room) => room.id);
+    const again = convertRoomPlan(oneSession()).model.rooms.map((room) => room.id);
+    expect(again).toEqual(first);
+    expect(new Set(first).size).toBe(2);
+  });
+
+  it('still splits when the dividing wall stops a few centimeters short', () => {
+    const { model } = convertRoomPlan(oneSession({ divider: [-1.42, 1.45] }));
+    expect(computeMetrics(model).rooms.map((room) => room.areaM2)).toEqual([12, 6]);
+  });
+
+  it('keeps one room, without a warning, when the dividing wall leaves a passage', () => {
+    const { model, warnings } = convertRoomPlan(oneSession({ divider: [-1.5, 0.5] }));
+    expect(model.rooms.map((room) => room.id)).toEqual(['s-floor']);
+    expect(warnings).toEqual([]);
+  });
+
+  it('keeps one room, with a warning, when a missing wall leaves part of the floor open', () => {
+    const { model, warnings } = convertRoomPlan(oneSession({ west: false }));
+    expect(model.rooms.map((room) => room.id)).toEqual(['s-floor']);
+    expect(computeMetrics(model).totalAreaM2).toBe(18);
+    expect(warnings.map((warning) => warning.code)).toEqual(['rooms-not-split']);
+    expect(warnings[0]!.elementId).toBe('s-floor');
+  });
+});

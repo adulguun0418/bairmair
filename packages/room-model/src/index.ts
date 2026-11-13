@@ -4,6 +4,7 @@ export * from './schema/model';
 
 // Geometry shared by the 3D viewer, the floor plan, and the converter
 export * from './geometry/polygon';
+export * from './geometry/faces';
 export * from './geometry/wall';
 export * from './geometry/layout';
 

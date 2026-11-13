@@ -1,14 +1,17 @@
 import * as z from 'zod';
+import { enclosedFaces } from '../geometry/faces';
 import { mat4Column, mat4FromYawTranslation, transformPoint } from '../geometry/mat4';
 import {
   boundsOf,
   distanceToPolygonEdge,
   pointInPolygon,
   polygonArea,
+  polygonCentroid,
   polygonEdges,
   signedArea,
 } from '../geometry/polygon';
-import { apertureCutout, normalizeAngle, yawFromDirection } from '../geometry/wall';
+import { apertureCutout, normalizeAngle, wallEndpoints, yawFromDirection } from '../geometry/wall';
+import { MIN_ROOM_WALLS, outlineWallCount, wallAlongOutline } from '../metrics';
 import { roundAngle, roundLength, roundTo } from '../round';
 import {
   MIN_ROOM_AREA_M2,
@@ -26,7 +29,7 @@ import type { Mat4, Transform, Vec2, Vec3 } from '../schema/primitives';
 import { parseRoomPlanCapture, type CaptureSurface, type RoomPlanCapture } from './capture';
 
 /** Bump when the conversion output changes for the same input. Stored with every model. */
-export const CONVERTER_VERSION = '0.2.0';
+export const CONVERTER_VERSION = '0.3.0';
 
 export type ConversionWarningCode =
   | 'no-floors'
@@ -35,7 +38,8 @@ export type ConversionWarningCode =
   | 'curved-wall-flattened'
   | 'orphan-aperture'
   | 'unassigned-element'
-  | 'incomplete-room';
+  | 'incomplete-room'
+  | 'rooms-not-split';
 
 export interface ConversionWarning {
   code: ConversionWarningCode;
@@ -62,8 +66,16 @@ const WALL_SNAP_M = 0.3;
 const UPRIGHT_COS = Math.cos((5 * Math.PI) / 180);
 /** How far a merged floor's corner may lie outside the rooms' floors and still count as a copy. */
 const MERGED_FLOOR_SNAP_M = 0.1;
-/** A room with fewer walls than this was not scanned all the way round. */
-const MIN_ROOM_WALLS = 3;
+/** Walls this close to a floor (or on it) take part in splitting it into rooms. */
+const FLOOR_SPLIT_SNAP_M = 0.3;
+/** Areas closed off by walls that are smaller than this are not rooms (gaps, wall cavities). */
+const MIN_SPLIT_ROOM_AREA_M2 = 1;
+/** ... nor are areas narrower than this on average (twice the area over the perimeter). */
+const MIN_SPLIT_ROOM_WIDTH_M = 0.4;
+/** Two rooms' lengths along a wall closer than this are a tie. */
+const WALL_TIE_M = 0.05;
+/** The rooms found by splitting must cover the floor to within this fraction of its area. */
+const SPLIT_COVERAGE_TOLERANCE = 0.05;
 
 /** RoomPlan section labels that map one-to-one onto ours. Anything else becomes `other`. */
 const SECTION_LABELS: Readonly<Record<string, RoomLabel>> = {
@@ -163,6 +175,62 @@ function dominantYaw(segments: readonly { yaw: number; length: number }[]): numb
   return Math.hypot(sin, cos) < 1e-9 ? 0 : Math.atan2(sin, cos) / 4;
 }
 
+/** FNV-1a, 32 bits, as 8 hex digits: a short stable tag, not a security hash. */
+function shortHash(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+interface PlacedWall {
+  id: string;
+  story: number;
+  transform: Transform;
+  dimensions: { width: number; height: number; depth: number };
+}
+
+type FloorSplit =
+  | { kind: 'whole' }
+  | { kind: 'split'; parts: Vec2[][] }
+  | { kind: 'uncovered'; parts: number; coverage: number };
+
+/**
+ * Divides one floor into the rooms its walls close off.
+ *
+ * A single RoomPlan session (the whole apartment walked through in one scan) exports one floor
+ * for every room it passed through; its walls still separate the rooms. The floor is split
+ * only when the closed-off areas cover it, so a scan with missing walls stays one room.
+ */
+function splitFloor(floor: readonly Vec2[], walls: readonly PlacedWall[]): FloorSplit {
+  const nearFloor = (point: Vec2) =>
+    pointInPolygon(point, floor) || distanceToPolygonEdge(point, floor) <= FLOOR_SPLIT_SNAP_M;
+  const segments = walls
+    .map((wall) => wallEndpoints(wall))
+    .filter(([a, b]) => nearFloor(a) && nearFloor(b));
+  const parts = enclosedFaces(segments).filter((face) => {
+    const area = polygonArea(face);
+    let perimeter = 0;
+    for (const [a, b] of polygonEdges(face)) perimeter += Math.hypot(b[0] - a[0], b[1] - a[1]);
+    return (
+      area >= MIN_SPLIT_ROOM_AREA_M2 &&
+      (2 * area) / perimeter >= MIN_SPLIT_ROOM_WIDTH_M &&
+      pointInPolygon(polygonCentroid(face), floor) &&
+      face.every(nearFloor)
+    );
+  });
+  if (parts.length === 0) return { kind: 'whole' };
+  const floorArea = polygonArea(floor);
+  const coverage = parts.reduce((sum, part) => sum + polygonArea(part), 0) / floorArea;
+  if (Math.abs(coverage - 1) > SPLIT_COVERAGE_TOLERANCE) {
+    return { kind: 'uncovered', parts: parts.length, coverage };
+  }
+  if (parts.length === 1) return { kind: 'whole' };
+  return { kind: 'split', parts: parts.sort((a, b) => polygonArea(b) - polygonArea(a)) };
+}
+
 /**
  * Converts a parsed RoomPlan capture into RoomModel v1. Pure and deterministic: the same
  * capture always yields the same model.
@@ -226,12 +294,28 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
     };
   };
 
-  // --- Rooms: one per floor surface -----------------------------------------------------------
+  // --- Rooms: one per floor surface, or one per area its walls close off ---------------------
   const sections = capture.sections.map((section) => ({
     label: SECTION_LABELS[section.label] ?? 'other',
     story: section.story,
     point: plan(transformPoint(fromSource, section.center)),
   }));
+  const labelOf = (outline: readonly Vec2[], story: number): RoomLabel =>
+    sections.find(
+      (candidate) =>
+        candidate.story === story &&
+        candidate.label !== 'other' &&
+        pointInPolygon(candidate.point, outline),
+    )?.label ?? 'other';
+
+  const placedWalls: PlacedWall[] = capture.walls
+    .filter((wall) => wall.dimensions[0] >= MIN_SIZE_M && wall.dimensions[1] >= MIN_SIZE_M)
+    .map((wall) => ({
+      id: wall.id,
+      story: wall.story,
+      transform: place(wall.transform).transform,
+      dimensions: { width: wall.dimensions[0], height: wall.dimensions[1], depth: 0 },
+    }));
 
   const rooms: Room[] = [];
   const roomIdsByIndex = new Map<number, string[]>();
@@ -245,23 +329,44 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
       warn('degenerate-element', 'Floor surface has no area and was dropped.', floor.id);
       continue;
     }
-    const section = sections.find(
-      (candidate) =>
-        candidate.story === floor.story &&
-        candidate.label !== 'other' &&
-        pointInPolygon(candidate.point, points),
-    );
-    rooms.push({
-      id: floor.id,
-      label: section?.label ?? 'other',
-      story: floor.story,
-      floor: { polygon: points, y: roundLength(y - floorY) },
-    });
-    if (floor.roomIndex !== null) {
-      roomIdsByIndex.set(floor.roomIndex, [
-        ...(roomIdsByIndex.get(floor.roomIndex) ?? []),
+    const roomY = roundLength(y - floorY);
+    const storyWalls = placedWalls.filter((wall) => wall.story === floor.story);
+    const split = splitFloor(points, storyWalls);
+    if (split.kind === 'uncovered') {
+      warn(
+        'rooms-not-split',
+        `Walls close off ${split.parts} room(s) covering ${Math.round(split.coverage * 100)}% ` +
+          'of the floor; the rest is open, so the floor was kept as one room.',
         floor.id,
-      ]);
+      );
+    }
+
+    const outlines = split.kind === 'split' ? split.parts : [points];
+    const ids = new Set<string>();
+    for (const outline of outlines) {
+      const rounded = outline.map(([x, z]): Vec2 => [roundLength(x), roundLength(z)]);
+      // A split room is named after its floor and the walls around it, so converting the
+      // same export again gives the same ids (room labels and photos refer to them).
+      let id = floor.id;
+      if (split.kind === 'split') {
+        const wallIds = storyWalls
+          .filter((wall) => wallAlongOutline(wall, rounded) > 0)
+          .map((wall) => wall.id)
+          .sort();
+        id = `${floor.id}-${shortHash(wallIds.join(','))}`;
+        for (let n = 2; ids.has(id); n++)
+          id = `${floor.id}-${shortHash(`${wallIds.join(',')}#${n}`)}`;
+      }
+      ids.add(id);
+      rooms.push({
+        id,
+        label: labelOf(rounded, floor.story),
+        story: floor.story,
+        floor: { polygon: rounded, y: roomY },
+      });
+    }
+    if (floor.roomIndex !== null) {
+      roomIdsByIndex.set(floor.roomIndex, [...(roomIdsByIndex.get(floor.roomIndex) ?? []), ...ids]);
     }
   }
   if (rooms.length === 0) {
@@ -296,6 +401,31 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
     return nearestRoom(point, candidates.rooms);
   };
 
+  /** A wall belongs to the room that most of it runs along (a wall between two rooms touches both). */
+  const roomOfWall = (wall: PlacedWall | undefined, roomIndex: number | null) => {
+    if (!wall) return null;
+    const point = plan(wall.transform.position);
+    const candidates = candidateRooms(roomIndex, wall.story);
+    if (candidates.fromExport && candidates.rooms.length === 1) return candidates.rooms[0]!.id;
+    // Most length along the outline wins; on a tie (two facing walls next to two rooms), the
+    // outline the wall is closest to.
+    let best: { id: string; along: number; distance: number } | null = null;
+    for (const room of candidates.rooms) {
+      const along = wallAlongOutline(wall, room.floor.polygon);
+      if (along === 0) continue;
+      const distance = distanceToPolygonEdge(point, room.floor.polygon);
+      if (
+        best === null ||
+        along > best.along + WALL_TIE_M ||
+        (along > best.along - WALL_TIE_M && distance < best.distance)
+      ) {
+        best = { id: room.id, along, distance };
+      }
+    }
+    return best?.id ?? nearestRoom(point, candidates.rooms);
+  };
+  const placedWallsById = new Map(placedWalls.map((wall) => [wall.id, wall]));
+
   /** Objects sit inside a floor. */
   const roomOfInterior = (point: Vec2, roomIndex: number | null, story: number) => {
     const candidates = candidateRooms(roomIndex, story);
@@ -319,7 +449,7 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
     }
     walls.push({
       id: wall.id,
-      roomId: roomOfBoundary(plan(transform.position), wall.roomIndex, wall.story),
+      roomId: roomOfWall(placedWallsById.get(wall.id), wall.roomIndex),
       transform,
       dimensions: { width: roundLength(width), height: roundLength(height), depth: 0 },
       confidence: wall.confidence,
@@ -328,7 +458,7 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
   const wallsById = new Map(walls.map((wall) => [wall.id, wall]));
 
   for (const room of rooms) {
-    const count = walls.filter((wall) => wall.roomId === room.id).length;
+    const count = outlineWallCount(walls, room.floor.polygon);
     if (count < MIN_ROOM_WALLS) {
       warn(
         'incomplete-room',
