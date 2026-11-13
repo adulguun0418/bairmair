@@ -2,9 +2,9 @@
 
 import { dbErrorKey } from '@bairmair/db';
 import { createTranslator, type Locale } from '@bairmair/i18n';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { CheckIcon, CopyIcon, MessageIcon, PhoneIcon } from '@/components/icons';
-import { publicClient } from '@/lib/supabase-public';
+import { browserClient } from '@/lib/supabase-browser';
 
 type State =
   | { kind: 'idle' }
@@ -18,22 +18,55 @@ export function formatPhone(e164: string): string {
   return match ? `+976 ${match[1]} ${match[2]}` : e164;
 }
 
+/** Numbers revealed in this tab, so a reload shows them again without another request. */
+const cacheKey = (listingId: string) => `bairmair-phone:${listingId}`;
+
+function readCached(listingId: string): string | null {
+  try {
+    return sessionStorage.getItem(cacheKey(listingId));
+  } catch {
+    return null;
+  }
+}
+
+function writeCached(listingId: string, phone: string): void {
+  try {
+    sessionStorage.setItem(cacheKey(listingId), phone);
+  } catch {
+    // Storage blocked: the number is still shown, just not remembered.
+  }
+}
+
+const noSubscribe = () => () => {};
+
 /**
  * Tap to reveal the seller's number (rate-limited by `reveal_listing_contact`). The button turns
  * into the number in place (tap to call), with SMS and copy beside it: same height, no jump.
  * The number is never in the page HTML, so it cannot be scraped from it.
+ *
+ * Sent with the visitor's session when signed in (their own hourly budget instead of the shared
+ * per-IP one). A repeat reveal of the same listing within the hour is free on the server.
  */
 export function ContactButtons({ listingId, locale }: { listingId: string; locale: Locale }) {
   const t = useMemo(() => createTranslator(locale), [locale]);
-  const [state, setState] = useState<State>({ kind: 'idle' });
+  const [revealed, setState] = useState<State>({ kind: 'idle' });
   const [copied, setCopied] = useState(false);
+  // Not on the server (no storage there): the button renders first, the number right after.
+  const cached = useSyncExternalStore(
+    noSubscribe,
+    () => readCached(listingId),
+    () => null,
+  );
+  const state: State =
+    revealed.kind === 'idle' && cached ? { kind: 'shown', phone: cached } : revealed;
 
   const reveal = async () => {
     setState({ kind: 'loading' });
-    const { data, error } = await publicClient().rpc('reveal_listing_contact', {
+    const { data, error } = await browserClient().rpc('reveal_listing_contact', {
       p_listing_id: listingId,
     });
     if (!error && data) {
+      writeCached(listingId, data);
       setState({ kind: 'shown', phone: data });
       return;
     }

@@ -133,7 +133,11 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Every pressable control shows the hand cursor (Tailwind v4 dropped it for buttons): a base rule in `globals.css` for buttons, selects, checkbox/radio labels, file inputs; disabled controls show "not allowed". The anonymous browser client got its own `storageKey` (no more "Multiple GoTrueClient instances").
   - Fix after merge: the home page now streams its two listing rows inside `<Suspense>` (card skeletons). Next 16.4 validates every page in dev ("instant" navigation) and flagged the uncached-for-the-shell search awaited outside Suspense. Logo size 115×32 matches its aspect (the dev "width or height modified" warning).
   - Verified: typecheck, lint, tests, production build; headless Chrome on the production build: header/footer/legal pages in light and dark, desktop and 390 px, open mobile menu and language menu, a chosen theme surviving a reload, embed light under a dark system.
-- Tests: 458 unit (room-model 189, browse 104, mobile 85, i18n 29, web 26, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
+- Phone reveals (after "Хэт олон дугаар үзлээ" while testing; the web always revealed anonymously, so a signed-in visitor shared the 10/hour per-IP budget):
+  - Migration 12 (`20261117100000_reveal_repeat_free.sql`): a repeat reveal of the same listing by the same caller (user id when signed in, else IP hash) within the hour returns the number without being logged or counted. Limits unchanged: 30/hour per user, 10/hour per IP.
+  - Web: the reveal is sent with the visitor's session (`browserClient()`), so signed-in visitors get their own budget; a revealed number is kept in `sessionStorage` for the tab, so a reload shows it without a request.
+  - Tests: the integration tests now check that repeats are free, that forged IP headers add no row under another key, and the per-IP limit (budget filled with reveals of a second, draft listing).
+- Tests: 458 unit (room-model 189, browse 104, mobile 85, i18n 29, web 26, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -199,6 +203,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - extra integrity: district belongs to city, a photo's scan is from the same listing, max 40 photos, no draft → sold
   - districts live in a migration, not `seed.sql`
   - one SELECT policy per role (advisor fix)
+- Phone reveal limits count distinct listings: re-revealing a listing within the hour is free (your choice, 2026-11-14).
 - Database errors are stable keys (`packages/db/src/errors.ts`) for the apps to localize; RPCs return HTTP 404/429.
 - Rate-limit IP: `cf-connecting-ip` (Cloudflare rejects client-supplied ones), else the last `x-forwarded-for` entry.
 - `send-sms`: errors on signed requests are HTTP 200 + error body, because Auth hides the reason for any other status. Only +976 numbers get SMS; foreign numbers can sign in with Apple/Google but cannot publish.
