@@ -208,3 +208,49 @@ describe('real scan apartment-living-corridor (one session, two rooms)', () => {
     await expect(formatSample(model)).toMatchFileSnapshot(file);
   });
 });
+
+// One scan session through a living room (with a dining area) and a galley kitchen. The wall
+// between them was scanned from both sides (0.39 m apart) with a doorless passage in it, so the
+// floor runs under about 1.3 m² of wall that belongs to neither room.
+describe('real scan apartment-kitchen-living (thick wall between the rooms)', () => {
+  const raw = loadFixture('apartment-kitchen-living');
+  const { model, warnings } = convertRoomPlan(raw);
+  const floorId = '512CBA53-D1B3-40F4-8EC3-C381D98FE449';
+  const [living, kitchen] = model.rooms;
+
+  it('becomes two rooms, labelled from RoomPlan, without warnings', () => {
+    expect(model.rooms).toHaveLength(2);
+    for (const room of model.rooms) expect(room.id.startsWith(`${floorId}-`)).toBe(true);
+    expect(model.rooms.map((room) => room.label)).toEqual(['livingRoom', 'kitchen']);
+    expect(warnings).toEqual([]);
+    expect(incompleteRoomIds(model)).toEqual([]);
+  });
+
+  it('measures the rooms between their walls, without the wall in between', () => {
+    const metrics = computeMetrics(model);
+    expect(metrics.rooms.map((room) => room.areaM2)).toEqual([17.35, 5.73]);
+    expect(metrics.totalAreaM2).toBe(23.08);
+  });
+
+  it('puts the kitchen appliances in the kitchen and the sofa in the living room', () => {
+    const categoriesIn = (roomId: string) =>
+      model.objects
+        .filter((object) => object.roomId === roomId)
+        .map((object) => object.category)
+        .sort();
+    expect(categoriesIn(kitchen!.id)).toEqual(
+      expect.arrayContaining(['oven', 'refrigerator', 'refrigerator', 'stove']),
+    );
+    expect(categoriesIn(living!.id)).toEqual(expect.arrayContaining(['sofa', 'sofa', 'table']));
+    for (const object of model.objects) {
+      const room = model.rooms.find((candidate) => candidate.id === object.roomId)!;
+      const [x, , z] = object.transform.position;
+      expect(pointInPolygon([x, z], room.floor.polygon), object.id).toBe(true);
+    }
+  });
+
+  it('is deterministic and a valid RoomModel v1', () => {
+    expect(convertRoomPlan(raw).model).toEqual(model);
+    expect(parseRoomModel(JSON.parse(JSON.stringify(model)))).toEqual(model);
+  });
+});

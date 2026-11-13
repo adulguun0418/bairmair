@@ -123,7 +123,8 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Walls go to the room most of their length runs along (ties: the closer outline). "Incomplete room" now counts walls along the room's outline, whichever room they belong to (`incompleteRoomIds`, used by the converter and the app's review screens), so a small room between shared walls is not flagged.
   - New fixture `apartment-living-corridor` (your scan): living room 17.53 m² + corridor 3.27 m² = 20.80 m², no warnings. Web sample `/samples/scan-living-corridor`.
   - Verified: unit tests (face finding, synthetic one-session splits incl. a short divider, a passage, a missing wall; the real scan); the sample page on the dev server (17.5 + 3.3 m², total 20.8 m²). Not verified: on the iPhone.
-- Tests: 447 unit (room-model 184, browse 104, mobile 85, i18n 27, web 22, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
+  - Fix (converter 0.3.1), from your second scan (`apartment-kitchen-living`): a partition scanned from both sides (0.39 m apart) leaves the floor under the wall closed off but in no room, so the rooms covered only 94.7% and the floor stayed one room (`rooms-not-split`). Areas too small or narrow to be rooms (wall interiors, columns, passage reveals) now count toward covering the floor. Result: living room 17.35 m² + kitchen 5.73 m² (labels from RoomPlan), total 23.08 m² between the walls instead of 24.37 m² for the whole floor.
+- Tests: 452 unit (room-model 189, browse 104, mobile 85, i18n 27, web 22, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -247,7 +248,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 
 ## Next
-- You: ship the whole-apartment scan after merging (Vercel redeploys `main`, so the server converts with 0.3.0 too): `pnpm update:preview -m "Whole-apartment scan, rooms split by walls"` in `apps/mobile`, then close and reopen the app twice. On the iPhone:
+- You, on the iPhone dev build (`pnpm dev:mobile`; the server converts on Vercel, which redeploys `main`): check the whole-apartment scan. Your earlier scans re-convert on the phone with the new converter when you open them.
   - A listing → "3D скан": the intro describes one scan for the whole apartment; while scanning there is only "Болих" and "Дуусгах".
   - Scan several rooms, doors open, walking through each doorway → "Дуусгах" → the room review screen lists each room with its own area; no "incomplete" warning on rooms that were scanned all the way round.
   - Assign photos to the rooms, publish, open the listing on the web: floor plan and 3D show the same rooms.
