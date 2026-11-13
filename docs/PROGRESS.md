@@ -1,7 +1,9 @@
 # Progress
 
-## Current state (2026-11-13)
-**All seven build steps are merged and running without your PC:** the web is live at https://bairmair-bairmair.vercel.app (Vercel Hobby, dev Supabase project), and the iOS **preview build** (standalone, ad hoc, pointing at Vercel) is installed on your iPhone and works. Everything still runs on the dev Supabase project.
+## Current state (2026-11-14)
+**All seven build steps are merged and running without your PC:** the web is live at https://bairmair-bairmair.vercel.app (Vercel Hobby, dev Supabase project), and the iOS and Android **preview builds** (standalone, ad hoc, pointing at Vercel) are installed and work. Everything still runs on the dev Supabase project.
+
+**OTA updates reach both phones:** the iOS preview build (from `51a9c31`) and the Android one (from `0cf3f86`) have runtime `0.1.0`; app version `0.1.1` and then `0.1.2` arrived on both as updates (see "Over-the-air updates").
 
 **SMS sign-in is live** through WeSend (`SMS_GATEWAY=wesend`, adapter in `supabase/functions/send-sms/gateways.ts`; see "SMS" below): real phone numbers get a code and can sign in. The first Android preview build is made too.
 
@@ -97,6 +99,8 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - `app.json`: `updates.url` (EAS project) and `runtimeVersion` (now the fixed string `"0.1.0"`, see Decisions). `eas.json`: channels `development` and `preview` on their profiles.
   - Publish: `pnpm update:preview -m "<what changed>"` in `apps/mobile` (= `eas update --channel preview --environment preview`). The `EXPO_PUBLIC_*` values come from the EAS `preview` environment; checked that they win over the local `.env` (an export with the shell values had them, not the Wi-Fi address).
   - The app checks on every launch, downloads in the background, and runs the update from the next launch (close the app fully, open it again). Бүртгэл shows the version and "суулгасан хувилбар" or "шинэчлэл <time>".
+  - Two numbers: `version` is what Бүртгэл shows and may change in any update (0.1.1, 0.1.2 shipped that way); `runtimeVersion` is the native code's identity, and EAS sends an update only to builds with the same runtime (the dashboard's "Runtime" column). Raise `runtimeVersion` only with a new build after a native change.
+  - In the EAS dashboard, a `*` after the commit means the update was bundled from uncommitted files (the "what changed" test update on iOS).
 - Web sign-in, account, favorites and reports:
   - `/sign-in` (and `/en/...`, `noindex`): phone + Cloudflare Turnstile → `POST /api/auth/otp` (`src/server/request-code.ts`: valid +976 number, Turnstile checked with Cloudflare, then Supabase `signInWithOtp` → SMS through the send-sms hook) → the browser checks the 6-digit code with `verifyOtp` and keeps the session (localStorage). New numbers get an account, as in the app. Returns to `?next=` (same site only).
   - The session lives in the browser only, so the cached listing/search pages stay cached; the parts that depend on the visitor are client components: header links (Нэвтрэх, or Хадгалсан + Бүртгэл), ♡ on cards and on the listing page, "Зөрчилтэй зар мэдээлэх" (hidden on your own listing), `/account` (phone, name, agent registration with a link to the agent page, sign-out, account deletion through `DELETE /api/account`), `/saved`.
@@ -226,7 +230,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Mobile UI starts in Mongolian whatever the phone language (iOS has no Mongolian UI language). English through an in-app toggle (not persisted yet). iOS permission prompts are Mongolian only.
 - Permission prompts limited to camera, photo library, location when in use (+ temporary precise). Microphone, Face ID, background location and motion are switched off in the plugins.
 - `app.json` stays static, so `eas init` can write the project id. EAS project `@adulguun0418/bairmair`; development builds use internal (ad hoc) distribution, so a newly registered iPhone needs a new build. `eas.json` pins Node 24.14.1, pnpm 12.18.0 and image `sdk-58` (the default image has Node 22 / pnpm 11).
-- Runtime version is a fixed string in `app.json` (`"0.1.0"`), not `fingerprint`: predictable on Windows (a fingerprint computed here could differ from the one on the EAS build server, and then no update would ever match). Until 0.1.1 it was the `appVersion` policy (same value, so the builds made then match); it became a fixed string so `version` can change in an OTA update (Бүртгэл shows it). The price: bump `runtimeVersion` by hand whenever native code changes. `version` 0.1.1 shipped as an OTA update.
+- Runtime version is a fixed string in `app.json` (`"0.1.0"`), not `fingerprint`: predictable on Windows (a fingerprint computed here could differ from the one on the EAS build server, and then no update would ever match). Until 0.1.1 it was the `appVersion` policy (same value, so the builds made then match); it became a fixed string so `version` can change in an OTA update (Бүртгэл shows it). The price: bump `runtimeVersion` by hand whenever native code changes. `version` 0.1.1 and 0.1.2 shipped as OTA updates.
 - EAS CLI runs through `pnpm dlx`, not as a devDependency: it added ~8,000 lockfile lines and build scripts pnpm 12 refuses until approved.
 - No `.easignore`: EAS then uses `.gitignore`, which keeps `.env` files off the build servers. An `.easignore` would have to exclude them itself.
 - pnpm adds packages younger than its minimum release age to `minimumReleaseAgeExclude` when they are installed explicitly (all of today's Expo patch releases). Prune the list later.
