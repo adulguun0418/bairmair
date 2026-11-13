@@ -213,7 +213,7 @@ function Chip({
   children: ReactNode;
 }) {
   return (
-    <label className="cursor-pointer rounded-full border border-line-2 px-3 py-1 text-sm has-checked:border-primary has-checked:bg-primary has-checked:text-on-primary has-focus-visible:ring-2 has-focus-visible:ring-amber-400">
+    <label className="cursor-pointer rounded-full border border-line-2 px-3 py-1 text-sm has-checked:border-primary has-checked:bg-primary has-checked:text-on-primary has-focus-visible:ring-2 has-focus-visible:ring-accent">
       <input
         type="checkbox"
         name={name}

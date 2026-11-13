@@ -197,3 +197,82 @@ export function FacebookIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function CubeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3l8-4.5Z" />
+      <path d="M4 7.3l8 4.6 8-4.6M12 11.9v9.3" />
+    </Icon>
+  );
+}
+
+export function DoorIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V21M3 21h18" />
+      <circle cx="15" cy="12.5" r="0.6" fill="currentColor" />
+    </Icon>
+  );
+}
+
+export function AreaIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+      <path d="M8 3.5v3M12 3.5v4.5M16 3.5v3M3.5 8h3M3.5 12h4.5M3.5 16h3" />
+    </Icon>
+  );
+}
+
+export function PinIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 1 1 14 0C19 14.8 12 21 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </Icon>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" />
+    </Icon>
+  );
+}
+
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 12h15M13 6l6 6-6 6" />
+    </Icon>
+  );
+}
+
+export function ScanIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" />
+      <path d="M3 12h18" />
+    </Icon>
+  );
+}
+
+export function PlanIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" />
+      <path d="M3.5 12h7v8.5M10.5 3.5V8M14 12h6.5M14 12v3" />
+    </Icon>
+  );
+}
+
+export function SparkleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3.5 13.8 9a2 2 0 0 0 1.2 1.2l5.5 1.8-5.5 1.8a2 2 0 0 0-1.2 1.2L12 20.5 10.2 15a2 2 0 0 0-1.2-1.2L3.5 12 9 10.2A2 2 0 0 0 10.2 9L12 3.5Z" />
+    </Icon>
+  );
+}
