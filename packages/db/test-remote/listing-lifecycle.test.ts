@@ -3,7 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   BUCKETS,
+  CITIES,
   CONTENT_TYPES,
+  DISTRICTS,
   avatarPath,
   listingPhotoPath,
   scanRawPaths,
@@ -83,6 +85,26 @@ describe('reference data', () => {
       .from('cities')
       .insert({ id: 99, slug: 'x', name_mn: 'x', name_en: 'x' });
     expect(error?.code).toBe('42501');
+  });
+
+  it('matches the CITIES and DISTRICTS constants', async () => {
+    const cities = await anon.from('cities').select('id, slug, name_mn, name_en').order('id');
+    expect(cities.data).toEqual(
+      CITIES.map((c) => ({ id: c.id, slug: c.slug, name_mn: c.nameMn, name_en: c.nameEn })),
+    );
+    const districts = await anon
+      .from('districts')
+      .select('id, city_id, slug, name_mn, name_en')
+      .order('sort_order');
+    expect(districts.data).toEqual(
+      DISTRICTS.map((d) => ({
+        id: d.id,
+        city_id: d.cityId,
+        slug: d.slug,
+        name_mn: d.nameMn,
+        name_en: d.nameEn,
+      })),
+    );
   });
 });
 

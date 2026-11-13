@@ -8,9 +8,11 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
+    // No automatic @types/* packages: Node types (for test-remote/) must not leak into app code.
+    "types": [],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

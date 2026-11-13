@@ -7,9 +7,11 @@ interface TextFieldProps extends TextInputProps {
   /** Shown before the input, e.g. a fixed country code. */
   prefix?: ReactNode;
   error?: string | null;
+  /** Shown under the input when there is no error. */
+  hint?: string | null;
 }
 
-export function TextField({ label, prefix, error, style, ...input }: TextFieldProps) {
+export function TextField({ label, prefix, error, hint, style, ...input }: TextFieldProps) {
   const colors = useColors();
   return (
     <View style={styles.field}>
@@ -32,7 +34,11 @@ export function TextField({ label, prefix, error, style, ...input }: TextFieldPr
           {...input}
         />
       </View>
-      {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+      ) : hint ? (
+        <Text style={[styles.hint, { color: colors.textMuted }]}>{hint}</Text>
+      ) : null}
     </View>
   );
 }
@@ -53,4 +59,5 @@ const styles = StyleSheet.create({
   prefix: { fontWeight: '600' },
   grow: { flex: 1 },
   error: { fontSize: 14, lineHeight: 20 },
+  hint: { fontSize: 13, lineHeight: 18 },
 });

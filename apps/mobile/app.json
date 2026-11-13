@@ -78,8 +78,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Скан тухайн байранд хийгдсэнийг шалгахын тулд байршлыг ашиглана.",
-          "locationFullAccuracyPermission": "Скан тухайн байранд хийгдсэнийг батлахад нарийн байршил хэрэгтэй.",
+          "locationWhenInUsePermission": "Зарын байршлыг тэмдэглэх, скан тухайн байранд хийгдсэнийг шалгахын тулд байршлыг ашиглана.",
+          "locationFullAccuracyPermission": "Байрны байршлыг зөв тэмдэглэхэд нарийн байршил хэрэгтэй.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
           "motionUsagePermission": false
