@@ -6,7 +6,15 @@ import { classifyPostgrestError } from './sync-errors';
 
 export type ServerListingSummary = Pick<
   Tables<'listings'>,
-  'id' | 'title' | 'type' | 'status' | 'price' | 'currency' | 'has_3d' | 'updated_at'
+  | 'id'
+  | 'title'
+  | 'type'
+  | 'status'
+  | 'price'
+  | 'currency'
+  | 'has_3d'
+  | 'updated_at'
+  | 'last_confirmed_at'
 >;
 
 /** The signed-in user's listings on the server (any status), newest first. */
@@ -16,9 +24,36 @@ export async function fetchMyListings(
 ): Promise<ServerListingSummary[]> {
   const result = await client
     .from('listings')
-    .select('id, title, type, status, price, currency, has_3d, updated_at')
+    .select('id, title, type, status, price, currency, has_3d, updated_at, last_confirmed_at')
     .eq('owner_id', ownerId)
     .order('updated_at', { ascending: false });
+  if (result.error) throw classifyPostgrestError(result.error, result.status);
+  return result.data;
+}
+
+/**
+ * When the seller last confirmed a listing is still available (set on publish too), or null.
+ * Server-maintained, so it is read when needed rather than kept on the phone.
+ */
+export async function fetchLastConfirmed(
+  client: TypedSupabaseClient,
+  id: string,
+): Promise<string | null> {
+  const result = await client
+    .from('listings')
+    .select('last_confirmed_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (result.error) throw classifyPostgrestError(result.error, result.status);
+  return result.data?.last_confirmed_at ?? null;
+}
+
+/**
+ * "Still available": keeps a published listing in search for another 14 days. Returns the new
+ * confirmation time. Online only: there is nothing to queue, the seller just tries again.
+ */
+export async function confirmAvailable(client: TypedSupabaseClient, id: string): Promise<string> {
+  const result = await client.rpc('confirm_listing_available', { p_listing_id: id });
   if (result.error) throw classifyPostgrestError(result.error, result.status);
   return result.data;
 }

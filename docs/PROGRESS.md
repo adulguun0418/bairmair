@@ -1,11 +1,11 @@
 # Progress
 
 ## Current state (2026-11-13)
-**Step 5 merged** (5a, 5b, 5c + placeholder icon). **Step 6a done** (pull request `step-6a-listing-pages`): the public web listing page with its Facebook preview image, plus a privacy fix for 5c's scan locations. No mobile rebuild needed (the mobile change is JS only).
+**Step 6a merged. Step 6b done** (pull request `step-6b-search`, merged): search RPC, web search with filters and a MapLibre map, new home page, agent pages, freshness ("still available" in the app; unconfirmed listings leave search). No mobile rebuild needed (the mobile changes are JS only).
 
 Step 6 is split in three:
 - 6a: public listing page (web). Done.
-- 6b: search RPC + web search with filters, map (MapLibre), agent pages, freshness ("confirm available" in the app, stale listings hidden).
+- 6b: search, map, agent pages, freshness. Done.
 - 6c: mobile browse/search/map + favorites + report (**EAS build 3**: MapLibre native module).
 
 The SMS gateway adapter (step 3) still waits on your gateway details.
@@ -56,8 +56,18 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - `apps/web`: `/listings/[id]` (and `/en/...`): badges (type, 3D, scanned on-site), price + per m² + district median, summary, "updated X days ago", stale notice, sold/rented banner, photo mosaic + viewer, 3D/floor plan (`ListingScene` with the seller's room labels and photo rooms), description, location (no map yet), details, seller card, tap-to-reveal phone with call/SMS, share (system sheet, copy post, Facebook), view counter. Data via the publishable key (RLS decides), one cached loader (`'use cache'`, 1 min, tag `listing:<id>`) shared by page, metadata and image.
   - Open Graph image at `/api/og/listings/[id]` (`?lang=en`): floor plan (or cover photo) + price, rooms, area, district; Noto Sans from `@fontsource/noto-sans` (one family per subset, otherwise Satori drops ₮ and bold Cyrillic). Under `/api` so the URL gets no `/mn` redirect.
   - Verified on a production build against the dev project: OG tags, image, missing listing → not-found with `noindex`, phone not in the HTML.
-- Tests: 344 unit (room-model 160, mobile 125, i18n 25, web 18, send-sms 12, db 4) + 66 integration tests against the dev project (db 49, mobile 11, web 6).
-- Tests before 6a: 330 unit (room-model 158, mobile 126, i18n 19, send-sms 12, web 11, db 4) + 62 integration tests against the dev project (db 45, mobile 11, web 6).
+- Step 6b:
+  - Migration 11 (`20261116100000_search.sql`): `search_listings(...)`, security invoker (RLS still applies). Only published listings confirmed within 14 days. Filters: type, districts, rooms (exact counts), price in one currency, area (official, else scanned), 3D only, text phrase (trigram `LIKE`, wildcards escaped), owner, map viewport (GiST `&&` + exact lat/lng check). Sorts: recommended (3D first, then newest), newest, price up/down (requested currency first). Paging (limit ≤ 1000, offset ≤ 10000) with `total_count`. Returns the public pin and the cover photo id, never the exact location.
+  - `@bairmair/db`: `SearchListingRow` (real nullability), `SEARCH_SORTS`, `SEARCH_LIMITS`, `MAP_PIN_COLUMNS`, `ULAANBAATAR_CENTER`, `daysLeftInSearch`. `@bairmair/i18n`: `formatPinPrice` (`250 сая`, `1.8 сая/сар`), `formatPinPricePerArea` (`3.8 сая/м²`); `search`, `map`, `listingCard`, `agentPage` catalogs, account agent and freshness copy.
+  - `apps/web`:
+    - `/search` (and `/en/search`): filters in the URL (`lib/search-params.ts`, unit-tested: districts by slug, rooms 1–5+, price in millions of ₮ or in $, area, 3D, text, sort, page, `view=map`). A GET form that also works before JavaScript loads; list with paging, or the map.
+    - Map (`maplibre-gl` 6.18.0, OpenFreeMap "liberty"): price pins as a symbol layer (3D listings amber), GeoJSON clustering, pins loaded per viewport (+25% margin, ≤ 1000, aborts stale requests), price ↔ price per m² toggle, a tap opens the card (several listings at one approximate spot open as a list). Labels in Cyrillic (`name:nonlatin`) or English; the traditional-script glyph range is not loaded (see notes).
+    - Home: sale/rent entry points, district shortcuts, newest 3D listings, newest listings. Header links: sale, rent, map. The language switch keeps the query.
+    - `/agents/[id]`: agency, name, verified badge, bio, live listings (up to 96). Listing pages link to it and gained a location map (marker if exact, a 200 m circle if approximate).
+  - `apps/mobile` (JS only): published listings show how many days they stay in search and a "Байр боломжтой хэвээр байна" button (`confirm_listing_available`); the home list flags listings out of search or within 3 days of leaving it. Account screen: register as an agent (agency name, bio); `agent_profiles` makes the account an agent.
+  - The remote rate-limit test now tolerates anonymous reveals made from the same network in the last hour (it failed after someone tried the 6a page).
+- Tests: 368 unit (room-model 160, mobile 125, web 37, i18n 27, send-sms 12, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
+- Tests before 6b: 344 unit + 66 integration.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -87,10 +97,17 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - Supabase CLI pinned at 3.1.0. In v3, hosted commands need `--remote` (last) and `--yes` when non-interactive. `supabase/.env` (gitignored) must exist: config.toml reads the hook URI and secret from it.
 - Migrations are append-only once applied.
 - Map (your choice, step 6): **MapLibre** on web (`maplibre-gl`) and mobile (`@maplibre/maplibre-react-native`), tiles from **OpenFreeMap** (free, commercial use, no key). OSM `name` in Mongolia also carries traditional script, so the style must label from `name:mn` / strip it; before launch, consider our own Mongolia PMTiles with `name:mn`. OSM has district boundaries in Ulaanbaatar but no khoroo boundaries: khoroo stays a seller-filled field.
-- Freshness: a published listing is "fresh" for 14 days after publish or the last `confirm_listing_available()`. Unfresh listings stay reachable by link (with a notice) but will be hidden from search (6b).
+- Freshness: a published listing is "fresh" for 14 days after publish or the last `confirm_listing_available()`. Unfresh listings stay reachable by link (with a notice) but are hidden from search.
 - Price per m² always uses the official area; the district median is shown only with ≥ 3 listings.
 - Web listing pages stream: a missing listing renders the not-found page with HTTP 200 + `noindex` (Next 16 Cache Components behaviour). A real 404 would need a DB lookup in the proxy.
 - Web images use `next/image` with `unoptimized` (no `sharp`: `allowBuilds: sharp: false`). Photos are 2048 px JPEGs; thumbnails need an optimizer once hosting is chosen.
+- Step 6b choices (mine, for your review):
+  - One RPC for list, map and agent pages; the map selects only the pin columns. Search results are cached for 1 minute per filter set.
+  - "Recommended" = 3D listings first, then newest (the brief's "better placement"). Simple and predictable; a softer boost is possible later.
+  - A price filter keeps only listings in the chosen currency (no exchange rate). Price inputs are in millions of ₮ (`priceMax=300` = 300 сая ₮) or in dollars for rents.
+  - Search, district medians and agent pages share the freshness rule; unconfirmed listings stay reachable by link with a notice.
+  - Agent pages need no admin step: an agency name makes the account an agent. "Verified" stays an admin flag in the dashboard.
+  - "Still available" is an online action, not a queued sync operation.
 - Changes from proposal 03:
   - exact location is `lat`/`lng` in `listing_private`; the public pin is snapped to the centre of a 0.0025° cell unless the owner opts in
   - added `unit_number`, `last_confirmed_at` (+ `confirm_listing_available()`), `scan_verified`
@@ -131,7 +148,8 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - supabase-js sends a Blob's own `type` and ignores `contentType`.
 - The location permission prompt text changed in `app.json` (it now also mentions the listing pin); it shows up with the next build, together with the new icon.
 - A refused status change (rare: the Publish button checks the same rules) holds back the listing's later sync operations until "Дахин оролдох" or "Өөрчлөлтийг болих".
-- Freshness ("confirm available every 14 days", `confirm_listing_available()`) has no button yet; it belongs with step 6's listing pages and the hiding of stale listings.
+- Map labels: OpenFreeMap tiles have no `name:mn`. A few OSM names carry the traditional script after the Cyrillic ("Улаанбаатар ᠤᠯᠠᠭᠠᠨ…"); the web maps load Basic Latin in place of that glyph range (`skipTraditionalScript`), so those characters are skipped. Our own Mongolia tiles with `name:mn` would remove the workaround. The mobile map (6c) needs the same treatment.
+- No reminder reaches a seller whose listing is about to leave search (no push yet); the app shows it on the home list and in the editor.
 - Step 6 serves the model with `applyAnnotations(model, { roomLabels, photos })` from `room_scans.room_labels` and `listing_photos.room_id`; replaced scans' `scan-models` files still need a server-side cleanup.
 - Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
 - Before an App Store build: real app icon and splash. The current icon (mobile icon, Android adaptive foreground, splash, web favicon/icon/apple-icon) is a placeholder character image that cannot ship (third-party copyright; App Review rejects it). Regenerate all sizes from one 1024 px source when the real logo exists.
@@ -147,12 +165,13 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - 5c copy (`listingScan`, `roomReview`, `photoRooms`, `listingStatus` in `mn.ts`), e.g. "Зарыг нуух" for archive.
 - The 150 m / 100 m thresholds for "scanned on-site".
 - 6a copy (`listingPage` in `mn.ts`) and the share post format (`packages/i18n/src/listing-post.ts`), e.g. "Зарна: 2 өрөө байр, Хан-Уул дүүрэг".
+- 6b copy (`search`, `map`, `listingCard`, `agentPage`, `home`, `account.agent`, `listingStatus.freshness` in `mn.ts`), e.g. "Зарагдах байр" / "Түрээсийн байр", "Санал болгох", "Байр боломжтой хэвээр байна".
 
 ## Next
-- You: review and merge `step-6a-listing-pages`. Look at a listing on the web: `pnpm dev:web`, then http://localhost:3000/listings/<id> of a published listing (one with a scan shows the 3D view). Add `NEXT_PUBLIC_SITE_URL` to `apps/web/.env.local` (see `.env.example`).
-- You, still open from 5c: test 5c on the iPhone (build 2 + `pnpm dev:web` on the same Wi-Fi). Note: "download to edit" now reads the scan location through the new RPC.
+- You: try 6b in a browser: `pnpm dev:web`, then http://localhost:3000/ and http://localhost:3000/search?view=map (pins, clusters, the ₮/м² toggle, tapping a pin; Mongolian street labels without traditional script). On the iPhone (build 2, Metro): a published listing's editor shows the days left in search and "Байр боломжтой хэвээр байна"; Account → Агент creates an agent page at `/agents/<your user id>`.
+- You, still open from 5c: test 5c on the iPhone (build 2 + `pnpm dev:web` on the same Wi-Fi).
 - You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). Answers whether shared walls are duplicated or merged. No code waits on it.
-- Then 6b: search RPC, web search + MapLibre map, agent pages, freshness.
+- Then 6c: mobile browse/search/map, favorites, report listing (**EAS build 3** for `@maplibre/maplibre-react-native`).
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.

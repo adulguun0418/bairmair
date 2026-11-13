@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   formatListingPost,
   formatListingPrice,
+  formatPinPrice,
+  formatPinPricePerArea,
   formatPricePerArea,
   type ListingPostInput,
 } from '../src/index';
@@ -26,6 +28,22 @@ describe('formatPricePerArea', () => {
   it('adds the area unit of the language', () => {
     expect(formatPricePerArea(3_846_153.85, 'MNT', 'mn')).toBe(`3.8${NB}сая${NB}₮/м²`);
     expect(formatPricePerArea(15.4, 'USD', 'en')).toBe('$15/m²');
+  });
+});
+
+describe('map pin labels', () => {
+  it('drop the ₮ sign and keep the local words', () => {
+    expect(formatPinPrice(250_000_000, 'MNT', 'sale', 'mn')).toBe(`250${NB}сая`);
+    expect(formatPinPrice(1_250_000_000, 'MNT', 'sale', 'mn')).toBe(`1.3${NB}тэрбум`);
+    expect(formatPinPrice(1_800_000, 'MNT', 'rent', 'mn')).toBe(`1.8${NB}сая/сар`);
+    expect(formatPinPrice(1200, 'USD', 'rent', 'mn')).toBe('$1,200/сар');
+    expect(formatPinPrice(250_000_000, 'MNT', 'sale', 'en')).toBe('250M');
+    expect(formatPinPrice(1_800_000, 'MNT', 'rent', 'en')).toBe('1.8M/mo');
+  });
+
+  it('show price per m² in the same style', () => {
+    expect(formatPinPricePerArea(3_846_153.85, 'MNT', 'mn')).toBe(`3.8${NB}сая/м²`);
+    expect(formatPinPricePerArea(24.4, 'USD', 'en')).toBe('$24/m²');
   });
 });
 

@@ -2,7 +2,7 @@
 
 import { LOCALES, localePath, stripLocale, type Locale } from '@bairmair/i18n/locales';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 interface LanguageSwitchProps {
   current: Locale;
@@ -11,13 +11,14 @@ interface LanguageSwitchProps {
 }
 
 /**
- * Links to the current page in each language. Reads the URL, so pages whose path is only known
- * at request time (listings) render it inside `<Suspense>` with `LanguageLinks` as the fallback.
+ * Links to the current page in each language, with its query (search filters). Reads the URL,
+ * so it renders inside `<Suspense>` with `LanguageLinks` as the fallback.
  */
 export function LanguageSwitch(props: LanguageSwitchProps) {
   // Without its locale prefix, whether the path is the address bar URL or the rewritten one.
   const path = stripLocale(usePathname() ?? '/');
-  return <LanguageLinks {...props} path={path} />;
+  const query = useSearchParams()?.toString() ?? '';
+  return <LanguageLinks {...props} path={query ? `${path}?${query}` : path} />;
 }
 
 /** Links to `path` (without a locale prefix) in each language. */
