@@ -629,6 +629,8 @@ export const en: Messages = {
     share: {
       button: 'Share',
       copyText: 'Copy listing text',
+      copyLink: 'Copy link',
+      more: 'More apps',
       copied: 'Copied',
       facebook: 'Facebook',
       post: {
@@ -747,6 +749,7 @@ export const en: Messages = {
     empty: 'Tap ♡ on a listing to save it.',
     signIn: 'Sign in to save listings.',
     save: 'Save',
+    saved: 'Saved',
     remove: 'Remove from saved',
     unavailable: 'No longer active',
     failed: 'Could not save. Try again.',

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { currentPath, signInHref } from '@/components/auth/sign-in-href';
+import { FlagIcon } from '@/components/icons';
 import { browserClient } from '@/lib/supabase-browser';
 
 type Reason = Enums<'report_reason'>;
@@ -40,7 +41,8 @@ export function ReportListing({
 
   if (!ready || session?.user.id === ownerId) return null;
 
-  const link = 'text-sm text-fg-subtle underline hover:text-fg-2';
+  const link =
+    'inline-flex items-center gap-1.5 text-sm text-fg-subtle transition-colors hover:text-fg-2';
   if (!session) {
     return (
       <button
@@ -48,6 +50,7 @@ export function ReportListing({
         onClick={() => router.push(signInHref(locale, currentPath()))}
         className={link}
       >
+        <FlagIcon className="size-3.5" />
         {t('report.button')}
       </button>
     );
@@ -55,6 +58,7 @@ export function ReportListing({
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)} className={link}>
+        <FlagIcon className="size-3.5" />
         {t('report.button')}
       </button>
     );

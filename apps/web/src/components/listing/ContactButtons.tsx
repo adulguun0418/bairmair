@@ -3,6 +3,7 @@
 import { dbErrorKey } from '@bairmair/db';
 import { createTranslator, type Locale } from '@bairmair/i18n';
 import { useMemo, useState } from 'react';
+import { MessageIcon, PhoneIcon } from '@/components/icons';
 import { publicClient } from '@/lib/supabase-public';
 
 type State =
@@ -49,21 +50,29 @@ export function ContactButtons({ listingId, locale }: { listingId: string; local
   };
 
   const primary =
-    'flex w-full items-center justify-center rounded-full bg-primary px-5 py-3 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-60';
+    'flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60';
   const secondary =
-    'flex flex-1 items-center justify-center rounded-full border border-line-2 px-4 py-2.5 font-medium hover:bg-surface-2';
+    'flex flex-1 items-center justify-center gap-2 rounded-xl border border-line-2 px-4 py-3 font-medium transition-colors hover:bg-surface-2';
+
+  const call =
+    'flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-medium text-on-primary transition-colors hover:bg-primary-hover';
 
   if (state.kind === 'shown') {
     return (
-      <div className="space-y-2">
-        <p className="text-center text-xl font-semibold tracking-wide">
+      <div className="space-y-3">
+        <a
+          href={`tel:${state.phone}`}
+          className="block rounded-xl bg-surface-2 px-4 py-3 text-center text-xl font-semibold tracking-wide tabular-nums transition-colors hover:bg-surface-3"
+        >
           {formatPhone(state.phone)}
-        </p>
+        </a>
         <div className="flex gap-2">
-          <a href={`tel:${state.phone}`} className={secondary}>
+          <a href={`tel:${state.phone}`} className={call}>
+            <PhoneIcon className="size-4" />
             {t('listingPage.contact.call')}
           </a>
           <a href={`sms:${state.phone}`} className={secondary}>
+            <MessageIcon className="size-4" />
             {t('listingPage.contact.sms')}
           </a>
         </div>
@@ -78,8 +87,10 @@ export function ContactButtons({ listingId, locale }: { listingId: string; local
         type="button"
         onClick={() => void reveal()}
         disabled={state.kind === 'loading'}
+        aria-busy={state.kind === 'loading'}
         className={primary}
       >
+        <PhoneIcon className="size-[18px]" />
         {state.kind === 'loading'
           ? t('listingPage.contact.loading')
           : t('listingPage.contact.show')}
