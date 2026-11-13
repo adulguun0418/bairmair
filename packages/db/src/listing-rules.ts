@@ -22,7 +22,15 @@ export const LISTING_LIMITS = {
   unitNumber: { max: 20 },
   /** listing_photos trigger */
   photos: { max: 40 },
+  /** RoomModel room name (`name`, max 80) stored in `room_scans.room_labels`. */
+  roomName: { max: 80 },
 } as const;
+
+/**
+ * "Scanned on-site" (`listings.scan_verified`), computed by `private.refresh_listing_scan()`:
+ * the current scan's GPS fix is this accurate and this close to the listing's exact location.
+ */
+export const SCAN_ON_SITE = { maxAccuracyM: 100, maxDistanceM: 150 } as const;
 
 /** listing_private.lat/lng must fall inside this box (Mongolia). */
 export const MONGOLIA_BOUNDS = {

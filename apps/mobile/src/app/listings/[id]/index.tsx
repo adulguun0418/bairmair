@@ -17,13 +17,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
-import {
-  formToFields,
-  missingForPublish,
-  parseNumberInput,
-  type FormField,
-  type ListingForm,
-} from '@/listings/form';
+import { formToFields, parseNumberInput, type FormField, type ListingForm } from '@/listings/form';
 import {
   addPickedPhotos,
   deleteListing,
@@ -43,6 +37,8 @@ import {
   type LocalPhoto,
 } from '@/listings/model';
 import { pickFromLibrary, takePhoto } from '@/listings/photos';
+import { ScanSection } from '@/listings/scan-section';
+import { StatusSection } from '@/listings/status-section';
 import { SyncStatusLine } from '@/listings/sync-status-line';
 import { Button } from '@/ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
@@ -117,12 +113,6 @@ function Editor({ listing }: { listing: LocalListing }) {
       ? `${formatMoney(price, currency)} · ${formatMoneyCompact(price, currency, locale)}`
       : null;
 
-  const missing = missingForPublish({
-    form,
-    hasLocation: listing.location !== null,
-    photoCount: listing.photos.length,
-  });
-
   const confirmDelete = () =>
     Alert.alert(t('listingForm.deleteTitle'), t('listingForm.deleteBody'), [
       { text: t('listingForm.cancel'), style: 'cancel' },
@@ -159,7 +149,8 @@ function Editor({ listing }: { listing: LocalListing }) {
       />
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <Text style={[styles.small, { color: colors.textMuted }]}>
-          {t(`listings.statuses.${listing.status}`)}
+          {t(`listings.statuses.${listing.serverStatus}`)}
+          {listing.scan?.processing === 'ready' ? ` · ${t('listings.badge3d')}` : ''}
         </Text>
         <SyncStatusLine listing={listing} />
       </View>
@@ -362,23 +353,12 @@ function Editor({ listing }: { listing: LocalListing }) {
         <Photos listing={listing} />
       </Section>
 
+      <Section title={t('listingForm.sections.scan')}>
+        <ScanSection listing={listing} />
+      </Section>
+
       <Section title={t('listingForm.sections.publish')}>
-        {missing.length === 0 ? (
-          <Text style={[styles.body, { color: colors.success }]}>
-            {t('listingForm.publishReady')}
-          </Text>
-        ) : (
-          <View style={styles.list}>
-            <Text style={[styles.body, { color: colors.textMuted }]}>
-              {t('listingForm.publishMissing')}
-            </Text>
-            {missing.map((requirement) => (
-              <Text key={requirement} style={[styles.body, { color: colors.text }]}>
-                • {t(`listingForm.requirements.${requirement}`)}
-              </Text>
-            ))}
-          </View>
-        )}
+        <StatusSection listing={listing} />
       </Section>
 
       <Button title={t('listingForm.delete')} variant="danger" onPress={confirmDelete} />
@@ -599,7 +579,6 @@ const styles = StyleSheet.create({
   pair: { flexDirection: 'row', gap: 12 },
   grow: { flex: 1 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 },
-  list: { gap: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   thumbBox: { width: '31.5%', aspectRatio: 1 },
   thumb: { width: '100%', height: '100%', borderRadius: 8 },

@@ -1,6 +1,43 @@
 import { isInMongolia } from '@bairmair/db';
 import * as Location from 'expo-location';
-import type { PinnedLocation } from './model';
+import { useEffect, useRef, type RefObject } from 'react';
+import { betterFix, type PinnedLocation } from './model';
+
+/**
+ * Watches the phone's position while the screen is open and keeps the most accurate fix inside
+ * Mongolia ("scanned on-site"). Asks for permission if needed; without it (or with "Precise
+ * Location" off) the ref stays null and the scan simply has no location.
+ */
+export function useBestFix(): RefObject<PinnedLocation | null> {
+  const best = useRef<PinnedLocation | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    let subscription: Location.LocationSubscription | null = null;
+    void (async () => {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (cancelled || !permission.granted || permission.ios?.accuracy === 'reduced') return;
+      const watch = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Highest, timeInterval: 2_000, distanceInterval: 0 },
+        ({ coords }) => {
+          if (!isInMongolia(coords.latitude, coords.longitude)) return;
+          best.current = betterFix(best.current, {
+            lat: coords.latitude,
+            lng: coords.longitude,
+            accuracyM: coords.accuracy === null ? null : Math.round(coords.accuracy),
+            capturedAt: new Date().toISOString(),
+          });
+        },
+      );
+      if (cancelled) watch.remove();
+      else subscription = watch;
+    })().catch((error: unknown) => console.warn('Location watch failed', error));
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+    };
+  }, []);
+  return best;
+}
 
 export type LocateResult =
   | { ok: true; location: PinnedLocation }

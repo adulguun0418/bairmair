@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { BUCKETS, listingPhotoPath } from '@bairmair/db';
+import { convertRoomPlan } from '@bairmair/room-model';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   admin,
+  createEmailUser,
   createUser,
   deleteCreatedUsers,
   env,
@@ -16,14 +18,20 @@ import {
   ZAISAN,
   type TestUser,
 } from '../../../packages/db/test-remote/helpers';
+import { processScan } from '../../web/src/server/process-scan';
+import { supabaseScanStore } from '../../web/src/server/supabase';
 import { formToFields } from '../src/listings/form';
 import {
   addPhotos,
+  assignPhotoRoom,
+  attachScan,
   markDeleted,
   movePhoto,
   newListing,
   removePhoto,
   setLocation,
+  setRoomLabel,
+  setStatus,
   updateForm,
   type LocalListing,
 } from '../src/listings/model';
@@ -58,13 +66,62 @@ const memory: ListingPersistence = {
   remove: async () => {},
 };
 
+/**
+ * Stands in for the web server: the real route logic (`processScan` with the real store and the
+ * secret key), behind the URL the app calls.
+ */
+const serverFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+  const match = /\/api\/scans\/([^/]+)\/process$/.exec(String(input));
+  const auth = new Headers(init?.headers).get('authorization') ?? '';
+  const { data } = await admin.auth.getUser(auth.replace(/^Bearer /, ''));
+  if (!match || !data.user) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  const outcome = await processScan(supabaseScanStore(admin), match[1]!, data.user.id);
+  return outcome.ok
+    ? Response.json(outcome.body)
+    : Response.json({ error: outcome.error }, { status: outcome.status });
+}) as typeof fetch;
+
 function remoteFor(user: TestUser) {
   return createSupabaseRemote(user.client, {
     supabaseUrl: env.url,
     publishableKey: env.publishableKey,
     uploadFile,
+    apiUrl: 'http://api.test',
+    fetch: serverFetch,
   });
 }
+
+const fixture = readFileSync(
+  new URL(
+    '../../../packages/room-model/test/fixtures/roomplan/l-shaped-room-shelves.json',
+    import.meta.url,
+  ),
+  'utf8',
+);
+const fixtureRoomId = convertRoomPlan(JSON.parse(fixture)).model.rooms[0]!.id;
+
+/** A scan "saved by the scanner": the real RoomPlan export and a stand-in USDZ. */
+function scanFiles(scanId: string) {
+  const files = { json: `scan-${scanId}.json`, usdz: `scan-${scanId}.usdz` };
+  writeFileSync(join(dir, files.json), fixture);
+  writeFileSync(join(dir, files.usdz), new Uint8Array([0x50, 0x4b, 0x03, 0x04]));
+  return {
+    id: scanId,
+    createdAt: NOW,
+    files,
+    device: { modelId: 'iPhone16,2', osVersion: '26.1' },
+    appVersion: '0.1.0',
+    location: { ...ZAISAN, accuracyM: 8, capturedAt: NOW },
+  };
+}
+
+async function rawFileCount(scanId: string): Promise<number> {
+  const { data } = await admin.storage.from(BUCKETS.scanRaw).list(`${listingId}/${scanId}`);
+  return (data ?? []).length;
+}
+
+const firstScan = randomUUID();
+const secondScan = randomUUID();
 
 function photo(name: string) {
   writeFileSync(join(dir, name), TINY_JPEG);
@@ -89,6 +146,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await removeFolders(BUCKETS.listingPhotos, [listingId]);
+  await removeFolders(BUCKETS.scanRaw, [listingId]);
+  await removeFolders(BUCKETS.scanModels, [listingId]);
   await deleteCreatedUsers();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -230,19 +289,132 @@ describe('listing sync against the dev project', () => {
     await expect(update).rejects.toMatchObject({ kind: 'permanent', key: 'rejected' });
   });
 
+  it('sends a scan with room labels and photo rooms; the server makes it current', async () => {
+    edit((listing) => attachScan(listing, scanFiles(firstScan), NOW));
+    edit((listing) =>
+      setRoomLabel(listing, fixtureRoomId, { label: 'livingRoom', name: 'Том өрөө ' }, NOW),
+    );
+    edit((listing) => assignPhotoRoom(listing, second.id, fixtureRoomId, NOW));
+
+    await engine.run();
+    expect(engine.status(listingId)).toEqual({ state: 'idle' });
+    const local = store.get(listingId)!;
+    expect(isSynced(local)).toBe(true);
+    expect(local.scan).toMatchObject({ row: 'created', processing: 'ready' });
+
+    const scan = await admin
+      .from('room_scans')
+      .select('status, is_current, room_labels, scan_lat, scan_lng, scan_accuracy_m, device_model')
+      .eq('id', firstScan)
+      .single();
+    expect(scan.data).toEqual({
+      status: 'ready',
+      is_current: true,
+      room_labels: { [fixtureRoomId]: { label: 'livingRoom', name: 'Том өрөө ' } },
+      scan_lat: ZAISAN.lat,
+      scan_lng: ZAISAN.lng,
+      scan_accuracy_m: 8,
+      device_model: 'iPhone16,2',
+    });
+    expect(await rawFileCount(firstScan)).toBe(2);
+
+    const row = await admin
+      .from('listings')
+      .select('has_3d, area_scanned_m2, scan_verified')
+      .eq('id', listingId)
+      .single();
+    expect(row.data).toEqual({
+      has_3d: true,
+      area_scanned_m2: local.scan!.totalAreaM2,
+      scan_verified: true,
+    });
+
+    const photo = await admin
+      .from('listing_photos')
+      .select('scan_id, room_id')
+      .eq('id', second.id)
+      .single();
+    expect(photo.data).toEqual({ scan_id: firstScan, room_id: fixtureRoomId });
+  });
+
+  it('publishes, then hides the listing', async () => {
+    edit((listing) => setStatus(listing, 'published', NOW));
+    await engine.run();
+    expect(store.get(listingId)!.serverStatus).toBe('published');
+    const published = await admin
+      .from('listings')
+      .select('status, published_at')
+      .eq('id', listingId)
+      .single();
+    expect(published.data?.status).toBe('published');
+    expect(published.data?.published_at).not.toBeNull();
+
+    edit((listing) => setStatus(listing, 'archived', NOW));
+    await engine.run();
+    const archived = await admin.from('listings').select('status').eq('id', listingId).single();
+    expect(archived.data?.status).toBe('archived');
+  });
+
+  it('refuses publishing for an account without a verified phone', async () => {
+    const carol = await createEmailUser('no-phone');
+    const remote = remoteFor(carol);
+    const id = randomUUID();
+    await remote.createListing(id, { ...(await currentFields()), title: 'Утасгүй' });
+    await expect(remote.setStatus(id, 'published')).rejects.toMatchObject({
+      kind: 'permanent',
+      key: 'needsVerifiedPhone',
+    });
+  });
+
+  it('a rescan replaces the scan once the new one is processed', async () => {
+    edit((listing) => attachScan(listing, scanFiles(secondScan), NOW));
+    await engine.run();
+    expect(isSynced(store.get(listingId)!)).toBe(true);
+
+    const scans = await admin
+      .from('room_scans')
+      .select('id, is_current')
+      .eq('listing_id', listingId);
+    expect(scans.data).toEqual([{ id: secondScan, is_current: true }]);
+    expect(await rawFileCount(firstScan)).toBe(0);
+    // Room ids belong to one scan: the photo is no longer in a room.
+    const photo = await admin
+      .from('listing_photos')
+      .select('scan_id, room_id')
+      .eq('id', second.id)
+      .single();
+    expect(photo.data).toEqual({ scan_id: null, room_id: null });
+  });
+
   it('downloads the listing for editing on another phone', async () => {
     const copy = await downloadListing(alice.client, listingId, alice.id, NOW);
     const local = store.get(listingId)!;
     // Numbers come back in canonical form ("85,5" was typed).
     expect(copy.form).toEqual({ ...local.form, areaOfficial: '85.5' });
     expect(copy.location).toMatchObject({ lat: ZAISAN.lat, lng: ZAISAN.lng });
+    expect(copy.serverStatus).toBe('archived');
     expect(copy.photos).toEqual([
-      { id: second.id, file: null, width: 2048, height: 1536, state: 'saved', savedSortOrder: 0 },
+      {
+        id: second.id,
+        file: null,
+        width: 2048,
+        height: 1536,
+        state: 'saved',
+        savedSortOrder: 0,
+        roomId: null,
+        savedRoom: null,
+      },
     ]);
+    expect(copy.scan).toMatchObject({
+      id: secondScan,
+      files: null,
+      processing: 'ready',
+      totalAreaM2: local.scan!.totalAreaM2,
+    });
     expect(isSynced(copy)).toBe(true);
   });
 
-  it('deletes the listing with its photos', async () => {
+  it('deletes the listing with its photos and raw scan files', async () => {
     edit((listing) => markDeleted(listing, NOW));
     await engine.run();
 
@@ -250,6 +422,7 @@ describe('listing sync against the dev project', () => {
     const row = await admin.from('listings').select('id').eq('id', listingId);
     expect(row.data).toEqual([]);
     expect(await objectExists(second.id)).toBe(false);
+    expect(await rawFileCount(secondScan)).toBe(0);
   });
 });
 

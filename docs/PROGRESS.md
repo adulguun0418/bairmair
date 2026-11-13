@@ -1,10 +1,10 @@
 # Progress
 
 ## Current state (2026-11-13)
-**Step 5, part 5b done** (pull request `step-5b-listing-form`): create/edit listing drafts on the phone, GPS location, photos, upload queue with retry. Runs on **build 2**; no new native module, so no new build is needed. Step 5 is split into three pull requests:
+**Step 5 done** with part 5c (pull request `step-5c-scan-publish`): scan from a listing, upload and process the scan, review room labels, assign photos to rooms, publish. 5c needs no new native module and runs on **build 2**. The placeholder icon (pull request `app-icon-placeholder`, which 5c is based on) appears only with the next EAS build.
 - 5a (merged): sign-in, account screen, `POST /api/scans/{id}/process`.
-- 5b: create/edit a listing (draft), location (GPS + district fields), photos resized on the phone, background upload with retry.
-- 5c: attach a scan, upload, process, confirm room labels, assign photos to rooms, publish.
+- 5b (merged): create/edit a listing (draft), location (GPS + district fields), photos resized on the phone, background upload with retry.
+- 5c: scan → listing, room labels, photo rooms, publishing and status changes, "scanned on-site".
 
 The SMS gateway adapter (step 3) still waits on your gateway details.
 
@@ -42,7 +42,13 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - Location: "use my current location" (precise only, inside Mongolia) → `listing_private`; district chips, khoroo, complex name, directions, unit number (private), exact-pin toggle.
   - `@bairmair/db`: `CITIES`/`DISTRICTS` constants (remote test checks them against the tables), `LISTING_LIMITS`, `isInMongolia`. `@bairmair/i18n`: `formatMoney`, `formatMoneyCompact` (`250 сая ₮`), `listings` and `listingForm` catalogs.
   - Integration test `apps/mobile/test-remote/listing-sync.test.ts`: the real engine + Supabase remote against the dev project (create, private row insert/update, uploads, reorder, removal, repeats, other user refused, download, delete with files).
-- Tests: 287 unit (room-model 158, mobile 103, i18n 19, send-sms 12, web 11, db 4) + 51 integration tests against the dev project (db 38, mobile 7, web 6).
+- Step 5c:
+  - Migration 9 (`20261114100000_scan_location.sql`): `room_scans.scan_lat/scan_lng/scan_accuracy_m` (insert-only for sellers, Mongolia check). `private.refresh_listing_scan()` now derives `has_3d`, `area_scanned_m2` and `scan_verified` in one place, called from the `room_scans` and `listing_private` triggers.
+  - `apps/mobile`: a listing holds one scan (`LocalScan`: row, raw uploads, processing, room labels) plus scan ids to clean up; photos carry a room; the listing has a desired `status` and the `serverStatus`. Old 5b files are normalized on load. New sync operations, in order: create scan row → room labels → photo rooms → raw JSON → USDZ → process → remove replaced scans. Status: leaving the live states is sent first; publishing waits for fields, location and photos (and for the processed scan when the area comes from it). Process answers: 409 re-uploads (after a backoff), 404 recreates the row, 422 marks the scan failed; a scan from another phone without files becomes failed.
+  - Screens: editor sections "3D скан" (floor plan, area, progress, incomplete-room warning, location note, review rooms, assign photos, rescan, remove) and "Нийтлэх" (checklist, verified-phone check, publish / mark sold or rented / hide / publish again, refused change with try again or cancel). `/listings/[id]/scan` (scanner + GPS watch, best fix kept), `/listings/[id]/rooms` (labels and names, opened after a scan), `/listings/[id]/photo-rooms`. The editor moved to `listings/[id]/index.tsx`. Home shows the server status and a 3D badge.
+  - Status-aware validation: while live, an edit that empties a required field waits (`incompleteForLive`) instead of failing at the database.
+  - Integration tests run the web server's real `processScan` behind a fake `fetch`.
+- Tests: 330 unit (room-model 158, mobile 126, i18n 19, send-sms 12, web 11, db 4) + 62 integration tests against the dev project (db 45, mobile 11, web 6).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -99,14 +105,20 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - `listing_private` is written as update-then-insert: a PostgREST upsert would also update `listing_id`, which has no update grant.
 - Deleting a listing removes its photos and raw scan files from Storage first, then the row. `scan-models` files stay (server-written; clean up server-side later).
 - Mobile `tsconfig.json` has `"types": []`; `test-remote/` has its own tsconfig with Node types.
+- Step 5c choices (mine, for your review):
+  - "Scanned on-site" = current ready scan within 150 m of the exact listing location, GPS accuracy ≤ 100 m (`SCAN_ON_SITE`). The fix comes from the seller's phone: a trust signal, not proof.
+  - One scan per listing. A rescan replaces it; the old scan (row + raw files) is deleted only after the new one is processed, so a live listing keeps its 3D view meanwhile. Photo rooms are cleared on a rescan (room ids belong to one scan).
+  - Status changes go through the sync queue like other edits; the database stays the judge. The Publish button needs a verified phone and a complete checklist (a scan still processing counts for the area).
+  - Room names are stored as typed; `applyAnnotations` trims them.
+  - The raw scan files move from `Documents/scans/` into the listing folder; scans the converter cannot read stay in the RoomPlan test list for sharing.
 
 ## Notes for later steps
 - Wall height: RoomPlan measures walls behind tall furniture lower (2.39 m vs 2.82 m in the same room). Option: raise walls of a room that are almost as tall as its tallest wall to that height. Not done yet; needs your call.
-- 5c review screen: show the `incomplete-room` warning (now also in `metrics.warnings`) and offer a rescan. Raw exports are small (42–91 KB per room), far under the 50 MB `scan-raw` limit.
-- 5c: record the GPS position during a scan. The scan upload can reuse `remote.ts` (`File.upload` + Storage REST). supabase-js sends a Blob's own `type` and ignores `contentType`.
-- 5c: editing a published listing sends updates directly; the form only checks draft rules, so clearing e.g. the price fails at the database (`listings_complete_when_live`) and shows "not accepted". Make validation status-aware when publishing lands.
-- The location permission prompt text changed in `app.json` (it now also mentions the listing pin); it shows up with the next build.
-- 5c: the app calls the process endpoint after both raw files are uploaded, and again for any scan still `uploaded` on the next launch (409 means "upload not finished").
+- supabase-js sends a Blob's own `type` and ignores `contentType`.
+- The location permission prompt text changed in `app.json` (it now also mentions the listing pin); it shows up with the next build, together with the new icon.
+- A refused status change (rare: the Publish button checks the same rules) holds back the listing's later sync operations until "Дахин оролдох" or "Өөрчлөлтийг болих".
+- Freshness ("confirm available every 14 days", `confirm_listing_available()`) has no button yet; it belongs with step 6's listing pages and the hiding of stale listings.
+- Step 6 serves the model with `applyAnnotations(model, { roomLabels, photos })` from `room_scans.room_labels` and `listing_photos.room_id`; replaced scans' `scan-models` files still need a server-side cleanup.
 - Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
 - Before an App Store build: real app icon and splash. The current icon (mobile icon, Android adaptive foreground, splash, web favicon/icon/apple-icon) is a placeholder character image that cannot ship (third-party copyright; App Review rejects it). Regenerate all sizes from one 1024 px source when the real logo exists.
 - Before production: separate project, remove the test OTP number, turn off the email provider (kept on in dev for the tests).
@@ -118,11 +130,13 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - Sample name "Бодит скан: Г хэлбэрийн өрөө" and the updated `samples.intro`.
 - Sign-in and account copy (`auth`, `account` in `mn.ts`).
 - Listing form copy (`listings`, `listingForm` in `mn.ts`), e.g. "Цутгамал" for monolithic, "Байршлын цэг" for the map pin, "Тоот" for the apartment number.
+- 5c copy (`listingScan`, `roomReview`, `photoRooms`, `listingStatus` in `mn.ts`), e.g. "Зарыг нуух" for archive.
+- The 150 m / 100 m thresholds for "scanned on-site".
 
 ## Next
-- You: test 5b on the iPhone (build 2, instructions in the PR), then review and merge the pull request.
+- You: merge `app-icon-placeholder`, then test 5c on the iPhone (build 2 + `pnpm dev:web` on the same Wi-Fi; instructions in the PR), then review and merge `step-5c-scan-publish`.
 - You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). It answers the last format question (are shared walls duplicated or merged?). No code waits on it.
-- Then 5c: attach a scan to a listing, upload and process it, confirm room labels, assign photos to rooms, publish.
+- Then step 6: search, map and listing pages (needs the map library decision).
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.

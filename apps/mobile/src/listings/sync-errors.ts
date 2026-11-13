@@ -9,7 +9,20 @@ export type SyncErrorKind = 'transient' | 'permanent' | 'signedOut';
 
 /** Message keys under `listings.syncErrors`. */
 export type SyncErrorKey =
-  'network' | 'server' | 'rejected' | 'listingMissing' | 'tooManyPhotos' | 'signedOut';
+  | 'network'
+  | 'server'
+  | 'rejected'
+  | 'listingMissing'
+  | 'tooManyPhotos'
+  | 'signedOut'
+  /** Publishing refused: the account has no verified phone number. */
+  | 'needsVerifiedPhone'
+  /** Publishing refused: no photo row yet. */
+  | 'needsPhoto'
+  /** A live listing must have price, rooms, area, district and location. */
+  | 'incomplete'
+  /** The scan row is gone (deleted on another phone). Handled by the engine, never shown. */
+  | 'scanMissing';
 
 export class SyncError extends Error {
   constructor(
@@ -37,8 +50,18 @@ export function classifyPostgrestError(
 ): SyncError {
   const code = error.code ?? '';
   const message = error.message ?? '';
-  if (dbErrorKey(error) === 'too_many_photos') {
-    return new SyncError('permanent', 'tooManyPhotos', message);
+  switch (dbErrorKey(error)) {
+    case 'too_many_photos':
+      return new SyncError('permanent', 'tooManyPhotos', message);
+    case 'publish_requires_verified_phone':
+      return new SyncError('permanent', 'needsVerifiedPhone', message);
+    case 'publish_requires_photo':
+      return new SyncError('permanent', 'needsPhoto', message);
+    default:
+      break;
+  }
+  if (code === '23514' && message.includes('listings_complete_when_live')) {
+    return new SyncError('permanent', 'incomplete', message);
   }
   // Expired or invalid token: the next attempt refreshes the session first.
   if (code.startsWith('PGRST3')) return new SyncError('transient', 'server', message);

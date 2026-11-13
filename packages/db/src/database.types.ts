@@ -531,6 +531,9 @@ export type Database = {
           processing_error: string | null;
           raw_json_path: string;
           room_labels: Json;
+          scan_accuracy_m: number | null;
+          scan_lat: number | null;
+          scan_lng: number | null;
           schema_version: number | null;
           status: Database['public']['Enums']['scan_status'];
           updated_at: string;
@@ -551,6 +554,9 @@ export type Database = {
           processing_error?: string | null;
           raw_json_path: string;
           room_labels?: Json;
+          scan_accuracy_m?: number | null;
+          scan_lat?: number | null;
+          scan_lng?: number | null;
           schema_version?: number | null;
           status?: Database['public']['Enums']['scan_status'];
           updated_at?: string;
@@ -571,6 +577,9 @@ export type Database = {
           processing_error?: string | null;
           raw_json_path?: string;
           room_labels?: Json;
+          scan_accuracy_m?: number | null;
+          scan_lat?: number | null;
+          scan_lng?: number | null;
           schema_version?: number | null;
           status?: Database['public']['Enums']['scan_status'];
           updated_at?: string;

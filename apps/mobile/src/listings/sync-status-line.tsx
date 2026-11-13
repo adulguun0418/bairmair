@@ -6,7 +6,7 @@ import { useColors, type Colors } from '@/ui/theme';
 import { retrySyncNow, useSyncStatus } from './listings';
 import type { LocalListing } from './model';
 import type { SyncStatus } from './sync-engine';
-import { isSynced, pendingPhotoCount } from './sync-plan';
+import { isSynced, pendingPhotoCount, scanProgress } from './sync-plan';
 
 type Tone = 'muted' | 'success' | 'warning' | 'danger';
 
@@ -35,20 +35,31 @@ export function describeSync(
       };
     }
     case 'blocked':
-      return status.block === 'needsTitle'
-        ? { text: t('listings.sync.needsTitle'), tone: 'muted', canRetry: false }
-        : { text: t('listings.sync.invalidFields'), tone: 'warning', canRetry: false };
+      switch (status.block) {
+        case 'needsTitle':
+          return { text: t('listings.sync.needsTitle'), tone: 'muted', canRetry: false };
+        case 'invalidFields':
+          return { text: t('listings.sync.invalidFields'), tone: 'warning', canRetry: false };
+        case 'incompleteForLive':
+          return { text: t('listings.sync.incompleteForLive'), tone: 'warning', canRetry: false };
+      }
+      break;
     case 'syncing':
-    case 'idle':
+    case 'idle': {
       if (status.state === 'idle' && isSynced(listing)) {
         return { text: t('listings.sync.synced'), tone: 'success', canRetry: false };
       }
-      return {
-        text:
-          pending > 0 ? t('listings.sync.photos', { count: pending }) : t('listings.sync.syncing'),
-        tone: 'muted',
-        canRetry: false,
-      };
+      const scan = scanProgress(listing);
+      const text =
+        pending > 0
+          ? t('listings.sync.photos', { count: pending })
+          : scan === 'uploading'
+            ? t('listings.sync.scanUploading')
+            : scan === 'processing'
+              ? t('listings.sync.scanProcessing')
+              : t('listings.sync.syncing');
+      return { text, tone: 'muted', canRetry: false };
+    }
   }
 }
 

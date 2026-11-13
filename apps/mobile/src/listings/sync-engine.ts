@@ -1,14 +1,27 @@
-import type { ListingFields } from './form';
+import type { RoomLabelOverride } from '@bairmair/room-model';
+import type { ListingFields, ListingStatus } from './form';
 import {
   dropPhoto,
   markCreateAttempted,
   markCreated,
   markPhotoRemoved,
+  markPhotoRoomSaved,
   markPhotoSaved,
   markPhotoUploaded,
   markPrivateSynced,
+  markScanFileUploaded,
+  markScanLabelsSynced,
+  markScanProcessed,
+  markScanRemoved,
+  markScanRowAttempted,
+  markScanRowCreated,
+  markStatusSynced,
   markSynced,
+  resetScanRow,
+  resetScanUpload,
   type LocalListing,
+  type LocalScan,
+  type PhotoRoom,
 } from './model';
 import type { ListingStore } from './store';
 import { SyncError, toSyncError, type SyncErrorKey } from './sync-errors';
@@ -38,7 +51,39 @@ export interface ListingRemote {
   removePhoto(listingId: string, photoId: string): Promise<void>;
   /** Deletes the listing's files it can reach, then the row (rows below it cascade). */
   deleteListing(listingId: string): Promise<void>;
+  /** Sets the status; the database checks publishing (verified phone, photo, complete row). */
+  setStatus(listingId: string, status: ListingStatus): Promise<void>;
+  /** Inserts the `room_scans` row. An existing row counts as success. */
+  createScan(listingId: string, scan: LocalScan): Promise<void>;
+  /** Writes `room_scans.room_labels`. Throws `scanMissing` if the row is gone. */
+  saveRoomLabels(scanId: string, labels: Record<string, RoomLabelOverride>): Promise<void>;
+  /** Sets (or clears) a photo's scan and room. */
+  assignPhotoRoom(photoId: string, room: PhotoRoom | null): Promise<void>;
+  /** Uploads (or overwrites) the raw RoomPlan JSON or USDZ in `scan-raw`. */
+  uploadScanFile(
+    listingId: string,
+    scanId: string,
+    file: 'json' | 'usdz',
+    fileUri: string,
+  ): Promise<void>;
+  /** Asks the web server to convert the scan. Network and server errors throw. */
+  processScan(scanId: string): Promise<ProcessResult>;
+  /** Deletes a replaced scan: its raw files, then its row. Either may already be gone. */
+  removeScan(listingId: string, scanId: string): Promise<void>;
 }
+
+/**
+ * The outcome of `processScan`:
+ * - `ready`: converted; the scan is now the listing's current scan
+ * - `failed`: the server could not convert the raw file (it marked the scan failed)
+ * - `filesMissing`: a raw file is not in storage
+ * - `notFound`: no such scan row (deleted on another phone)
+ */
+export type ProcessResult =
+  | { kind: 'ready'; totalAreaM2: number }
+  | { kind: 'failed' }
+  | { kind: 'filesMissing' }
+  | { kind: 'notFound' };
 
 /** The listing folders on the phone. */
 export interface ListingFiles {
@@ -282,6 +327,76 @@ export class SyncEngine {
         await this.remote.reorderPhoto(op.photoId, op.sortOrder);
         this.store.update(id, (current) => markPhotoSaved(current, op.photoId, op.sortOrder));
         return;
+      case 'setStatus':
+        await this.remote.setStatus(id, op.status);
+        this.store.update(id, (current) => markStatusSynced(current, op.rev, op.status));
+        return;
+      case 'createScan':
+        this.store.update(id, (current) => markScanRowAttempted(current, op.scan.id));
+        await this.remote.createScan(id, op.scan);
+        this.store.update(id, (current) => markScanRowCreated(current, op.scan.id));
+        return;
+      case 'saveRoomLabels':
+        try {
+          await this.remote.saveRoomLabels(op.scanId, op.labels);
+        } catch (error) {
+          if (error instanceof SyncError && error.key === 'scanMissing') {
+            this.store.update(id, (current) => resetScanRow(current, op.scanId));
+            return;
+          }
+          throw error;
+        }
+        this.store.update(id, (current) => markScanLabelsSynced(current, op.scanId, op.rev));
+        return;
+      case 'assignPhotoRoom':
+        await this.remote.assignPhotoRoom(op.photoId, op.room);
+        this.store.update(id, (current) => markPhotoRoomSaved(current, op.photoId, op.room));
+        return;
+      case 'uploadScanFile':
+        if (!this.files.exists(id, op.name)) {
+          // The raw file is the only copy of the scan; without it the scan cannot be sent.
+          console.warn(`Scan file ${op.name} of listing ${id} is missing`);
+          this.store.update(id, (current) => markScanProcessed(current, op.scanId, { ok: false }));
+          return;
+        }
+        await this.remote.uploadScanFile(id, op.scanId, op.file, this.files.uri(id, op.name));
+        this.store.update(id, (current) => markScanFileUploaded(current, op.scanId, op.file));
+        return;
+      case 'processScan':
+        await this.process(id, op.scanId, op.hasLocalFiles);
+        return;
+      case 'removeScan':
+        await this.remote.removeScan(id, op.scanId);
+        this.store.update(id, (current) => markScanRemoved(current, op.scanId));
+        return;
+    }
+  }
+
+  private async process(id: string, scanId: string, hasLocalFiles: boolean): Promise<void> {
+    const result = await this.remote.processScan(scanId);
+    switch (result.kind) {
+      case 'ready':
+        this.store.update(id, (current) =>
+          markScanProcessed(current, scanId, { ok: true, totalAreaM2: result.totalAreaM2 }),
+        );
+        return;
+      case 'failed':
+        this.store.update(id, (current) => markScanProcessed(current, scanId, { ok: false }));
+        return;
+      case 'filesMissing':
+      case 'notFound':
+        if (!hasLocalFiles) {
+          // Scanned on another phone: only that phone could send the files again.
+          this.store.update(id, (current) => markScanProcessed(current, scanId, { ok: false }));
+          return;
+        }
+        this.store.update(id, (current) =>
+          result.kind === 'notFound'
+            ? resetScanRow(current, scanId)
+            : resetScanUpload(current, scanId),
+        );
+        // Wait (with backoff) before sending again, so a server bug cannot cause a tight loop.
+        throw new SyncError('transient', 'server', `Scan ${scanId}: ${result.kind}`);
     }
   }
 
