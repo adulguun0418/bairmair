@@ -281,6 +281,9 @@ max_frequency = "60s"
 # Keys are the phone number with country code and without the + prefix.
 # Test numbers skip the send-sms hook entirely, so they work without an SMS gateway.
 # +976 0xxxxxxx is not a real Mongolian number. Dev project only: remove before production.
+# Real phones used as test numbers stay out of this public repo: list them in DEV_TEST_OTP
+# (supabase/.env) and push with `pnpm auth:push`, which adds them to this table.
+# A plain `supabase config push` sends only the entries below and removes the others.
 [auth.sms.test_otp]
 97600000001 = "123456"
 

@@ -42,7 +42,7 @@ export function StatusSection({ listing }: { listing: LocalListing }) {
     <Button
       title={t('listingStatus.verifyPhone')}
       variant="secondary"
-      onPress={() => router.push('/account')}
+      onPress={() => router.push({ pathname: '/sign-in', params: { mode: 'add-phone' } })}
     />
   );
 

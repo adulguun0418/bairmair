@@ -1,11 +1,10 @@
 import { daysLeftInSearch } from '@bairmair/db';
-import { formatMoneyCompact, LOCALES } from '@bairmair/i18n';
+import { formatMoneyCompact } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
-import { formatMongolianPhone } from '@/auth/phone';
 import { useI18n } from '@/i18n/i18n';
 import { parseNumberInput } from '@/listings/form';
 import {
@@ -22,9 +21,9 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
 
-/** Home: the seller's listings (on this phone and on the server), account and test links. */
-export default function HomeScreen() {
-  const { t, locale, setLocale } = useI18n();
+/** The seller's listings, on this phone and on the server. */
+export default function MyListingsScreen() {
+  const { t } = useI18n();
   const colors = useColors();
   const router = useRouter();
   const user = useAuth().session?.user ?? null;
@@ -101,24 +100,6 @@ export default function HomeScreen() {
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/account')}
-        style={({ pressed }) => [
-          styles.row,
-          { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
-        ]}
-      >
-        <Text style={[styles.body, text]}>{t('account.title')}</Text>
-        <Text style={[styles.muted, muted]}>
-          {user
-            ? user.phone
-              ? formatMongolianPhone(user.phone)
-              : (user.email ?? '')
-            : t('account.signIn')}
-        </Text>
-      </Pressable>
-
       {user ? (
         <Button title={t('listings.new')} onPress={openNew} />
       ) : (
@@ -159,30 +140,6 @@ export default function HomeScreen() {
         </View>
       ))}
       {error && <Text style={[styles.body, { color: colors.danger }]}>{error}</Text>}
-
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/scan-test')}
-        style={({ pressed }) => [
-          styles.row,
-          { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
-        ]}
-      >
-        <Text style={[styles.body, text]}>{t('listings.scanTest')}</Text>
-        <Text style={[styles.muted, muted]}>›</Text>
-      </Pressable>
-
-      <View style={styles.languages}>
-        {LOCALES.map((option) => (
-          <Button
-            key={option}
-            title={t(`language.${option}`)}
-            variant={option === locale ? 'primary' : 'secondary'}
-            onPress={() => setLocale(option)}
-            style={styles.grow}
-          />
-        ))}
-      </View>
     </ScrollView>
   );
 }
@@ -260,13 +217,5 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, lineHeight: 22 },
   muted: { fontSize: 15, lineHeight: 21 },
   small: { fontSize: 14, lineHeight: 20 },
-  row: {
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  languages: { flexDirection: 'row', gap: 12, marginTop: 8 },
   grow: { flex: 1, gap: 4 },
 });

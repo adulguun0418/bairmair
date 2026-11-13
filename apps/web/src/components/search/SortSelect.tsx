@@ -4,7 +4,7 @@ import { SEARCH_SORTS, type SearchSort } from '@bairmair/db';
 import { createTranslator, type Locale } from '@bairmair/i18n';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
-import { searchQuery, type SearchFilters } from '@/lib/search-params';
+import { searchQuery, type SearchFilters } from '@bairmair/browse';
 
 /** The result order; changing it reloads the search at page 1. */
 export function SortSelect({

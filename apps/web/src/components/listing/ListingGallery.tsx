@@ -3,7 +3,7 @@
 import { createTranslator, type Locale } from '@bairmair/i18n';
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
-import type { ListingPhoto } from '@/lib/listing-view';
+import type { ListingPhoto } from '@bairmair/browse';
 
 /** Photos shown in the mosaic; the rest open from the last tile. */
 const MOSAIC = 5;

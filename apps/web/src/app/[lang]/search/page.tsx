@@ -16,7 +16,7 @@ import {
   searchArgs,
   searchQuery,
   type SearchFilters,
-} from '@/lib/search-params';
+} from '@bairmair/browse';
 import { searchListings } from '@/server/search';
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -64,7 +64,8 @@ export default function SignInScreen() {
     setError(null);
     setBusy(true);
     try {
-      if ((await signIn()) === 'signed-in') router.dismissTo('/account');
+      // Back to the screen that asked for sign-in (account, a listing, saved listings).
+      if ((await signIn()) === 'signed-in') router.back();
     } catch (cause) {
       setError(t(`auth.errors.${authErrorKey(cause)}`));
     } finally {

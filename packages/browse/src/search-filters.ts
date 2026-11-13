@@ -169,6 +169,20 @@ export function hasFilters(filters: SearchFilters): boolean {
   );
 }
 
+/**
+ * How many filter groups narrow the results, for a "Filters (2)" button: districts, rooms, price,
+ * area and 3D count once each. The text query has its own field and does not count.
+ */
+export function activeFilterCount(filters: SearchFilters): number {
+  return [
+    filters.districts.length > 0,
+    filters.rooms.length > 0,
+    filters.priceMin !== null || filters.priceMax !== null,
+    filters.areaMin !== null || filters.areaMax !== null,
+    filters.has3d,
+  ].filter(Boolean).length;
+}
+
 /** The `search_listings` arguments for the filters, without paging or viewport. */
 export function searchArgs(filters: SearchFilters): SearchListingsArgs {
   const args: SearchListingsArgs = { p_sort: filters.sort, p_currency: filters.currency };

@@ -1,6 +1,15 @@
+import { LOCALES } from '@bairmair/i18n';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { AgentSection } from '@/account/agent-section';
 import { signOut } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
@@ -70,6 +79,7 @@ export default function AccountScreen() {
       >
         <Text style={[styles.body, muted]}>{t('account.signedOut')}</Text>
         <Button title={t('account.signIn')} onPress={() => router.push('/sign-in')} />
+        <AppSettings />
       </ScrollView>
     );
   }
@@ -168,7 +178,41 @@ export default function AccountScreen() {
       <AgentSection userId={user.id} />
 
       <Button title={t('account.signOut')} variant="danger" onPress={confirmSignOut} />
+      <AppSettings />
     </ScrollView>
+  );
+}
+
+/** The app language and the RoomPlan test screen, signed in or not. */
+function AppSettings() {
+  const { t, locale, setLocale } = useI18n();
+  const colors = useColors();
+  const router = useRouter();
+  return (
+    <>
+      <View style={styles.languages}>
+        {LOCALES.map((option) => (
+          <Button
+            key={option}
+            title={t(`language.${option}`)}
+            variant={option === locale ? 'primary' : 'secondary'}
+            onPress={() => setLocale(option)}
+            style={styles.grow}
+          />
+        ))}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/scan-test')}
+        style={({ pressed }) => [
+          styles.row,
+          { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Text style={[styles.body, { color: colors.text }]}>{t('listings.scanTest')}</Text>
+        <Text style={[styles.body, { color: colors.textMuted }]}>›</Text>
+      </Pressable>
+    </>
   );
 }
 
@@ -180,4 +224,13 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, lineHeight: 22 },
   small: { fontSize: 14, lineHeight: 20 },
   line: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  languages: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  grow: { flex: 1 },
+  row: {
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 });

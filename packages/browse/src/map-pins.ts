@@ -67,6 +67,17 @@ export function paddedViewport(view: Viewport, margin = 0.25): Viewport {
   };
 }
 
+/** How many pins lie inside a viewport. */
+export function countInViewport(rows: readonly Pick<MapPinRow, 'lat' | 'lng'>[], view: Viewport) {
+  return rows.filter(
+    (row) =>
+      row.lng >= view.west &&
+      row.lng <= view.east &&
+      row.lat >= view.south &&
+      row.lat <= view.north,
+  ).length;
+}
+
 /** Whether `inner` lies entirely inside `outer` (the loaded area still covers the view). */
 export function covers(outer: Viewport, inner: Viewport): boolean {
   return (

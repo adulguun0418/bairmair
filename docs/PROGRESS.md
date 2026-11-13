@@ -1,12 +1,12 @@
 # Progress
 
 ## Current state (2026-11-13)
-**Step 6a merged. Step 6b done** (pull request `step-6b-search`, merged): search RPC, web search with filters and a MapLibre map, new home page, agent pages, freshness ("still available" in the app; unconfirmed listings leave search). No mobile rebuild needed (the mobile changes are JS only).
+**Step 6c done** (pull request `step-6c-mobile-browse`): the app is now a buyer app too (tabs: search with list and map, saved listings, my listings, account), with a public listing screen, favorites and reports. **Needs EAS development build 3** (MapLibre native module). Until build 3 is installed, everything except the two maps works on build 2.
 
 Step 6 is split in three:
 - 6a: public listing page (web). Done.
 - 6b: search, map, agent pages, freshness. Done.
-- 6c: mobile browse/search/map + favorites + report (**EAS build 3**: MapLibre native module).
+- 6c: mobile browse/search/map + favorites + report. Done.
 
 The SMS gateway adapter (step 3) still waits on your gateway details.
 
@@ -19,7 +19,7 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - `apps/web` (Next.js 16): `/samples` gallery and `/samples/[sample]` with 3D view, floor plan, room list and photo dialog, in sync.
 - Step 3:
   - Dev project `bairmair` (ref `xjfqbgwobpudqgjmnaod`, Postgres 17, Seoul) linked; 7 migrations applied: schema, districts, triggers, RPCs (`reveal_listing_contact`, `record_listing_view`, `confirm_listing_available`), grants + RLS, storage buckets and policies.
-  - Auth from `supabase/config.toml`: phone OTP through the `send-sms` Edge Function (Send SMS hook). Test number +976 00000001, code 123456 (skips the hook).
+  - Auth from `supabase/config.toml`: phone OTP through the `send-sms` Edge Function (Send SMS hook). Test number +976 00000001, code 123456 (skips the hook). Real phones used as dev test numbers stay out of the public repo: they live in `DEV_TEST_OTP` in `supabase/.env` (see Commands).
   - `@bairmair/db`: generated types, storage paths, database error keys.
   - Verified on the live project: Cyrillic trigrams work (ICU en-US locale); phone auth needs no built-in SMS provider; the caller IP reaches SQL; CLI works on Windows without Docker.
 - Step 4, part 1:
@@ -67,8 +67,20 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - `apps/mobile` (JS only): published listings show how many days they stay in search and a "Байр боломжтой хэвээр байна" button (`confirm_listing_available`); the home list flags listings out of search or within 3 days of leaving it. Account screen: register as an agent (agency name, bio); `agent_profiles` makes the account an agent.
   - Fix after merge (map stuck on "Ачаалж байна…"): MapLibre 6 loads its worker from `maplibre-gl-worker.mjs` next to its module, which does not exist once bundled into a Next.js chunk. `setUpWorker()` (`components/map/map-style.ts`) points it at a copy the bundler emits (`new URL(..., import.meta.url)`). Checked in headless Chrome on dev and production builds: map, pins, pin tap, listing-page map.
   - The remote rate-limit test now tolerates anonymous reveals made from the same network in the last hour (it failed after someone tried the 6a page).
-- Tests: 368 unit (room-model 160, mobile 125, web 37, i18n 27, send-sms 12, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
-- Tests before 6b: 344 unit + 66 integration.
+- Step 6c:
+  - `@bairmair/browse` (new package): the buyer side shared by web and mobile. Moved from `apps/web/src/lib` with their tests: search filters (`search-params` → `search-filters`), listing cards, the listing page builder, map pins. New: `loadListingPage` and `loadAgentPage` (the web's loaders without Next's cache; web wraps them in `'use cache'`), listing texts (`listingSummary`, `locationLine`, `listingFacts`, `updatedText`), map style helpers (`localizeStyle` for style JSON, `nameLabel`, `skipTraditionalScript`, `metersCircleRadius`), `activeFilterCount`, `countInViewport`.
+  - `apps/mobile`:
+    - Native tabs (`expo-router/native-tabs`): Хайх (search, the new first screen), Хадгалсан (saved), Миний зарууд (the old home), Бүртгэл (account, now with the language switch and the RoomPlan test link). Each tab has its own stack. The editor stays at `/listings/[id]`; the public listing screen is `/listing/[id]`.
+    - Search: search bar in the header (text query), all/sale/rent, a filters sheet (`/search-filters`: districts, rooms, currency, price, area, 3D, sort; the web's filter model), list or map. The list loads 24 at a time while scrolling; pull to refresh.
+    - Map (`@maplibre/maplibre-react-native` 11.5.1, OpenFreeMap "liberty"): price pins as a symbol layer on generated pill images (`scripts/pin-images.mjs`, 3D amber), clustering, pins per viewport (+25%, at most 1000, stale requests aborted), ₮ / ₮/м² toggle, tap a pin or a same-spot cluster for cards. Labels in Cyrillic or English (the style JSON is localized before it loads); the traditional-script glyph range is swapped for Basic Latin through `TransformRequestManager`. Both map components load lazily, so build 2 still runs the rest of the app.
+    - Listing screen, same content as the web page (shared loader and texts): photos (swipe; room name on photos placed in a room), badges, price, per m², district median, updated/stale/sold notices, tap-to-reveal phone with call and SMS, seller card and agent screen (`/agent/[id]`), floor plan (the 3D model opens in the browser until step 7), description, location with a fixed map (exact dot or 200 m circle), details, share (system sheet with the Mongolian post and link), view counter, report. On your own listing: "Энэ таны зар" (and edit, when it is on this phone) instead of contact and report.
+    - Favorites: a heart on cards and in the listing header (shown at once, undone if refused; signed out, it offers sign-in). Saved tab with sold/rented notes; listings that are no longer visible can be removed.
+    - Report: a sheet with the reason (`report_reason`) and optional details; a second report of the same listing says "already reported".
+    - Sign-in and verify return to the screen that opened them (a listing, the Saved tab, account) instead of always going to the account. The editor's "verify phone" opens the add-phone flow directly.
+  - Dev test numbers: `pnpm auth:diff` / `pnpm auth:push` (`supabase/scripts/auth-config.mjs`) run `supabase config diff|push` on a temporary copy of `config.toml` with the numbers from `DEV_TEST_OTP` added.
+  - Verified: typecheck, lint, tests, web production build, web search/listing pages and OG image against the dev project, `expo-doctor` 20/20, the MapLibre config plugin in the resolved config (its Podfile hook applied to a sample Podfile). Live against the dev project with the fake test number: signed-in search, viewport pins, saving (a repeat save returns 23505, treated as success), the favorites-to-listings embed under RLS, removing. Not verified: anything on the iPhone (needs build 3).
+- Tests: 384 unit (room-model 160, mobile 131, browse 36, i18n 27, send-sms 12, web 11, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
+- Tests before 6c: 368 unit + 74 integration.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -79,9 +91,11 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - `pnpm test:remote`: integration tests on the dev project (needs `packages/db/.env` and `apps/web/.env.local`; mobile's reads `packages/db/.env`; creates and deletes test users)
 - Env files (gitignored, copy from each `.env.example`): `packages/db/.env`, `apps/web/.env.local`, `apps/mobile/.env` (`EXPO_PUBLIC_API_URL` = your PC's Wi-Fi IP, port 3000; restart Metro after changes)
 - `pnpm run doctor` in `apps/mobile` (plain `pnpm doctor` runs pnpm's own check)
-- Route types for the mobile app (`.expo/types/router.d.ts`) are regenerated only by starting Metro; start it once after adding a screen, before `pnpm typecheck`.
+- Route types for the mobile app (`.expo/types/router.d.ts`) are regenerated only by starting Metro; start it once after adding a screen, before `pnpm typecheck`. A Metro that was already running while screens were added keeps writing a stale copy (new dynamic routes typed as static): restart it.
 - `pnpm db:push` (new migrations), then `pnpm db:types`; `pnpm functions:deploy`
-- Auth settings: `pnpm supabase config diff --remote`, then `pnpm supabase config push --remote`
+- Auth settings: `pnpm auth:diff`, then `pnpm auth:push --yes`. Not a plain `supabase config push`: it would drop the test numbers from `DEV_TEST_OTP` (`supabase/.env`, `phone=code,phone=code`, phone without +).
+- `node apps/mobile/scripts/pin-images.mjs` regenerates the map pin images.
+- Mobile env: `EXPO_PUBLIC_SITE_URL` (optional) is the public site for share links; it defaults to `EXPO_PUBLIC_API_URL`.
 - SQL: `pnpm supabase db query --read-only "<sql>" --remote`
 
 ## Decisions made
@@ -109,6 +123,13 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - Search, district medians and agent pages share the freshness rule; unconfirmed listings stay reachable by link with a notice.
   - Agent pages need no admin step: an agency name makes the account an agent. "Verified" stays an admin flag in the dashboard.
   - "Still available" is an online action, not a queued sync operation.
+- Step 6c choices (mine, for your review):
+  - Search is the app's first tab (buyers outnumber sellers); "Миний зарууд" is the third. Native tabs (iOS tab bar), one stack per tab; listing, agent, filters and seller screens are pushed over the tabs.
+  - The public listing screen is native and reuses the web's loader and texts. Step 7 adds the 3D view through the WebView embed; until then a button opens the web page.
+  - Favorites and reports need sign-in (RLS: `authenticated` only). The web has no sign-in yet, so favorites and reports are app-only for now.
+  - Map pins are PNG pills stretched around the label. MapLibre Native's `Images` cannot mark stretchable areas the way the web canvas pins do, so the base image is close to a typical label size to keep the corners round.
+  - Search filters live for the app session only (not saved between launches).
+  - Your own dev test number is kept out of the public repo (`DEV_TEST_OTP` in `supabase/.env` + `pnpm auth:push`): with a fixed code in a public file, anyone could sign in as you on the dev project.
 - Changes from proposal 03:
   - exact location is `lat`/`lng` in `listing_private`; the public pin is snapped to the centre of a 0.0025° cell unless the owner opts in
   - added `unit_number`, `last_confirmed_at` (+ `confirm_listing_available()`), `scan_verified`
@@ -149,7 +170,7 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - supabase-js sends a Blob's own `type` and ignores `contentType`.
 - The location permission prompt text changed in `app.json` (it now also mentions the listing pin); it shows up with the next build, together with the new icon.
 - A refused status change (rare: the Publish button checks the same rules) holds back the listing's later sync operations until "Дахин оролдох" or "Өөрчлөлтийг болих".
-- Map labels: OpenFreeMap tiles have no `name:mn`. A few OSM names carry the traditional script after the Cyrillic ("Улаанбаатар ᠤᠯᠠᠭᠠᠨ…"); the web maps load Basic Latin in place of that glyph range (`skipTraditionalScript`), so those characters are skipped. Our own Mongolia tiles with `name:mn` would remove the workaround. The mobile map (6c) needs the same treatment.
+- Map labels: OpenFreeMap tiles have no `name:mn`. A few OSM names carry the traditional script after the Cyrillic ("Улаанбаатар ᠤᠯᠠᠭᠠᠨ…"); the web maps load Basic Latin in place of that glyph range (`skipTraditionalScript`), so those characters are skipped. Our own Mongolia tiles with `name:mn` would remove the workaround. The app does the same through MapLibre Native's `TransformRequestManager` (to check on the iPhone: no loose traditional-script letters).
 - No reminder reaches a seller whose listing is about to leave search (no push yet); the app shows it on the home list and in the editor.
 - Step 6 serves the model with `applyAnnotations(model, { roomLabels, photos })` from `room_scans.room_labels` and `listing_photos.room_id`; replaced scans' `scan-models` files still need a server-side cleanup.
 - Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
@@ -167,12 +188,18 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - The 150 m / 100 m thresholds for "scanned on-site".
 - 6a copy (`listingPage` in `mn.ts`) and the share post format (`packages/i18n/src/listing-post.ts`), e.g. "Зарна: 2 өрөө байр, Хан-Уул дүүрэг".
 - 6b copy (`search`, `map`, `listingCard`, `agentPage`, `home`, `account.agent`, `listingStatus.freshness` in `mn.ts`), e.g. "Зарагдах байр" / "Түрээсийн байр", "Санал болгох", "Байр боломжтой хэвээр байна".
+- 6c copy (`tabs`, `browse`, `favorites`, `report` in `mn.ts`), e.g. "Хадгалсан", "Зөрчилтэй зар мэдээлэх", "Мэдээлэл нь буруу", "Зар харах".
 
 ## Next
-- You: try 6b in a browser: `pnpm dev:web`, then http://localhost:3000/ and http://localhost:3000/search?view=map (pins, clusters, the ₮/м² toggle, tapping a pin; Mongolian street labels without traditional script). On the iPhone (build 2, Metro): a published listing's editor shows the days left in search and "Байр боломжтой хэвээр байна"; Account → Агент creates an agent page at `/agents/<your user id>`.
-- You, still open from 5c: test 5c on the iPhone (build 2 + `pnpm dev:web` on the same Wi-Fi).
-- You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). Answers whether shared walls are duplicated or merged. No code waits on it.
-- Then 6c: mobile browse/search/map, favorites, report listing (**EAS build 3** for `@maplibre/maplibre-react-native`).
+- You: EAS development build 3 (MapLibre). In `apps/mobile`: `pnpm eas build --profile development --platform ios`, install it on the iPhone, then restart Metro (`pnpm dev:mobile`) and keep `pnpm dev:web` running. Then check:
+  - Хайх: listings load; search bar text, sale/rent, filters (count on the button), list ↔ map.
+  - Map: pins and clusters, ₮ ↔ ₮/м², tapping a pin opens a card, a cluster zooms in; Mongolian street names without traditional-script letters; English labels after switching language in Бүртгэл.
+  - A listing: photos, price, call/SMS after "Утасны дугаар харах", share sheet text, location map, floor plan, agent page link.
+  - ♡ on a card and in the listing header; Хадгалсан lists it. Signed out, ♡ and "Зөрчилтэй зар мэдээлэх" offer sign-in and come back to the listing.
+  - Report a listing twice: the second time says it was already reported.
+  - Your own listing shows "Энэ таны зар" with no contact or report.
+- You, still open: 5c and 6b checks on the iPhone (now on build 3), and one scan of two neighbouring rooms in a single session (shared walls duplicated or merged?).
+- Then step 7: the WebView embed (`/embed/listings/[id]`) for the 3D view in the app.
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.

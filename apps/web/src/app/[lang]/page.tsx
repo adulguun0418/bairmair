@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ListingGrid } from '@/components/listing/ListingCard';
 import { getI18n, localePath } from '@/lib/i18n';
 import { publicEnv } from '@/lib/public-env';
-import { DEFAULT_FILTERS, searchQuery } from '@/lib/search-params';
+import { DEFAULT_FILTERS, searchQuery } from '@bairmair/browse';
 import { searchListings } from '@/server/search';
 
 /** Main districts offered as shortcuts (the outlying ones are in the search filters). */

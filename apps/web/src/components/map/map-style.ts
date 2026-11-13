@@ -1,3 +1,4 @@
+import { nameLabel, showsName } from '@bairmair/browse';
 import type { Locale } from '@bairmair/i18n';
 import {
   getWorkerUrl,
@@ -5,6 +6,10 @@ import {
   type AddLayerObject,
   type Map as MapLibreMap,
 } from 'maplibre-gl';
+
+// Style constants and pure helpers are shared with the app (@bairmair/browse); this file keeps
+// what needs the browser and maplibre-gl.
+export { MAP_FONTS, MAP_STYLE_URL, skipTraditionalScript } from '@bairmair/browse';
 
 /**
  * MapLibre 6 starts its web worker from `maplibre-gl-worker.mjs` next to its own module file.
@@ -23,58 +28,12 @@ type TextField = NonNullable<
   NonNullable<Extract<AddLayerObject, { type: 'symbol' }>['layout']>['text-field']
 >;
 
-/**
- * OpenFreeMap's "liberty" style: free, commercial use, no key (decision in step 6). Tiles follow
- * the OpenMapTiles schema, which has no `name:mn`.
- */
-export const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
-
-/** Fonts served by OpenFreeMap's glyph endpoint (they cover Cyrillic). */
-export const MAP_FONTS = {
-  regular: ['Noto Sans Regular'],
-  bold: ['Noto Sans Bold'],
-} as const;
-
-/** The glyph range holding the traditional Mongolian script (U+1800–U+18FF). */
-const TRADITIONAL_SCRIPT_GLYPHS = '/6144-6399.pbf';
-
-/**
- * Pass as the map's `transformRequest`. A few OSM names in Ulaanbaatar carry the traditional
- * script after the Cyrillic ("Улаанбаатар ᠤᠯᠠᠭᠠᠨ ᠪᠠᠭᠠᠲᠤᠷ"). MapLibre cannot lay out that
- * script (vertical, joined letters), so it would show loose letters, and style expressions cannot
- * cut it out of a name. Loading the Basic Latin range in place of that range leaves its
- * characters without glyphs, and MapLibre skips characters it has no glyph for. Our own tiles with
- * `name:mn` would make this unnecessary (see PROGRESS).
- */
-export function skipTraditionalScript(
-  url: string,
-  resourceType?: string,
-): { url: string } | undefined {
-  if (resourceType === 'Glyphs' && url.endsWith(TRADITIONAL_SCRIPT_GLYPHS)) {
-    return { url: url.replace(TRADITIONAL_SCRIPT_GLYPHS, '/0-255.pbf') };
-  }
-  return undefined;
-}
-
-/**
- * Street and place labels in the page language. The style shows "Latin\nlocal" for every name;
- * in Mongolian we show the Cyrillic name only, in English the English or transliterated one.
- */
+/** Street and place labels in the page language (see `nameLabel`). */
 export function localizeLabels(map: MapLibreMap, locale: Locale): void {
-  const label: TextField =
-    locale === 'mn'
-      ? ['coalesce', ['get', 'name:nonlatin'], ['get', 'name'], ['get', 'name:latin']]
-      : [
-          'coalesce',
-          ['get', 'name:en'],
-          ['get', 'name_en'],
-          ['get', 'name:latin'],
-          ['get', 'name'],
-        ];
+  const label = nameLabel(locale) as TextField;
   for (const layer of map.getStyle().layers) {
     if (layer.type !== 'symbol') continue;
-    const field = map.getLayoutProperty(layer.id, 'text-field') as unknown;
-    if (field !== undefined && JSON.stringify(field).includes('"name')) {
+    if (showsName(map.getLayoutProperty(layer.id, 'text-field') as unknown)) {
       map.setLayoutProperty(layer.id, 'text-field', label);
     }
   }

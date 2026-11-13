@@ -1,6 +1,6 @@
 import twoRoom from '@bairmair/room-model/samples/two-room.json';
 import { describe, expect, it } from 'vitest';
-import { buildListingPage, type ListingPageInput, type ListingRow } from '@/lib/listing-view';
+import { buildListingPage, type ListingPageInput, type ListingRow } from '../src/listing-page';
 
 const LISTING_ID = '11111111-1111-4111-8111-111111111111';
 const SCAN_ID = '22222222-2222-4222-8222-222222222222';

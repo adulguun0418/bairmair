@@ -19,4 +19,12 @@ export const env = {
   ),
   /** The web app (Next.js), which hosts the API routes. During development: your PC on Wi-Fi. */
   apiUrl: required('EXPO_PUBLIC_API_URL', process.env.EXPO_PUBLIC_API_URL).replace(/\/+$/, ''),
+  /**
+   * The public website, for share links (`<siteUrl>/listings/<id>`). Optional: defaults to the
+   * API URL, which is the same Next.js app.
+   */
+  siteUrl: (
+    process.env.EXPO_PUBLIC_SITE_URL ||
+    required('EXPO_PUBLIC_API_URL', process.env.EXPO_PUBLIC_API_URL)
+  ).replace(/\/+$/, ''),
 };

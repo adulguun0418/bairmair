@@ -10,7 +10,7 @@ import {
   searchQuery,
   type RawSearchParams,
   type SearchFilters,
-} from '@/lib/search-params';
+} from '@bairmair/browse';
 
 const ROOM_CHIPS = Array.from({ length: SEARCH_LIMITS.roomsPlus }, (_, index) => index + 1);
 

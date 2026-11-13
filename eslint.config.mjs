@@ -21,6 +21,13 @@ export default tseslint.config(
     ...reactHooks.configs.flat.recommended,
   },
   {
+    // Node scripts run by hand or by package scripts (e.g. supabase/scripts).
+    files: ['**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly', Buffer: 'readonly', URL: 'readonly' },
+    },
+  },
+  {
     // three.js objects (camera, controls, materials) are mutable by design, and
     // react-three-fiber code updates them in place every frame. This React Compiler rule
     // assumes immutable values and does not apply to them.
