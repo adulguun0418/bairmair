@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { StyleSheet, View, type TextInputProps } from 'react-native';
 import { useColors } from './theme';
+import { Text, TextInput } from './text';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
@@ -49,9 +50,9 @@ const styles = StyleSheet.create({
   box: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 1,
     paddingHorizontal: 14,
     gap: 8,
   },

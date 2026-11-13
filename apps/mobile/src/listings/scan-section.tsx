@@ -1,6 +1,6 @@
 import { formatArea } from '@bairmair/i18n';
 import { useRouter } from 'expo-router';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { scanSupport } from '@/scanner/device';
 import { supportMessage } from '@/scanner/support-message';
@@ -13,6 +13,7 @@ import type { LocalListing } from './model';
 import { useScanModel } from './scan-model';
 import { ScanModelMessage } from './scan-model-message';
 import { scanProgress } from './sync-plan';
+import { Text } from '@/ui/text';
 
 /** The listing's 3D scan in the editor: start one, or see and manage the current one. */
 export function ScanSection({ listing }: { listing: LocalListing }) {

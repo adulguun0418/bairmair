@@ -25,7 +25,7 @@ import {
 } from '@maplibre/maplibre-react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
@@ -33,6 +33,7 @@ import { useColors } from '@/ui/theme';
 import { ListingCard } from './listing-card';
 import { PIN_IMAGES, useMapStyle } from './map-style';
 import { searchPins } from './search';
+import { Text } from '@/ui/text';
 
 /** Above this zoom, points stay clustered only when they share a spot (an approximate cell). */
 const CLUSTER_MAX_ZOOM = 16;
@@ -229,9 +230,9 @@ export function SearchMap({ filters }: { filters: SearchFilters }) {
             type="circle"
             filter={['has', 'point_count']}
             paint={{
-              'circle-color': '#1c1917',
+              'circle-color': '#1a2b60',
               'circle-radius': ['step', ['get', 'point_count'], 15, 10, 19, 50, 24],
-              'circle-stroke-width': 2,
+              'circle-stroke-width': 3,
               'circle-stroke-color': '#ffffff',
             }}
           />
@@ -264,7 +265,7 @@ export function SearchMap({ filters }: { filters: SearchFilters }) {
               'text-size': 12,
               'text-allow-overlap': true,
             }}
-            paint={{ 'text-color': ['case', ['get', 'has3d'], '#451a03', '#1c1917'] }}
+            paint={{ 'text-color': ['case', ['get', 'has3d'], '#ffffff', '#0e1733'] }}
           />
         </GeoJSONSource>
       </Map>

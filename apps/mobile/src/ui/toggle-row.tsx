@@ -1,5 +1,6 @@
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 import { useColors } from './theme';
+import { Text } from './text';
 
 interface ToggleRowProps {
   label: string;
@@ -20,7 +21,7 @@ export function ToggleRow({ label, hint, value, onValueChange }: ToggleRowProps)
         accessibilityLabel={label}
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ true: colors.accent }}
+        trackColor={{ true: colors.brand }}
       />
     </View>
   );

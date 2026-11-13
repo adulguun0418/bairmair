@@ -765,6 +765,8 @@ export const mn = {
     scanVerified: 'Байран дээр скан хийсэн',
     noPhoto: 'Зураггүй',
     perArea: '1 м²: {{price}}',
+    showPlan: 'Төлөвлөлт',
+    showPhoto: 'Зураг',
   },
   agentPage: {
     agent: 'Үл хөдлөх хөрөнгийн агент',
@@ -825,6 +827,33 @@ export const mn = {
     signIn: 'Зар мэдээлэхийн тулд нэвтэрнэ үү.',
     failed: 'Илгээж чадсангүй. Дахин оролдоно уу.',
     close: 'Хаах',
+  },
+  listingSheet: {
+    views: {
+      photos: 'Зураг',
+      plan: 'Төлөвлөлт',
+      model: '3D',
+    },
+    key: {
+      rooms: 'Өрөө',
+      area: 'Талбай',
+      floor: 'Давхар',
+      year: 'Он',
+    },
+    space: 'Орон зай',
+    spaceTotal: 'Сканаар хэмжсэн нийт талбай',
+    spaceNote: 'Хананы дотор талаар хэмжсэн, ойролцоо. Гэрчилгээний талбайгаас бага байж болно.',
+    median: {
+      title: '1 м² үнэ ба дүүргийн дундаж',
+      below: 'Дүүргийн дунджаас {{percent}}% хямд',
+      above: 'Дүүргийн дунджаас {{percent}}% үнэтэй',
+      same: 'Дүүргийн дундажтай ойролцоо',
+      thisListing: 'Энэ зар',
+      median: 'Дундаж',
+      basis: '{{district}} дүүргийн {{count}} зарын дундаж',
+    },
+    details: 'Бүх мэдээлэл',
+    callNumber: '{{phone}} руу залгах',
   },
 };
 

@@ -1,12 +1,13 @@
 import type { Translator } from '@bairmair/i18n';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { useColors, type Colors } from '@/ui/theme';
 import { retrySyncNow, useSyncStatus } from './listings';
 import type { LocalListing } from './model';
 import type { SyncStatus } from './sync-engine';
 import { isSynced, pendingPhotoCount, scanProgress } from './sync-plan';
+import { Text } from '@/ui/text';
 
 type Tone = 'muted' | 'success' | 'warning' | 'danger';
 

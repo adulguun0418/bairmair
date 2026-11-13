@@ -6,10 +6,11 @@ import {
   Map,
   type CircleLayerSpecification,
 } from '@maplibre/maplibre-react-native';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { useColors } from '@/ui/theme';
 import { useMapStyle } from './map-style';
+import { Text } from '@/ui/text';
 
 /**
  * A listing's public location: a dot when the owner shows the exact spot, otherwise a shaded
@@ -40,15 +41,15 @@ export function LocationMap({ lat, lng, exact }: { lat: number; lng: number; exa
   const paint: CircleLayerSpecification['paint'] = exact
     ? {
         'circle-radius': 8,
-        'circle-color': '#1c1917',
+        'circle-color': '#1a2b60',
         'circle-stroke-color': '#ffffff',
         'circle-stroke-width': 3,
       }
     : {
         'circle-radius': metersCircleRadius(APPROXIMATE_RADIUS_M, lat) as never,
-        'circle-color': '#f59e0b',
+        'circle-color': '#199ed6',
         'circle-opacity': 0.25,
-        'circle-stroke-color': '#b45309',
+        'circle-stroke-color': '#1a2b60',
         'circle-stroke-width': 2,
       };
 

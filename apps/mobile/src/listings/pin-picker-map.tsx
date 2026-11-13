@@ -1,7 +1,7 @@
 import { ULAANBAATAR_CENTER } from '@bairmair/db';
 import { Camera, Map, type CameraRef, type LngLat } from '@maplibre/maplibre-react-native';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMapStyle } from '@/browse/map-style';
 import { useI18n } from '@/i18n/i18n';
@@ -9,6 +9,7 @@ import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
 import { locateHere, type LocateResult } from './location';
 import { mapPin, type PinnedLocation } from './model';
+import { Text } from '@/ui/text';
 
 const nowIso = () => new Date().toISOString();
 
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
     width: PIN_HEAD,
     height: PIN_HEAD,
     borderRadius: PIN_HEAD / 2,
-    backgroundColor: '#1c1917',
+    backgroundColor: '#1a2b60',
     borderWidth: 4,
     borderColor: '#ffffff',
     shadowColor: '#000',
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 4,
   },
-  pinStem: { width: 3, height: PIN_STEM, backgroundColor: '#1c1917', borderRadius: 1.5 },
+  pinStem: { width: 3, height: PIN_STEM, backgroundColor: '#1a2b60', borderRadius: 1.5 },
   hint: {
     position: 'absolute',
     top: 12,

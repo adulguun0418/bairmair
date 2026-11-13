@@ -1,23 +1,30 @@
 import type { ListingPhoto } from '@bairmair/browse';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { FlatList, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 /** The listing's photos, swiped one by one, with "Зураг 2 / 9". */
 export function PhotoCarousel({
   photos,
   roomNames,
+  height: fixedHeight,
+  overlayBottom = 12,
 }: {
   photos: readonly ListingPhoto[];
+  /** Defaults to 3:4 of the screen width. */
+  height?: number;
+  /** Space under the room name and photo counter (e.g. for controls drawn over the photos). */
+  overlayBottom?: number;
   /** Room names by id, shown on photos the seller put in a room of the scan. */
   roomNames: ReadonlyMap<string, string>;
 }) {
   const { t } = useI18n();
   const colors = useColors();
   const { width } = useWindowDimensions();
-  const height = Math.round((width * 3) / 4);
+  const height = fixedHeight ?? Math.round((width * 3) / 4);
   const [index, setIndex] = useState(0);
 
   if (photos.length === 0) {
@@ -55,7 +62,7 @@ export function PhotoCarousel({
           />
         )}
       />
-      <View style={styles.overlay} pointerEvents="none">
+      <View style={[styles.overlay, { bottom: overlayBottom }]} pointerEvents="none">
         {room ? <Text style={styles.chip}>{room}</Text> : <View />}
         <Text style={styles.chip}>
           {t('listingPage.photo', { index: index + 1, total: photos.length })}
@@ -71,13 +78,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     right: 12,
-    bottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   chip: {
     color: '#ffffff',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(14, 23, 51, 0.6)',
     fontSize: 13,
     fontWeight: '600',
     paddingHorizontal: 10,

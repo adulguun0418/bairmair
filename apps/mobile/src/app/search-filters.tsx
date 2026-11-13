@@ -2,7 +2,7 @@ import { parseAmount, type SearchFilters } from '@bairmair/browse';
 import { DISTRICTS, SEARCH_LIMITS, SEARCH_SORTS } from '@bairmair/db';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { clearSearchFilters, setSearchFilters, useSearchFilters } from '@/browse/search-store';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
@@ -11,6 +11,7 @@ import { MultiChips } from '@/ui/multi-chips';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
+import { Text } from '@/ui/text';
 
 type RangeKey = 'priceMin' | 'priceMax' | 'areaMin' | 'areaMax';
 

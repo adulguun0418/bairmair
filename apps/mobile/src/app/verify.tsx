@@ -1,12 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { sendPhoneCode, verifyPhoneCode, type PhoneMode } from '@/auth/actions';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 const CODE_LENGTH = 6;
 /** Matches `[auth.sms] max_frequency` in supabase/config.toml. */

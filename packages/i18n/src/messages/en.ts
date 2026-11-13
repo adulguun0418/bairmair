@@ -765,6 +765,8 @@ export const en: Messages = {
     scanVerified: 'Scanned on-site',
     noPhoto: 'No photo',
     perArea: 'Per m²: {{price}}',
+    showPlan: 'Floor plan',
+    showPhoto: 'Photo',
   },
   agentPage: {
     agent: 'Real estate agent',
@@ -825,5 +827,33 @@ export const en: Messages = {
     signIn: 'Sign in to report a listing.',
     failed: 'Could not send. Try again.',
     close: 'Close',
+  },
+  listingSheet: {
+    views: {
+      photos: 'Photos',
+      plan: 'Floor plan',
+      model: '3D',
+    },
+    key: {
+      rooms: 'Rooms',
+      area: 'Area',
+      floor: 'Floor',
+      year: 'Built',
+    },
+    space: 'Space',
+    spaceTotal: 'Total area measured by the scan',
+    spaceNote:
+      'Measured between the inner walls, approximate. It can be smaller than the certificate area.',
+    median: {
+      title: 'Price per m² vs. the district median',
+      below: '{{percent}}% below the district median',
+      above: '{{percent}}% above the district median',
+      same: 'About the district median',
+      thisListing: 'This listing',
+      median: 'Median',
+      basis: 'Median of {{count}} listings in {{district}}',
+    },
+    details: 'All details',
+    callNumber: 'Call {{phone}}',
   },
 };

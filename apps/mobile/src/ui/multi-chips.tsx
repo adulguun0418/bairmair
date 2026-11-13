@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { Choice } from './choice-chips';
 import { useColors } from './theme';
+import { Text } from './text';
 
 /** Several choices from a few options, as wrapping chips (none selected = no filter). */
 export function MultiChips<T extends string | number>({
@@ -37,13 +38,14 @@ export function MultiChips<T extends string | number>({
               style={({ pressed }) => [
                 styles.chip,
                 {
-                  backgroundColor: selected ? colors.accent : colors.surface,
-                  borderColor: selected ? colors.accent : colors.border,
+                  backgroundColor: selected ? colors.primary : colors.surface,
+                  borderColor: selected ? colors.primary : colors.border,
                   opacity: pressed ? 0.75 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
                 },
               ]}
             >
-              <Text style={[styles.chipText, { color: selected ? colors.onAccent : colors.text }]}>
+              <Text style={[styles.chipText, { color: selected ? colors.onPrimary : colors.text }]}>
                 {choice.label}
               </Text>
             </Pressable>
@@ -56,13 +58,13 @@ export function MultiChips<T extends string | number>({
 
 const styles = StyleSheet.create({
   field: { gap: 6 },
-  label: { fontSize: 14, fontWeight: '600' },
+  label: { fontSize: 14, fontWeight: '600', letterSpacing: 0.1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     minHeight: 40,
     paddingHorizontal: 14,
     borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     justifyContent: 'center',
   },
   chipText: { fontSize: 15, fontWeight: '500' },

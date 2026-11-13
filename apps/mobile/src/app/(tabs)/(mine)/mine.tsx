@@ -3,7 +3,7 @@ import { formatMoneyCompact } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { parseNumberInput } from '@bairmair/browse';
@@ -21,6 +21,7 @@ import { SyncStatusLine } from '@/listings/sync-status-line';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 /** The seller's listings, on this phone and on the server. */
 export default function MyListingsScreen() {
