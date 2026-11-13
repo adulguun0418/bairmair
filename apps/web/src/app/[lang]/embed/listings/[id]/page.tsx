@@ -31,7 +31,7 @@ export async function generateMetadata({
  */
 export default function ListingEmbedPage(props: PageProps<'/[lang]/embed/listings/[id]'>) {
   return (
-    <Suspense fallback={<div className="fixed inset-0 animate-pulse bg-stone-200" />}>
+    <Suspense fallback={<div className="fixed inset-0 animate-pulse bg-surface-3" />}>
       <EmbedContent params={props.params} />
     </Suspense>
   );
@@ -43,7 +43,7 @@ async function EmbedContent({ params }: Pick<PageProps<'/[lang]/embed/listings/[
 
   if (!page?.model) {
     return (
-      <div className="fixed inset-0 grid place-items-center bg-stone-100 p-6 text-center text-stone-700">
+      <div className="fixed inset-0 grid place-items-center bg-surface-2 p-6 text-center text-fg-2">
         <p>{page ? t('viewer.noModel') : t('browse.notFound')}</p>
         <EmbedSignal event={page ? 'no-model' : 'missing'} listingId={id} />
       </div>

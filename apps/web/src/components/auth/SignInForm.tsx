@@ -100,9 +100,9 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
     message &&
     (message.key === 'invalidPhone' ? t('auth.invalidPhone') : t(`auth.errors.${message.key}`));
   const input =
-    'w-full rounded-xl border border-stone-300 px-4 py-3 text-lg outline-none focus:border-stone-900';
+    'w-full rounded-xl border border-line-2 px-4 py-3 text-lg outline-none focus:border-primary';
   const primary =
-    'w-full rounded-full bg-stone-900 px-5 py-3 font-medium text-white hover:bg-stone-700 disabled:opacity-50';
+    'w-full rounded-full bg-primary px-5 py-3 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50';
 
   if (step.kind === 'code') {
     const wait = Math.max(0, RESEND_SECONDS - Math.floor((now - step.sentAt) / 1000));
@@ -115,7 +115,7 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
         }}
       >
         <h1 className="text-2xl font-semibold">{t('auth.codeTitle')}</h1>
-        <p className="text-stone-600">
+        <p className="text-fg-muted">
           {t('auth.codeSent', { phone: formatMongolianPhone(step.phone) })}
         </p>
         <label className="block space-y-1">
@@ -130,7 +130,7 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
           />
         </label>
         {errorText && (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-danger">
             {errorText}
           </p>
         )}
@@ -149,7 +149,7 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
             {t('auth.changeNumber')}
           </button>
           {wait > 0 ? (
-            <span className="text-stone-500">{t('auth.resendIn', { seconds: wait })}</span>
+            <span className="text-fg-subtle">{t('auth.resendIn', { seconds: wait })}</span>
           ) : (
             <button
               type="button"
@@ -176,11 +176,11 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
       }}
     >
       <h1 className="text-2xl font-semibold">{t('auth.title')}</h1>
-      <p className="text-stone-600">{t('auth.intro')}</p>
+      <p className="text-fg-muted">{t('auth.intro')}</p>
       <label className="block space-y-1">
         <span className="text-sm font-medium">{t('auth.phoneLabel')}</span>
         <div className="flex items-center gap-2">
-          <span className="text-lg text-stone-500">+976</span>
+          <span className="text-lg text-fg-subtle">+976</span>
           <input
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
@@ -194,7 +194,7 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
       </label>
       <Turnstile siteKey={siteKey} language={locale} resetKey={resetKey} onToken={setToken} />
       {errorText && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {errorText}
         </p>
       )}

@@ -41,7 +41,7 @@ export function ShareActions({ post, url, locale }: { post: string; url: string;
   };
 
   const button =
-    'flex flex-1 items-center justify-center rounded-full border border-stone-300 px-3 py-2 text-sm font-medium hover:bg-stone-50';
+    'flex flex-1 items-center justify-center rounded-full border border-line-2 px-3 py-2 text-sm font-medium hover:bg-surface-2';
   return (
     <div className="flex flex-wrap gap-2">
       {canShare && (

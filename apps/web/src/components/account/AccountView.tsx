@@ -7,18 +7,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { signInHref } from '@/components/auth/HeaderAuthLinks';
+import { signInHref } from '@/components/auth/sign-in-href';
 import { browserClient } from '@/lib/supabase-browser';
 
 type Notice = { text: string; error: boolean } | null;
 
-const input =
-  'w-full rounded-xl border border-stone-300 px-3 py-2 outline-none focus:border-stone-900';
+const input = 'w-full rounded-xl border border-line-2 px-3 py-2 outline-none focus:border-primary';
 const primary =
-  'rounded-full bg-stone-900 px-4 py-2 font-medium text-white hover:bg-stone-700 disabled:opacity-50';
+  'rounded-full bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50';
 const secondary =
-  'rounded-full border border-stone-300 px-4 py-2 font-medium hover:bg-stone-50 disabled:opacity-50';
-const card = 'space-y-3 rounded-2xl bg-white p-5 shadow-sm';
+  'rounded-full border border-line-2 px-4 py-2 font-medium hover:bg-surface-2 disabled:opacity-50';
+const card = 'space-y-3 rounded-2xl bg-surface p-5 shadow-sm';
 
 /** The signed-in visitor's account: phone, name, agent page, sign-out and account deletion. */
 export function AccountView({ locale }: { locale: Locale }) {
@@ -34,7 +33,7 @@ export function AccountView({ locale }: { locale: Locale }) {
       router.replace(signInHref(locale, localePath(locale, '/account')));
   }, [ready, session, deleting, locale, router]);
 
-  if (!ready || !user) return <div className="h-64 animate-pulse rounded-2xl bg-stone-200" />;
+  if (!ready || !user) return <div className="h-64 animate-pulse rounded-2xl bg-surface-3" />;
 
   const signOut = async () => {
     if (!window.confirm(t('account.signOutTitle'))) return;
@@ -70,10 +69,10 @@ export function AccountView({ locale }: { locale: Locale }) {
         {user.phone ? (
           <p className="flex justify-between gap-3">
             <span>{formatMongolianPhone(user.phone)}</span>
-            <span className="text-emerald-700">{t('account.phoneVerified')}</span>
+            <span className="text-success">{t('account.phoneVerified')}</span>
           </p>
         ) : (
-          <p className="text-stone-600">{t('account.noPhone')}</p>
+          <p className="text-fg-muted">{t('account.noPhone')}</p>
         )}
       </section>
 
@@ -97,19 +96,19 @@ export function AccountView({ locale }: { locale: Locale }) {
         </button>
       </section>
 
-      <section className="border-t border-stone-200 pt-4">
+      <section className="border-t border-line pt-4">
         <button
           type="button"
           onClick={() => void deleteAccount()}
           disabled={deleting}
-          className="text-sm text-red-700 underline disabled:opacity-50"
+          className="text-sm text-danger underline disabled:opacity-50"
         >
           {deleting ? t('account.deleting') : t('account.deleteAccount')}
         </button>
         {notice && (
           <p
             role="alert"
-            className={`mt-2 text-sm ${notice.error ? 'text-red-700' : 'text-emerald-700'}`}
+            className={`mt-2 text-sm ${notice.error ? 'text-danger' : 'text-success'}`}
           >
             {notice.text}
           </p>
@@ -189,9 +188,7 @@ function NameForm({ userId, locale }: { userId: string; locale: Locale }) {
         {t('account.save')}
       </button>
       {notice && (
-        <p className={`text-sm ${notice.error ? 'text-red-700' : 'text-emerald-700'}`}>
-          {notice.text}
-        </p>
+        <p className={`text-sm ${notice.error ? 'text-danger' : 'text-success'}`}>{notice.text}</p>
       )}
     </form>
   );
@@ -276,14 +273,14 @@ function AgentForm({ userId, locale }: { userId: string; locale: Locale }) {
     >
       <h2 className="font-semibold">{t('account.agent.title')}</h2>
       {saved ? (
-        <p className={saved.verified ? 'text-emerald-700' : 'text-stone-600'}>
+        <p className={saved.verified ? 'text-success' : 'text-fg-muted'}>
           {saved.verified ? t('account.agent.verified') : t('account.agent.pending')}{' '}
           <Link href={localePath(locale, `/agents/${userId}`)} className="underline">
             {t('listingPage.seller.profile')}
           </Link>
         </p>
       ) : (
-        <p className="text-sm text-stone-600">{t('account.agent.intro')}</p>
+        <p className="text-sm text-fg-muted">{t('account.agent.intro')}</p>
       )}
       <label className="block space-y-1">
         <span className="text-sm font-medium">{t('account.agent.agencyName')}</span>
@@ -320,9 +317,7 @@ function AgentForm({ userId, locale }: { userId: string; locale: Locale }) {
         {saved ? t('account.agent.save') : t('account.agent.become')}
       </button>
       {notice && (
-        <p className={`text-sm ${notice.error ? 'text-red-700' : 'text-emerald-700'}`}>
-          {notice.text}
-        </p>
+        <p className={`text-sm ${notice.error ? 'text-danger' : 'text-success'}`}>{notice.text}</p>
       )}
     </form>
   );

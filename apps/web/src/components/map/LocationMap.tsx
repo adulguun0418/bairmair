@@ -92,7 +92,7 @@ export default function LocationMap({
 
   if (!supported) {
     return (
-      <div className="flex h-full items-center justify-center bg-stone-100 p-4 text-center text-sm text-stone-600">
+      <div className="flex h-full items-center justify-center bg-surface-2 p-4 text-center text-sm text-fg-muted">
         {t('map.unsupported')}
       </div>
     );

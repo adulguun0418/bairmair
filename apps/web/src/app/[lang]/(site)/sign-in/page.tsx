@@ -14,7 +14,7 @@ export default async function SignInPage() {
   const { locale } = await getI18n();
   return (
     <div className="mx-auto max-w-sm px-4 py-12">
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-stone-200" />}>
+      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-surface-3" />}>
         <SignInForm locale={locale} siteKey={publicEnv.turnstileSiteKey} />
       </Suspense>
     </div>

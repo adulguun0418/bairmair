@@ -32,7 +32,7 @@ export function PhotoSection({
   const [busy, setBusy] = useState(false);
 
   if (!listingId) {
-    return <p className="text-sm text-stone-600">{t('listingForm.photosNeedSave')}</p>;
+    return <p className="text-sm text-fg-muted">{t('listingForm.photosNeedSave')}</p>;
   }
 
   const add = async (files: FileList | null) => {
@@ -87,17 +87,17 @@ export function PhotoSection({
   };
 
   const small =
-    'rounded-full bg-white/90 px-2 py-0.5 text-xs shadow-sm hover:bg-white disabled:opacity-50';
+    'rounded-full bg-surface/90 px-2 py-0.5 text-xs shadow-sm hover:bg-surface disabled:opacity-50';
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-fg-muted">
         {t('listingForm.photosHint', { count: photos.length, max: MAX_PHOTOS })}
       </p>
       {photos.length > 0 && (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {photos.map((photo, index) => (
-            <li key={photo.id} className="relative overflow-hidden rounded-xl bg-stone-200">
+            <li key={photo.id} className="relative overflow-hidden rounded-xl bg-surface-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photo.url}
@@ -142,7 +142,7 @@ export function PhotoSection({
                   type="button"
                   disabled={busy}
                   onClick={() => void remove(photo)}
-                  className={`${small} text-red-700`}
+                  className={`${small} text-danger`}
                 >
                   {t('listingForm.photoActions.remove')}
                 </button>
@@ -163,12 +163,12 @@ export function PhotoSection({
         type="button"
         disabled={progress !== null || photos.length >= MAX_PHOTOS}
         onClick={() => input.current?.click()}
-        className="rounded-full border border-stone-300 px-4 py-2 font-medium hover:bg-stone-50 disabled:opacity-50"
+        className="rounded-full border border-line-2 px-4 py-2 font-medium hover:bg-surface-2 disabled:opacity-50"
       >
         {progress ? t('listingForm.uploadingPhotos', progress) : t('listingForm.addPhotos')}
       </button>
       {failed > 0 && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {t('listingForm.photosFailed', { count: failed })}
         </p>
       )}

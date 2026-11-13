@@ -31,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function SearchPage(props: PageProps<'/[lang]/search'>) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-stone-200" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-surface-3" />}>
         <SearchContent searchParams={props.searchParams} />
       </Suspense>
     </div>
@@ -50,7 +50,7 @@ async function SearchContent({ searchParams }: Pick<PageProps<'/[lang]/search'>,
       href={href({ type, currency: type === 'sale' ? 'MNT' : filters.currency })}
       aria-current={filters.type === type ? 'page' : undefined}
       className={`rounded-full px-4 py-1.5 text-sm ${
-        filters.type === type ? 'bg-white font-medium shadow-sm' : 'text-stone-600'
+        filters.type === type ? 'bg-surface font-medium shadow-sm' : 'text-fg-muted'
       }`}
     >
       {label}
@@ -61,7 +61,7 @@ async function SearchContent({ searchParams }: Pick<PageProps<'/[lang]/search'>,
       href={href({ view, page: filters.page })}
       aria-current={filters.view === view ? 'page' : undefined}
       className={`rounded-full px-4 py-1.5 text-sm ${
-        filters.view === view ? 'bg-stone-900 font-medium text-white' : 'text-stone-700'
+        filters.view === view ? 'bg-primary font-medium text-on-primary' : 'text-fg-2'
       }`}
     >
       {label}
@@ -73,12 +73,12 @@ async function SearchContent({ searchParams }: Pick<PageProps<'/[lang]/search'>,
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         <div className="flex flex-wrap gap-3">
-          <nav className="inline-flex rounded-full bg-stone-200 p-1">
+          <nav className="inline-flex rounded-full bg-surface-3 p-1">
             {tab(null, t('search.types.all'))}
             {tab('sale', t('search.types.sale'))}
             {tab('rent', t('search.types.rent'))}
           </nav>
-          <nav className="inline-flex rounded-full border border-stone-300 bg-white p-1">
+          <nav className="inline-flex rounded-full border border-line-2 bg-surface p-1">
             {viewTab('list', t('search.views.list'))}
             {viewTab('map', t('search.views.map'))}
           </nav>
@@ -86,7 +86,7 @@ async function SearchContent({ searchParams }: Pick<PageProps<'/[lang]/search'>,
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-4 lg:self-start">
+        <aside className="lg:sticky lg:top-20 lg:self-start">
           <SearchForm
             key={searchQuery(filters, { page: filters.page })}
             locale={locale}
@@ -96,7 +96,7 @@ async function SearchContent({ searchParams }: Pick<PageProps<'/[lang]/search'>,
         </aside>
 
         {filters.view === 'map' ? (
-          <section className="h-[calc(100svh-11rem)] min-h-[26rem] overflow-hidden rounded-2xl bg-stone-200 shadow-sm">
+          <section className="h-[calc(100svh-11rem)] min-h-[26rem] overflow-hidden rounded-2xl bg-surface-3 shadow-sm">
             <SearchMap
               locale={locale}
               args={searchArgs(filters)}
@@ -108,7 +108,7 @@ async function SearchContent({ searchParams }: Pick<PageProps<'/[lang]/search'>,
         )}
       </div>
 
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-fg-subtle">
         {t('search.freshNote', { days: LISTING_FRESHNESS.confirmEveryDays })}
       </p>
     </div>
@@ -140,11 +140,11 @@ async function Results({
         <SortSelect locale={locale} filters={filters} action={action} />
       </div>
       {filters.sort === 'recommended' && total > 0 && (
-        <p className="-mt-2 text-sm text-stone-500">{t('search.recommendedHint')}</p>
+        <p className="-mt-2 text-sm text-fg-subtle">{t('search.recommendedHint')}</p>
       )}
 
       {rows.length === 0 ? (
-        <p className="rounded-2xl bg-white p-8 text-center text-stone-600 shadow-sm">
+        <p className="rounded-2xl bg-surface p-8 text-center text-fg-muted shadow-sm">
           {t('search.noResults')}
         </p>
       ) : (
@@ -160,7 +160,7 @@ async function Results({
           ) : (
             <span className={`${pagerClass} opacity-40`}>{t('search.previous')}</span>
           )}
-          <span className="text-stone-600">{t('search.page', { page: filters.page, pages })}</span>
+          <span className="text-fg-muted">{t('search.page', { page: filters.page, pages })}</span>
           {filters.page < pages ? (
             <Link href={pageHref(filters.page + 1)} className={pagerClass}>
               {t('search.next')}
@@ -174,4 +174,4 @@ async function Results({
   );
 }
 
-const pagerClass = 'rounded-full border border-stone-300 bg-white px-4 py-2';
+const pagerClass = 'rounded-full border border-line-2 bg-surface px-4 py-2';

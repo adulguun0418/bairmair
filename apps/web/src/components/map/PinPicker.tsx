@@ -138,20 +138,20 @@ export default function PinPicker({
   return (
     <div className="space-y-2">
       {supported ? (
-        <div ref={container} className="h-72 w-full overflow-hidden rounded-xl bg-stone-200" />
+        <div ref={container} className="h-72 w-full overflow-hidden rounded-xl bg-surface-3" />
       ) : (
-        <p className="text-sm text-stone-600">{t('map.unsupported')}</p>
+        <p className="text-sm text-fg-muted">{t('map.unsupported')}</p>
       )}
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <button
           type="button"
           onClick={locate}
           disabled={locating}
-          className="rounded-full border border-stone-300 px-3 py-1.5 hover:bg-stone-50 disabled:opacity-50"
+          className="rounded-full border border-line-2 px-3 py-1.5 hover:bg-surface-2 disabled:opacity-50"
         >
           {locating ? t('listingForm.locating') : t('listingForm.useCurrentLocation')}
         </button>
-        {error && <span className="text-red-700">{t(`listingForm.locationErrors.${error}`)}</span>}
+        {error && <span className="text-danger">{t(`listingForm.locationErrors.${error}`)}</span>}
       </div>
     </div>
   );

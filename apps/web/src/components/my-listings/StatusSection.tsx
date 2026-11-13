@@ -63,9 +63,9 @@ export function StatusSection({
   };
 
   const primary =
-    'rounded-full bg-stone-900 px-4 py-2 font-medium text-white hover:bg-stone-700 disabled:opacity-50';
+    'rounded-full bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50';
   const secondary =
-    'rounded-full border border-stone-300 px-4 py-2 font-medium hover:bg-stone-50 disabled:opacity-50';
+    'rounded-full border border-line-2 px-4 py-2 font-medium hover:bg-surface-2 disabled:opacity-50';
   const statusName = t(`listings.statuses.${row.status}`);
   const live = row.status === 'published';
   const canPublish = missing.length === 0 && phoneVerified && !unsaved;
@@ -80,24 +80,24 @@ export function StatusSection({
           {missing.length > 0 ? (
             <div className="text-sm">
               <p>{t('listingForm.publishMissing')}</p>
-              <ul className="mt-1 list-inside list-disc text-stone-700">
+              <ul className="mt-1 list-inside list-disc text-fg-2">
                 {missing.map((item) => (
                   <li key={item}>{t(`listingForm.requirements.${item}`)}</li>
                 ))}
               </ul>
             </div>
           ) : (
-            <p className="text-sm text-emerald-700">{t('listingForm.publishReady')}</p>
+            <p className="text-sm text-success">{t('listingForm.publishReady')}</p>
           )}
           {!phoneVerified && (
-            <p className="text-sm text-amber-800">
+            <p className="text-sm text-warning">
               {t('listingStatus.needsPhone')}{' '}
               <Link href={localePath(locale, '/account')} className="underline">
                 {t('nav.account')}
               </Link>
             </p>
           )}
-          {unsaved && <p className="text-sm text-amber-800">{t('listingForm.unsaved')}</p>}
+          {unsaved && <p className="text-sm text-warning">{t('listingForm.unsaved')}</p>}
           <button
             type="button"
             disabled={busy || !canPublish}
@@ -111,7 +111,7 @@ export function StatusSection({
 
       {live && (
         <>
-          <p className="text-sm text-stone-600">
+          <p className="text-sm text-fg-muted">
             {t('listingStatus.freshness.explain', { days: LISTING_FRESHNESS.confirmEveryDays })}
           </p>
           <p className="text-sm">
@@ -160,13 +160,13 @@ export function StatusSection({
             </button>
           </div>
           {confirmed && (
-            <p className="text-sm text-emerald-700">{t('listingStatus.freshness.confirmed')}</p>
+            <p className="text-sm text-success">{t('listingStatus.freshness.confirmed')}</p>
           )}
         </>
       )}
 
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

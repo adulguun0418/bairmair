@@ -1,6 +1,7 @@
 // Builds the horizontal logo (building mark left, "bairmair" wordmark right) from logo.svg's own
 // paths, for places too short for the stacked logo (the web header). Each path in logo.svg mixes
 // mark and wordmark subpaths; wordmark subpaths are the ones entirely below y = 340.
+// Also writes a `-dark` variant for dark backgrounds.
 // Run: node assets/brand/build-horizontal.mjs
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -57,5 +58,14 @@ const svg = [
 for (const out of OUTPUTS) {
   mkdirSync(dirname(join(root, out)), { recursive: true });
   writeFileSync(join(root, out), svg);
+}
+
+// Dark backgrounds (the web's dark theme): the navy ink becomes near-white, the blue stays.
+const DARK_INK = { '#1A2B60': '#E8ECF6' };
+const darkSvg = svg.replace(/fill="(#[0-9A-Fa-f]+)"/g, (all, fill) =>
+  DARK_INK[fill.toUpperCase()] ? `fill="${DARK_INK[fill.toUpperCase()]}"` : all,
+);
+for (const out of OUTPUTS) {
+  writeFileSync(join(root, out.replace(/.svg$/, '-dark.svg')), darkSvg);
 }
 console.log(`${r(width)} x ${r(height)} (aspect ${(width / height).toFixed(3)})`);

@@ -41,7 +41,7 @@ export function PhotoDialog({
       aria-label={caption}
       onClose={onClose}
       onClick={onClick}
-      className="m-auto w-[min(92vw,56rem)] overflow-hidden rounded-2xl bg-white p-0 backdrop:bg-black/60"
+      className="m-auto w-[min(92vw,56rem)] overflow-hidden rounded-2xl bg-surface p-0 backdrop:bg-black/60"
     >
       {photo && (
         <figure>
@@ -58,7 +58,7 @@ export function PhotoDialog({
             <button
               type="button"
               onClick={() => ref.current?.close()}
-              className="rounded-full bg-stone-900 px-4 py-1.5 text-sm text-white"
+              className="rounded-full bg-primary px-4 py-1.5 text-sm text-on-primary"
             >
               {closeLabel}
             </button>
