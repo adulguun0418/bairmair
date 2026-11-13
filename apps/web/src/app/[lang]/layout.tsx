@@ -1,14 +1,14 @@
 import { LOCALES } from '@bairmair/i18n/locales';
 import type { Metadata, Viewport } from 'next';
-import { Geist } from 'next/font/google';
+import { Onest } from 'next/font/google';
 import { getI18n } from '@/lib/i18n';
 import { publicEnv } from '@/lib/public-env';
 import { THEME_SCRIPT } from '@/lib/theme';
 import '../globals.css';
 
-// Mongolian needs Ө and Ү, which are in the extended Cyrillic subset.
-const geist = Geist({
-  variable: '--font-geist-sans',
+// Onest was drawn for Cyrillic. Mongolian needs Ө and Ү, which are in the extended subset.
+const onest = Onest({
+  variable: '--font-onest',
   subsets: ['latin', 'cyrillic', 'cyrillic-ext'],
 });
 
@@ -29,8 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
 // Browser UI (address bar on phones) follows the page background in each theme.
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafaf9' },
-    { media: '(prefers-color-scheme: dark)', color: '#0c0a09' },
+    { media: '(prefers-color-scheme: light)', color: '#f7f8fb' },
+    { media: '(prefers-color-scheme: dark)', color: '#070b16' },
   ],
 };
 
@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
   const { locale } = await getI18n();
   return (
     // The theme script sets `data-theme` before React hydrates; that attribute is expected to differ.
-    <html lang={locale} className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${onest.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>

@@ -36,15 +36,15 @@
 
 /*
  * Colours are semantic tokens (`bg-surface`, `text-fg-muted`, `border-line`, ...) defined once
- * per theme below, so components never need `dark:` variants. Light values are the stone/amber
- * shades the site used before dark mode.
+ * per theme below, so components never need `dark:` variants. Colours follow the logo: navy
+ * (#1a2b60) for primary actions and sky blue (#199ed6) for accents.
  *
  * Theme choice: `data-theme="light" | "dark"` on <html> (set before paint by the script in the
  * root layout, from the visitor's choice); without it, the system setting decides.
  * Maps, the floor plan drawing and Open Graph images keep their own light palette.
  */
 @theme inline {
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-sans: var(--font-onest), system-ui, sans-serif;
 
   --color-page: var(--page);
   --color-surface: var(--surface);
@@ -62,6 +62,7 @@
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
   --color-accent-soft: var(--accent-soft);
+  --color-brand: var(--brand);
   --color-accent-subtle: var(--accent-subtle);
   --color-on-accent-soft: var(--on-accent-soft);
   --color-warning: var(--warning);
@@ -76,97 +77,126 @@
 
 :root {
   color-scheme: light;
-  --page: #fafaf9;
+  --page: #f7f8fb;
   --surface: #ffffff;
-  --surface-2: #f5f5f4;
-  --surface-3: #e7e5e4;
-  --line: #e7e5e4;
-  --line-2: #d6d3d1;
-  --fg: #1c1917;
-  --fg-2: #44403c;
-  --fg-muted: #57534e;
-  --fg-subtle: #78716c;
-  --primary: #1c1917;
-  --primary-hover: #44403c;
+  --surface-2: #f0f3f8;
+  --surface-3: #e3e8f1;
+  --line: #e4e8f0;
+  --line-2: #cfd6e3;
+  --fg: #0e1733;
+  --fg-2: #2a3554;
+  --fg-muted: #525d78;
+  --fg-subtle: #6f7a93;
+  --primary: #1a2b60;
+  --primary-hover: #26397a;
   --on-primary: #ffffff;
-  --accent: #fcd34d;
-  --on-accent: #451a03;
-  --accent-soft: #fde68a;
-  --accent-subtle: #fef3c7;
-  --on-accent-soft: #451a03;
-  --warning: #92400e;
+  --accent: #0e7cb0;
+  --on-accent: #ffffff;
+  --accent-soft: #cdebf9;
+  --accent-subtle: #eaf6fd;
+  --on-accent-soft: #0a3a55;
+  --brand: #199ed6;
+  --warning: #b45309;
   --danger: #b91c1c;
   --success: #047857;
   --success-soft: #d1fae5;
   --on-success-soft: #064e3b;
   --favorite: #e11d48;
-  --scene-from: #f5f5f4;
-  --scene-to: #d6d3d1;
+  --scene-from: #f3f6fb;
+  --scene-to: #d9e1ee;
 }
 
 /* Kept in sync with the block below: one for the system setting, one for an explicit choice. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --page: #0c0a09;
-    --surface: #1c1917;
-    --surface-2: #292524;
-    --surface-3: #3a3633;
-    --line: #2e2a27;
-    --line-2: #44403c;
-    --fg: #fafaf9;
-    --fg-2: #e7e5e4;
-    --fg-muted: #a8a29e;
-    --fg-subtle: #8a847e;
-    --primary: #f5f5f4;
-    --primary-hover: #d6d3d1;
-    --on-primary: #1c1917;
-    --accent: #fbbf24;
-    --on-accent: #451a03;
-    --accent-soft: #4a3510;
-    --accent-subtle: #33260c;
-    --on-accent-soft: #fef3c7;
+    --page: #070b16;
+    --surface: #0f1628;
+    --surface-2: #161f36;
+    --surface-3: #212b45;
+    --line: #1c2640;
+    --line-2: #2c3753;
+    --fg: #f2f5fb;
+    --fg-2: #d6dcea;
+    --fg-muted: #9ba5bc;
+    --fg-subtle: #7f89a1;
+    --primary: #eef2fb;
+    --primary-hover: #cfd7ea;
+    --on-primary: #0e1733;
+    --accent: #38b6ec;
+    --on-accent: #04131f;
+    --accent-soft: #0e3a55;
+    --accent-subtle: #0a2639;
+    --on-accent-soft: #cdeefc;
+    --brand: #38b6ec;
     --warning: #fbbf24;
     --danger: #f87171;
     --success: #34d399;
     --success-soft: #063b2c;
     --on-success-soft: #a7f3d0;
     --favorite: #fb7185;
-    --scene-from: #292524;
-    --scene-to: #1c1917;
+    --scene-from: #1b2440;
+    --scene-to: #0f1628;
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --page: #0c0a09;
-  --surface: #1c1917;
-  --surface-2: #292524;
-  --surface-3: #3a3633;
-  --line: #2e2a27;
-  --line-2: #44403c;
-  --fg: #fafaf9;
-  --fg-2: #e7e5e4;
-  --fg-muted: #a8a29e;
-  --fg-subtle: #8a847e;
-  --primary: #f5f5f4;
-  --primary-hover: #d6d3d1;
-  --on-primary: #1c1917;
-  --accent: #fbbf24;
-  --on-accent: #451a03;
-  --accent-soft: #4a3510;
-  --accent-subtle: #33260c;
-  --on-accent-soft: #fef3c7;
+  --page: #070b16;
+  --surface: #0f1628;
+  --surface-2: #161f36;
+  --surface-3: #212b45;
+  --line: #1c2640;
+  --line-2: #2c3753;
+  --fg: #f2f5fb;
+  --fg-2: #d6dcea;
+  --fg-muted: #9ba5bc;
+  --fg-subtle: #7f89a1;
+  --primary: #eef2fb;
+  --primary-hover: #cfd7ea;
+  --on-primary: #0e1733;
+  --accent: #38b6ec;
+  --on-accent: #04131f;
+  --accent-soft: #0e3a55;
+  --accent-subtle: #0a2639;
+  --on-accent-soft: #cdeefc;
+  --brand: #38b6ec;
   --warning: #fbbf24;
   --danger: #f87171;
   --success: #34d399;
   --success-soft: #063b2c;
   --on-success-soft: #a7f3d0;
   --favorite: #fb7185;
-  --scene-from: #292524;
-  --scene-to: #1c1917;
+  --scene-from: #1b2440;
+  --scene-to: #0f1628;
 }
 
 body {
   font-family: var(--font-sans);
+}
+
+/* A faint blueprint grid, for the home page hero and plan panels. Colour from `currentColor`. */
+@utility bg-blueprint {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, currentColor 9%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, currentColor 9%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Floating cards over the hero model drift a little; still for reduced motion. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@utility animate-drift {
+  animation: drift 6s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }

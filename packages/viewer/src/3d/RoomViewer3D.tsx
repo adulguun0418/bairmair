@@ -33,9 +33,20 @@ export interface RoomViewer3DProps {
   showObjects?: boolean;
   /** Show room names and areas on the floors. */
   showLabels?: boolean;
+  /**
+   * - `full` (default): drag, pinch and wheel to explore, with a reset button and a usage hint.
+   * - `showcase`: turns slowly by itself, for a page header. Drag still turns it, but the wheel
+   *   and vertical swipes scroll the page; no zoom, pan, reset button or hint.
+   */
+  mode?: 'full' | 'showcase';
   className?: string;
   style?: CSSProperties;
 }
+
+/** OrbitControls' `autoRotateSpeed`: 2 is one turn per 30 s at 60 fps, so 0.9 ≈ one per minute. */
+const SHOWCASE_SPEED = 0.9;
+/** After a drag, the showcase waits this long before turning by itself again. */
+const SHOWCASE_RESUME_MS = 4000;
 
 /** Opacity of a wall between the camera and its room. */
 const FADED_WALL_OPACITY = 0.12;
@@ -57,6 +68,7 @@ export function RoomViewer3D({
   onSelectPhoto,
   showObjects = true,
   showLabels = true,
+  mode = 'full',
   className,
   style,
 }: RoomViewer3DProps) {
@@ -67,17 +79,26 @@ export function RoomViewer3D({
   // container from the start matters: drei's default target is only set after the first
   // render, and switching targets mid-commit left the first label empty.
   const overlay = useRef<HTMLDivElement>(null) as RefObject<HTMLElement>;
+  const showcase = mode === 'showcase';
+  const rotating = useShowcaseRotation(showcase, overlay);
 
   return (
     <div
       ref={overlay as RefObject<HTMLDivElement>}
       className={className}
-      style={{ position: 'relative', width: '100%', height: '100%', touchAction: 'none', ...style }}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        touchAction: showcase ? 'pan-y' : 'none',
+        ...style,
+      }}
     >
       <ViewerErrorBoundary fallback={<p style={styles.fallback}>{text.webglUnavailable}</p>}>
         <Canvas
           flat
-          frameloop="demand"
+          // A turning showcase draws every frame; otherwise only when something changes.
+          frameloop={rotating.active ? 'always' : 'demand'}
           dpr={[1, 2]}
           camera={{ fov: 40, near: 0.05, far: 500, position: [0, 12, 12] }}
           fallback={<p style={styles.fallback}>{text.webglUnavailable}</p>}
@@ -103,18 +124,87 @@ export function RoomViewer3D({
             enableDamping
             dampingFactor={0.12}
             maxPolarAngle={Math.PI * 0.46}
+            enableZoom={!showcase}
+            enablePan={!showcase}
+            autoRotate={rotating.active}
+            autoRotateSpeed={SHOWCASE_SPEED}
+            onStart={rotating.pause}
+            onEnd={rotating.resumeLater}
           />
           <CameraRig bounds={scene.bounds} resetCount={resetCount} />
         </Canvas>
       </ViewerErrorBoundary>
-      <button type="button" style={styles.resetButton} onClick={() => setResetCount((n) => n + 1)}>
-        {text.resetView}
-      </button>
-      <p style={styles.hint} aria-hidden="true">
-        {text.hint}
-      </p>
+      {!showcase && (
+        <>
+          <button
+            type="button"
+            style={styles.resetButton}
+            onClick={() => setResetCount((n) => n + 1)}
+          >
+            {text.resetView}
+          </button>
+          <p style={styles.hint} aria-hidden="true">
+            {text.hint}
+          </p>
+        </>
+      )}
     </div>
   );
+}
+
+/**
+ * Whether the showcase should turn right now: only while on screen, with the tab visible, when
+ * the visitor has not asked for reduced motion, and not while (or just after) they drag it.
+ */
+function useShowcaseRotation(enabled: boolean, element: RefObject<HTMLElement>) {
+  const [visible, setVisible] = useState(false);
+  const [held, setHeld] = useState(false);
+  const [calm, setCalm] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const target = element.current;
+    if (!target) return;
+    let onScreen = false;
+    const update = () => setVisible(onScreen && document.visibilityState === 'visible');
+    const observer = new IntersectionObserver(([entry]) => {
+      onScreen = entry?.isIntersecting ?? false;
+      update();
+    });
+    observer.observe(target);
+    document.addEventListener('visibilitychange', update);
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotion = () => setCalm(motion.matches);
+    updateMotion();
+    motion.addEventListener('change', updateMotion);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+      motion.removeEventListener('change', updateMotion);
+    };
+  }, [enabled, element]);
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  return {
+    active: enabled && visible && !held && !calm,
+    pause: () => {
+      if (!enabled) return;
+      if (timer.current) clearTimeout(timer.current);
+      setHeld(true);
+    },
+    resumeLater: () => {
+      if (!enabled) return;
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setHeld(false), SHOWCASE_RESUME_MS);
+    },
+  };
 }
 
 function Lights() {

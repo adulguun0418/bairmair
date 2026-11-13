@@ -142,6 +142,13 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Once pinned, the editor shows a small map of the pin. A map pin has no accuracy ("Тэмдэглэсэн"), like pins set on the website.
   - `mapPin()` in `listings/model.ts` (6 decimals, Mongolia only), unit-tested. Map loaded lazily like the other MapLibre screens.
   - Verified: typecheck, lint, tests, Android bundle (`expo export`). Not verified: on a phone.
+- Web redesign, phase 1 of 4: home page and visual system (your go-ahead, 2026-11-14):
+  - Visual system: colours from the logo (navy `#1a2b60` primary, sky blue `#199ed6` brand/accent; tokens in `globals.css`, light and dark) and the typeface **Onest** (drawn for Cyrillic) instead of Geist. Utilities `bg-blueprint` (faint grid) and `animate-drift` (still under reduced motion).
+  - Home: hero with the headline, a search box (buy/rent, keyword, district, rooms; a GET form to `/search`) and a scanned apartment turning in 3D beside it, with its floor plan and price floating over it. The model is the most complete of the 4 newest live 3D listings (most rooms, then area; at least 2 rooms), else the `two-room` sample. Then "how it works" (scan → plan → 3D), newest 3D listings, newest listings, district tiles, and a navy band for sellers ("Зар нэмэх").
+  - `RoomViewer3D` `mode="showcase"`: turns by itself (~1 turn/min) only while on screen, with the tab visible and without reduced motion; pauses while dragged and 4 s after; no zoom or pan (the wheel and vertical swipes scroll the page), no reset button or hint.
+  - Listing cards (everywhere): rounded panel, lift on hover, facts with icons, navy "3D" badge. Scanned listings show a small floor-plan inset over the photo, and the labelled plan over the whole photo on hover (not on touch screens). Plans come from `GET /api/plan/listings/[id]` (SVG; `?lang=en`, `?thumb=1` without labels; CDN-cacheable for an hour; CSP `default-src 'none'`).
+  - Not yet in the new colours: map pins and markers (amber/stone), redone in phase 2.
+  - Verified: typecheck, lint, tests, production build; headless Chrome on the dev server: home in light and dark, mn and en, desktop and 390 px (no horizontal scroll), card hover, a listing page in the new palette.
 - Tests: 460 unit (room-model 189, browse 104, mobile 87, i18n 29, web 26, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
 
 ## Commands
@@ -269,6 +276,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 
 ## Next
+- Web redesign, next phases (one PR each): 2. search: list beside the map, filter pills, live results, map pins in the new colours; 3. listing page: full-width viewer with Зураг / 3D / Төлөвлөлт tabs, sticky contact card, bottom bar on phones, fact grid, price vs district median bar; 4. motion and images: card-to-listing view transitions, photo thumbnails, blurred placeholders.
 - You, on the Android preview build: check that the OTA update with the map pin arrives (Бүртгэл's version line shows "шинэчлэл <time>" after two restarts), then pin a listing on the map (see the map pin entry above).
 - You: fill in `apps/web/src/content/site-info.ts` (company name, registration number, address, support e-mail and phone; the pages show the [bracket] placeholders until then), and have the terms and privacy drafts checked (they describe what the code does today; update them when Sentry, analytics or payments arrive).
 - Store review: the app needs links to the privacy policy and terms (Бүртгэл and sign-in), and App Store Connect needs the privacy policy URL (`/privacy`) and a support URL (`/support`); Google Play needs the account-deletion URL (`/delete-account`).
