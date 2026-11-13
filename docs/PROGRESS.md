@@ -65,6 +65,7 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
     - Home: sale/rent entry points, district shortcuts, newest 3D listings, newest listings. Header links: sale, rent, map. The language switch keeps the query.
     - `/agents/[id]`: agency, name, verified badge, bio, live listings (up to 96). Listing pages link to it and gained a location map (marker if exact, a 200 m circle if approximate).
   - `apps/mobile` (JS only): published listings show how many days they stay in search and a "Байр боломжтой хэвээр байна" button (`confirm_listing_available`); the home list flags listings out of search or within 3 days of leaving it. Account screen: register as an agent (agency name, bio); `agent_profiles` makes the account an agent.
+  - Fix after merge (map stuck on "Ачаалж байна…"): MapLibre 6 loads its worker from `maplibre-gl-worker.mjs` next to its module, which does not exist once bundled into a Next.js chunk. `setUpWorker()` (`components/map/map-style.ts`) points it at a copy the bundler emits (`new URL(..., import.meta.url)`). Checked in headless Chrome on dev and production builds: map, pins, pin tap, listing-page map.
   - The remote rate-limit test now tolerates anonymous reveals made from the same network in the last hour (it failed after someone tried the 6a page).
 - Tests: 368 unit (room-model 160, mobile 125, web 37, i18n 27, send-sms 12, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
 - Tests before 6b: 344 unit + 66 integration.
