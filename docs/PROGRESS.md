@@ -137,7 +137,12 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Migration 12 (`20261117100000_reveal_repeat_free.sql`): a repeat reveal of the same listing by the same caller (user id when signed in, else IP hash) within the hour returns the number without being logged or counted. Limits unchanged: 30/hour per user, 10/hour per IP.
   - Web: the reveal is sent with the visitor's session (`browserClient()`), so signed-in visitors get their own budget; a revealed number is kept in `sessionStorage` for the tab, so a reload shows it without a request.
   - Tests: the integration tests now check that repeats are free, that forged IP headers add no row under another key, and the per-IP limit (budget filled with reveals of a second, draft listing).
-- Tests: 458 unit (room-model 189, browse 104, mobile 85, i18n 29, web 26, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
+- App map pin (JS only, shipped as an OTA update to the preview channel):
+  - The editor's "Байршлын цэг" no longer needs the phone's GPS: "Газрын зураг дээр сонгох" opens `/listings/[id]/pin`, a full-screen map with a fixed pin in the middle; the seller drags the map until the pin sits on the building (a tap centres the map there), then "Энд тэмдэглэх". "Миний байршил" only moves the map. "Одоогийн байршлаа ашиглах" stays as before.
+  - Once pinned, the editor shows a small map of the pin. A map pin has no accuracy ("Тэмдэглэсэн"), like pins set on the website.
+  - `mapPin()` in `listings/model.ts` (6 decimals, Mongolia only), unit-tested. Map loaded lazily like the other MapLibre screens.
+  - Verified: typecheck, lint, tests, Android bundle (`expo export`). Not verified: on a phone.
+- Tests: 460 unit (room-model 189, browse 104, mobile 87, i18n 29, web 26, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -264,6 +269,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 
 ## Next
+- You, on the Android preview build: check that the OTA update with the map pin arrives (Бүртгэл's version line shows "шинэчлэл <time>" after two restarts), then pin a listing on the map (see the map pin entry above).
 - You: fill in `apps/web/src/content/site-info.ts` (company name, registration number, address, support e-mail and phone; the pages show the [bracket] placeholders until then), and have the terms and privacy drafts checked (they describe what the code does today; update them when Sentry, analytics or payments arrive).
 - Store review: the app needs links to the privacy policy and terms (Бүртгэл and sign-in), and App Store Connect needs the privacy policy URL (`/privacy`) and a support URL (`/support`); Google Play needs the account-deletion URL (`/delete-account`).
 - You, on the iPhone dev build (`pnpm dev:mobile`; the server converts on Vercel, which redeploys `main`): check the whole-apartment scan. Your earlier scans re-convert on the phone with the new converter when you open them.
