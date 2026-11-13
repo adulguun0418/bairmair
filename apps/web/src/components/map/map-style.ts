@@ -1,5 +1,22 @@
 import type { Locale } from '@bairmair/i18n';
-import type { AddLayerObject, Map as MapLibreMap } from 'maplibre-gl';
+import {
+  getWorkerUrl,
+  setWorkerUrl,
+  type AddLayerObject,
+  type Map as MapLibreMap,
+} from 'maplibre-gl';
+
+/**
+ * MapLibre 6 starts its web worker from `maplibre-gl-worker.mjs` next to its own module file.
+ * Once bundled, its module lives in a Next.js chunk, where that file does not exist ("Worker
+ * failed to load") and maps never finish loading. The bundler emits the worker file as a static
+ * asset through this `new URL(..., import.meta.url)` reference; point MapLibre at it. Call before
+ * the first map is created.
+ */
+export function setUpWorker(): void {
+  const url = new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).href;
+  if (getWorkerUrl() !== url) setWorkerUrl(url);
+}
 
 /** A symbol layer's `text-field` value (MapLibre does not export the type itself). */
 type TextField = NonNullable<

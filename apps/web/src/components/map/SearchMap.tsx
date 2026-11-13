@@ -33,8 +33,12 @@ import {
   localizeLabels,
   MAP_FONTS,
   MAP_STYLE_URL,
+  setUpWorker,
   skipTraditionalScript,
 } from './map-style';
+
+// This module loads in the browser only (see maps.tsx).
+setUpWorker();
 
 const SOURCE = 'listings';
 const PINS = 'listing-pins';

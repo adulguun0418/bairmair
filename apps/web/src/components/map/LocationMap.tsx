@@ -4,7 +4,16 @@ import { createTranslator, type Locale } from '@bairmair/i18n';
 import { Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { canShowMap, localizeLabels, MAP_STYLE_URL, skipTraditionalScript } from './map-style';
+import {
+  canShowMap,
+  localizeLabels,
+  MAP_STYLE_URL,
+  setUpWorker,
+  skipTraditionalScript,
+} from './map-style';
+
+// This module loads in the browser only (see maps.tsx).
+setUpWorker();
 
 /** Radius of the "approximate location" circle: the public pin is a 0.0025° cell centre. */
 const APPROXIMATE_RADIUS_M = 200;
