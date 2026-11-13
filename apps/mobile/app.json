@@ -3,6 +3,12 @@
     "name": "bairmair",
     "slug": "bairmair",
     "version": "0.1.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/49505f3a-4bf2-444a-b3ac-49b4b11948bf"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "bairmair",

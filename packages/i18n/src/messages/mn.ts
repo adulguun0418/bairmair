@@ -186,6 +186,9 @@ export const mn = {
     deleting: 'Бүртгэлийг устгаж байна…',
     deleted: 'Таны бүртгэл устгагдлаа.',
     deleteFailed: 'Бүртгэлийг устгаж чадсангүй. Интернэтээ шалгаад дахин оролдоно уу.',
+    version: 'Хувилбар {{version}}',
+    versionBuiltIn: 'суулгасан хувилбар',
+    versionUpdate: 'шинэчлэл {{date}}',
     agent: {
       title: 'Агент',
       intro:

@@ -1,5 +1,7 @@
 import { LOCALES } from '@bairmair/i18n';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -253,8 +255,35 @@ function AppSettings() {
         <Text style={[styles.body, { color: colors.text }]}>{t('listings.scanTest')}</Text>
         <Text style={[styles.body, { color: colors.textMuted }]}>›</Text>
       </Pressable>
+      <VersionLine />
     </>
   );
+}
+
+/**
+ * App version and which JavaScript is running: the build's own ("built-in") or an over-the-air
+ * update with its publish time, so a tester can see that an update arrived.
+ */
+function VersionLine() {
+  const { t } = useI18n();
+  const colors = useColors();
+  const version = Constants.expoConfig?.version ?? '?';
+  const created = !Updates.isEmbeddedLaunch && Updates.createdAt ? Updates.createdAt : null;
+  const source = created
+    ? t('account.versionUpdate', { date: formatStamp(created) })
+    : t('account.versionBuiltIn');
+  return (
+    <Text style={[styles.small, styles.version, { color: colors.textMuted }]}>
+      {t('account.version', { version })} · {source}
+    </Text>
+  );
+}
+
+/** "2026-11-13 14:20" in the phone's time zone (by hand, like the app's other numbers). */
+function formatStamp(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${day} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 const styles = StyleSheet.create({
@@ -267,6 +296,7 @@ const styles = StyleSheet.create({
   line: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   languages: { flexDirection: 'row', gap: 12, marginTop: 8 },
   grow: { flex: 1 },
+  version: { textAlign: 'center' },
   deleteRow: {
     flexDirection: 'row',
     justifyContent: 'center',

@@ -93,6 +93,10 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - `@bairmair/db`: `ACCOUNT_PATH`, `DeleteAccountResponse`.
   - App: "Бүртгэл устгах" at the bottom of Бүртгэл → confirmation (what is deleted, cannot be undone) → server call → this user's listings removed from the phone (`forgetListingsOf`) → local sign-out → "Таны бүртгэл устгагдлаа." JS only, but the installed preview builds need a new build to get it (no `expo-updates` yet).
   - Verified: unit tests with a fake store; integration test on the dev project (user with listing, photo, raw scan, model, avatar and a favorite: all gone, another user's listing and photo kept, the old token refused afterwards).
+- Over-the-air updates (`expo-updates` 58.0.22, EAS Update; **needs a new build**, then JS-only changes ship without one):
+  - `app.json`: `updates.url` (EAS project) and `runtimeVersion` policy `appVersion` (= `version`, now `0.1.0`). `eas.json`: channels `development` and `preview` on their profiles.
+  - Publish: `pnpm update:preview -m "<what changed>"` in `apps/mobile` (= `eas update --channel preview --environment preview`). The `EXPO_PUBLIC_*` values come from the EAS `preview` environment; checked that they win over the local `.env` (an export with the shell values had them, not the Wi-Fi address).
+  - The app checks on every launch, downloads in the background, and runs the update from the next launch (close the app fully, open it again). Бүртгэл shows the version and "суулгасан хувилбар" or "шинэчлэл <time>".
 - Tests: 400 unit (room-model 160, mobile 131, browse 41, i18n 27, send-sms 18, web 16, db 7) + 76 integration tests against the dev project (db 57, mobile 11, web 8).
 - Tests before account deletion: 389 unit + 74 integration.
 
@@ -110,6 +114,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Auth settings: `pnpm auth:diff`, then `pnpm auth:push --yes`; it adds the test numbers from `DEV_TEST_OTP` (`supabase/.env`, `phone=code,phone=code`, phone without +). A push cannot remove a test number (CLI 3.1 leaves undeclared remote settings alone; `auth:diff` shows them as `remote_only`): delete it in the dashboard, Authentication → Sign In / Providers → Phone.
 - `node apps/mobile/scripts/pin-images.mjs` regenerates the map pin images.
 - Web on Vercel (Hobby, team `bairmair`, project `bairmair`, root `apps/web`, functions in Seoul `icn1` via `apps/web/vercel.json`): https://bairmair-bairmair.vercel.app, deployed from `main`, against the dev Supabase project. Env vars (Production): the four in `apps/web/.env.example`, with `NEXT_PUBLIC_SITE_URL` = that URL. Vercel builds with `turbo run build`, which hides env vars not listed in `turbo.json` (`build.env`): add new ones there. CLI: `pnpm dlx vercel <command>` (repo root is linked).
+- OTA update to the preview builds: `pnpm update:preview -m "..."` in `apps/mobile`. Only for JS/asset changes: a new native module or a native config change needs a new build **and** a `version` bump in `app.json` (the runtime version), so old builds never get JS they cannot run.
 - Standalone iOS app (no Metro): `pnpm eas build --profile preview --platform ios` in `apps/mobile`; its `EXPO_PUBLIC_*` come from the EAS `preview` environment (`pnpm eas env:list --environment preview`). Same bundle id as the development build: installing one replaces the other.
 - Mobile env: `EXPO_PUBLIC_SITE_URL` (optional) is the public site for share links; it defaults to `EXPO_PUBLIC_API_URL`.
 - SQL: `pnpm supabase db query --read-only "<sql>" --remote`
@@ -167,6 +172,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Mobile UI starts in Mongolian whatever the phone language (iOS has no Mongolian UI language). English through an in-app toggle (not persisted yet). iOS permission prompts are Mongolian only.
 - Permission prompts limited to camera, photo library, location when in use (+ temporary precise). Microphone, Face ID, background location and motion are switched off in the plugins.
 - `app.json` stays static, so `eas init` can write the project id. EAS project `@adulguun0418/bairmair`; development builds use internal (ad hoc) distribution, so a newly registered iPhone needs a new build. `eas.json` pins Node 24.14.1, pnpm 12.18.0 and image `sdk-58` (the default image has Node 22 / pnpm 11).
+- Runtime version policy `appVersion` rather than `fingerprint`: predictable on Windows (a fingerprint computed here could differ from the one on the EAS build server, and then no update would ever match). The price: bump `version` whenever native code changes.
 - EAS CLI runs through `pnpm dlx`, not as a devDependency: it added ~8,000 lockfile lines and build scripts pnpm 12 refuses until approved.
 - No `.easignore`: EAS then uses `.gitignore`, which keeps `.env` files off the build servers. An `.easignore` would have to exclude them itself.
 - pnpm adds packages younger than its minimum release age to `minimumReleaseAgeExclude` when they are installed explicitly (all of today's Expo patch releases). Prune the list later.
@@ -227,7 +233,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - the room strip sits above the home indicator; back swipe returns to the listing.
   - with the web server stopped: the failed message, "Дахин оролдох" and "3D загварыг хөтөч дээр үзэх".
 - You, still open: 5c and 6b checks on the iPhone (now on build 3), and one scan of two neighbouring rooms in a single session (shared walls duplicated or merged?).
-- Then (your call on the order): over-the-air updates (`expo-updates`) and error reporting (Sentry) before others test; production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Later: web sign-in (favorites and reports on the web).
+- Then (your call on the order): error reporting (Sentry) before others test; production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Later: web sign-in (favorites and reports on the web).
 
 ## SMS (WeSend, live since 2026-11-13)
 - Verified: a real number gets "Bairmair код: 780190. Хэнд ч бүү хэлээрэй." and signs in. WeSend adds no brand prefix to plain `/v1/sms` texts.
