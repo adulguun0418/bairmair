@@ -1,3 +1,4 @@
+import { daysLeftInSearch } from '@bairmair/db';
 import { formatMoneyCompact, LOCALES } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -29,6 +30,8 @@ export default function HomeScreen() {
   const user = useAuth().session?.user ?? null;
   const local = useLocalListings();
   const [server, setServer] = useState<ServerListingSummary[]>([]);
+  /** When `server` was fetched: the clock for "days left in search". */
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +44,11 @@ export default function HomeScreen() {
       }
       let active = true;
       fetchMyListings(supabase, userId)
-        .then((rows) => active && setServer(rows))
+        .then((rows) => {
+          if (!active) return;
+          setServer(rows);
+          setFetchedAt(new Date());
+        })
         .catch(() => {
           // Offline: the phone's own listings are still shown.
         });
@@ -56,6 +63,14 @@ export default function HomeScreen() {
   // (a deletion hides the listing from `local` and records it for isKnownLocally).
   const localIds = new Set(local.map((listing) => listing.id));
   const serverOnly = server.filter((row) => !localIds.has(row.id) && !isKnownLocally(row.id));
+  /** Days each published listing has left in search (null: already out). */
+  const daysLeft = new Map(
+    fetchedAt
+      ? server
+          .filter((row) => row.status === 'published')
+          .map((row) => [row.id, daysLeftInSearch(row.last_confirmed_at, fetchedAt)] as const)
+      : [],
+  );
 
   const openNew = () => {
     if (!userId) return;
@@ -121,6 +136,7 @@ export default function HomeScreen() {
         <ListingRow
           key={listing.id}
           listing={listing}
+          daysLeftInSearch={daysLeft.get(listing.id)}
           onPress={() => router.push({ pathname: '/listings/[id]', params: { id: listing.id } })}
         />
       ))}
@@ -171,7 +187,19 @@ export default function HomeScreen() {
   );
 }
 
-function ListingRow({ listing, onPress }: { listing: LocalListing; onPress: () => void }) {
+/** Within this many days of leaving search, the list reminds the seller to confirm. */
+const REMIND_DAYS = 3;
+
+function ListingRow({
+  listing,
+  daysLeftInSearch: left,
+  onPress,
+}: {
+  listing: LocalListing;
+  /** Published on the server: days left in search, null when out; undefined otherwise. */
+  daysLeftInSearch: number | null | undefined;
+  onPress: () => void;
+}) {
   const { t, locale } = useI18n();
   const colors = useColors();
   const cover = listing.photos[0];
@@ -209,6 +237,14 @@ function ListingRow({ listing, onPress }: { listing: LocalListing; onPress: () =
           {listing.form.title.trim() || t('listings.untitled')}
         </Text>
         <Text style={[styles.small, { color: colors.textMuted }]}>{details.join(' · ')}</Text>
+        {left === null && (
+          <Text style={[styles.small, { color: colors.danger }]}>{t('listings.notInSearch')}</Text>
+        )}
+        {left !== null && left !== undefined && left <= REMIND_DAYS && (
+          <Text style={[styles.small, { color: colors.warning }]}>
+            {t('listings.leavingSearch', { count: left })}
+          </Text>
+        )}
         <SyncStatusLine listing={listing} />
       </View>
     </Pressable>

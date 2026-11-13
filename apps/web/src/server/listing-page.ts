@@ -6,10 +6,9 @@ import {
   type ListingPageData,
   type ListingRow,
 } from '@/lib/listing-view';
+import { isUuid } from '@/lib/ids';
 import { publicEnv } from '@/lib/public-env';
 import { publicClient } from '@/lib/supabase-public';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** Cache tag of one listing's page data, for `revalidateTag` after a change. */
 export function listingTag(id: string): string {
@@ -28,7 +27,7 @@ export async function getListingPage(id: string): Promise<ListingPageData | null
   cacheLife({ stale: 60, revalidate: 60, expire: 3600 });
   cacheTag(listingTag(id));
 
-  if (!UUID_RE.test(id)) return null;
+  if (!isUuid(id)) return null;
   const client = publicClient();
 
   const [listing, photos, scans] = await Promise.all([

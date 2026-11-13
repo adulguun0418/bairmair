@@ -51,6 +51,11 @@ const COMPACT_UNITS: Record<Locale, readonly [string, string, string]> = {
  */
 export function formatMoneyCompact(amount: number, currency: CurrencyCode, locale: Locale): string {
   if (currency === 'USD') return `$${formatDecimal(amount, 0)}`;
+  return `${compactAmount(amount, locale)}${NBSP}₮`;
+}
+
+/** `250 сая`, `1.8 сая`, `250M`: a tögrög amount in words, without the sign. */
+function compactAmount(amount: number, locale: Locale): string {
   const [billion, million, thousand] = COMPACT_UNITS[locale];
   const abs = Math.abs(amount);
   const [value, unit] =
@@ -61,7 +66,7 @@ export function formatMoneyCompact(amount: number, currency: CurrencyCode, local
         : abs >= 1e3
           ? [amount / 1e3, thousand]
           : [amount, ''];
-  return `${formatDecimal(value, 1)}${unit}${NBSP}₮`;
+  return `${formatDecimal(value, 1)}${unit}`;
 }
 
 export type ListingType = 'sale' | 'rent';
@@ -86,6 +91,30 @@ export function formatListingPrice(
 /** A price per square meter: `3.8 сая ₮/м²`, `$15/m²`. */
 export function formatPricePerArea(amount: number, currency: CurrencyCode, locale: Locale): string {
   return `${formatMoneyCompact(amount, currency, locale)}${PER_AREA[locale]}`;
+}
+
+/**
+ * The short label of a map pin, as local listings write prices: `250 сая`, `1.8 сая/сар`,
+ * `$1,200/сар` (English: `250M`, `1.8M/mo`). Tögrög amounts drop the ₮ sign.
+ */
+export function formatPinPrice(
+  amount: number,
+  currency: CurrencyCode,
+  type: ListingType,
+  locale: Locale,
+): string {
+  const price = currency === 'USD' ? `$${formatDecimal(amount, 0)}` : compactAmount(amount, locale);
+  return type === 'rent' ? `${price}${PER_MONTH[locale]}` : price;
+}
+
+/** A map pin in price-per-m² mode: `3.8 сая/м²`, `$24/м²`. */
+export function formatPinPricePerArea(
+  amount: number,
+  currency: CurrencyCode,
+  locale: Locale,
+): string {
+  const price = currency === 'USD' ? `$${formatDecimal(amount, 0)}` : compactAmount(amount, locale);
+  return `${price}${PER_AREA[locale]}`;
 }
 
 const FILE_SIZE_UNITS: Record<Locale, readonly [string, string, string]> = {

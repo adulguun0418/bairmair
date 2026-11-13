@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AgentSection } from '@/account/agent-section';
 import { signOut } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
 import { authErrorKey } from '@/auth/errors';
@@ -163,6 +164,8 @@ export default function AccountScreen() {
           {message.text}
         </Text>
       )}
+
+      <AgentSection userId={user.id} />
 
       <Button title={t('account.signOut')} variant="danger" onPress={confirmSignOut} />
     </ScrollView>

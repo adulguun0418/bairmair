@@ -43,8 +43,23 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             <Link href={localePath(locale, '/')} className="text-lg font-semibold tracking-tight">
               {t('app.name')}
             </Link>
-            <nav className="flex items-center gap-5 text-sm">
-              <Link href={localePath(locale, '/samples')} className="hover:underline">
+            <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1 text-sm">
+              <Link href={localePath(locale, '/search?type=sale')} className="hover:underline">
+                {t('nav.sale')}
+              </Link>
+              <Link href={localePath(locale, '/search?type=rent')} className="hover:underline">
+                {t('nav.rent')}
+              </Link>
+              <Link
+                href={localePath(locale, '/search?view=map')}
+                className="hidden hover:underline sm:inline"
+              >
+                {t('nav.map')}
+              </Link>
+              <Link
+                href={localePath(locale, '/samples')}
+                className="hidden hover:underline sm:inline"
+              >
                 {t('nav.samples')}
               </Link>
               <Suspense fallback={<LanguageLinks {...languageProps} path="/" />}>

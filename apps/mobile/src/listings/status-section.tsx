@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
 import type { ListingStatus } from './form';
+import { FreshnessSection } from './freshness-section';
 import { changeListingStatus, retryRefusedSync, useSyncStatus } from './listings';
 import { isLive, type LocalListing } from './model';
 import { missingToPublish } from './sync-plan';
@@ -128,6 +129,7 @@ export function StatusSection({ listing }: { listing: LocalListing }) {
           <Text style={[styles.body, { color: colors.success }]}>
             {t('listingStatus.published')}
           </Text>
+          <FreshnessSection listingId={id} />
           <Button
             title={rent ? t('listingStatus.markRented') : t('listingStatus.markSold')}
             variant="secondary"

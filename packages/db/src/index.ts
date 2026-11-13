@@ -19,4 +19,5 @@ export * from './api';
 export * from './errors';
 export * from './listing-rules';
 export * from './reference';
+export * from './search';
 export * from './storage';

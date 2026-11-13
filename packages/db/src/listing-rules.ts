@@ -49,6 +49,16 @@ export function isListingFresh(lastConfirmedAt: string | null, now: Date): boole
   return now.getTime() - confirmed <= LISTING_FRESHNESS.confirmEveryDays * DAY_MS;
 }
 
+/**
+ * Whole days a listing confirmed at `lastConfirmedAt` stays in search after `now`: 14 right after
+ * a confirmation, 0 on its last day, null once it has dropped out (or was never confirmed).
+ */
+export function daysLeftInSearch(lastConfirmedAt: string | null, now: Date): number | null {
+  if (!lastConfirmedAt || !isListingFresh(lastConfirmedAt, now)) return null;
+  const until = Date.parse(lastConfirmedAt) + LISTING_FRESHNESS.confirmEveryDays * DAY_MS;
+  return Math.floor((until - now.getTime()) / DAY_MS);
+}
+
 /** Whole days from `then` to `now` (0 on the same day or for a date in the future). */
 export function daysSince(then: string, now: Date): number {
   const time = Date.parse(then);

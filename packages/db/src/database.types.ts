@@ -629,6 +629,53 @@ export type Database = {
           lng: number;
         }[];
       };
+      search_listings: {
+        Args: {
+          p_area_max?: number;
+          p_area_min?: number;
+          p_currency?: Database['public']['Enums']['currency_code'];
+          p_district_ids?: number[];
+          p_east?: number;
+          p_has_3d?: boolean;
+          p_limit?: number;
+          p_north?: number;
+          p_offset?: number;
+          p_owner_id?: string;
+          p_price_max?: number;
+          p_price_min?: number;
+          p_query?: string;
+          p_rooms?: number[];
+          p_sort?: string;
+          p_south?: number;
+          p_type?: Database['public']['Enums']['listing_type'];
+          p_west?: number;
+        };
+        Returns: {
+          area_official_m2: number;
+          area_scanned_m2: number;
+          complex_name: string;
+          cover_photo_id: string;
+          currency: Database['public']['Enums']['currency_code'];
+          district_id: number;
+          floor: number;
+          has_3d: boolean;
+          id: string;
+          last_confirmed_at: string;
+          lat: number;
+          lng: number;
+          negotiable: boolean;
+          owner_id: string;
+          price: number;
+          published_at: string;
+          rooms: number;
+          scan_verified: boolean;
+          show_exact_location: boolean;
+          title: string;
+          total_count: number;
+          total_floors: number;
+          type: Database['public']['Enums']['listing_type'];
+        }[];
+      };
     };
     Enums: {
       building_material: 'panel' | 'brick' | 'monolithic' | 'other';

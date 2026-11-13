@@ -9,6 +9,7 @@ import {
   type Translator,
 } from '@bairmair/i18n';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 import { ContactButtons } from '@/components/listing/ContactButtons';
@@ -16,6 +17,7 @@ import { ListingGallery } from '@/components/listing/ListingGallery';
 import { ShareActions } from '@/components/listing/ShareActions';
 import { ViewCounter } from '@/components/listing/ViewCounter';
 import { ListingScene } from '@/components/ListingScene';
+import { LocationMap } from '@/components/map/maps';
 import { getI18n, localePath } from '@/lib/i18n';
 import type { ListingPageData, ListingRow } from '@/lib/listing-view';
 import { publicEnv } from '@/lib/public-env';
@@ -150,6 +152,14 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
                 : t('listingPage.seller.owner')}
               {seller.isAgent && seller.displayName && ` · ${seller.displayName}`}
             </p>
+            {seller.isAgent && (
+              <Link
+                href={localePath(locale, `/agents/${listing.owner_id}`)}
+                className="mt-2 inline-block text-sm font-medium hover:underline"
+              >
+                {t('listingPage.seller.profile')}
+              </Link>
+            )}
           </div>
         </aside>
       </header>
@@ -175,9 +185,19 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
               <p className="whitespace-pre-line text-stone-800">{listing.description}</p>
             </section>
           )}
-          <section className="rounded-2xl bg-white p-5 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold">{t('listingPage.sections.location')}</h2>
+          <section className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold">{t('listingPage.sections.location')}</h2>
             <LocationText listing={listing} locale={locale} t={t} />
+            {listing.public_lat !== null && listing.public_lng !== null && (
+              <div className="h-64 overflow-hidden rounded-xl bg-stone-200">
+                <LocationMap
+                  lat={listing.public_lat}
+                  lng={listing.public_lng}
+                  exact={listing.show_exact_location}
+                  locale={locale}
+                />
+              </div>
+            )}
           </section>
         </div>
         <section className="rounded-2xl bg-white p-5 shadow-sm">
