@@ -39,7 +39,7 @@
     "android": {
       "package": "mn.bairmair.app",
       "adaptiveIcon": {
-        "backgroundColor": "#1F66F4",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -53,7 +53,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#1F66F4",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }

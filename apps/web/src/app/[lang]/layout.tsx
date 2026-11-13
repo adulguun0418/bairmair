@@ -1,6 +1,7 @@
 import { LOCALES } from '@bairmair/i18n/locales';
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { LanguageLinks, LanguageSwitch } from '@/components/LanguageSwitch';
@@ -40,8 +41,17 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
       <body className="flex min-h-full flex-col bg-stone-50 text-stone-900">
         <header className="border-b border-stone-200 bg-white">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-            <Link href={localePath(locale, '/')} className="text-lg font-semibold tracking-tight">
-              {t('app.name')}
+            <Link href={localePath(locale, '/')} className="shrink-0">
+              {/* Built from assets/brand/logo.svg by assets/brand/build-horizontal.mjs (aspect 3.608). */}
+              <Image
+                src="/brand/logo-horizontal.svg"
+                alt={t('app.name')}
+                width={130}
+                height={36}
+                preload
+                unoptimized
+                className="h-8 w-auto sm:h-9"
+              />
             </Link>
             <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1 text-sm">
               <Link href={localePath(locale, '/search?type=sale')} className="hover:underline">

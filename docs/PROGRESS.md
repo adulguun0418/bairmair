@@ -174,7 +174,7 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - No reminder reaches a seller whose listing is about to leave search (no push yet); the app shows it on the home list and in the editor.
 - Step 6 serves the model with `applyAnnotations(model, { roomLabels, photos })` from `room_scans.room_labels` and `listing_photos.room_id`; replaced scans' `scan-models` files still need a server-side cleanup.
 - Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
-- Before an App Store build: real app icon and splash. The current icon (mobile icon, Android adaptive foreground, splash, web favicon/icon/apple-icon) is a placeholder character image that cannot ship (third-party copyright; App Review rejects it). Regenerate all sizes from one 1024 px source when the real logo exists.
+- Icons come from `assets/brand/logo.svg` on white: the full logo (building + "bairmair") for the iOS icon, Android adaptive icon and splash; `logo-mark.svg` (building only) for the web icons and the small Expo web favicon. The web header uses `logo-horizontal.svg` (mark left, wordmark right), built from `logo.svg`'s own paths by `node assets/brand/build-horizontal.mjs` (also writes `apps/web/public/brand/`). The new app icons and splash show up with the next EAS build.
 - Before production: separate project, remove the test OTP number, turn off the email provider (kept on in dev for the tests).
 
 ## To review
