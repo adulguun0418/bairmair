@@ -40,7 +40,12 @@ function RootStack() {
     <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="listing/[id]/index" options={{ title: '' }} />
-      <Stack.Screen name="listing/[id]/model" options={{ title: t('viewer.label') }} />
+      <Stack.Screen
+        name="listing/[id]/model"
+        // iOS 26 turns a swipe right anywhere on the screen into "back", which took the 3D view's
+        // drags. Only the swipe from the left edge goes back here.
+        options={{ title: t('viewer.label'), fullScreenGestureEnabled: false }}
+      />
       <Stack.Screen
         name="listing/[id]/report"
         options={{ presentation: 'formSheet', title: t('report.title'), sheetGrabberVisible: true }}

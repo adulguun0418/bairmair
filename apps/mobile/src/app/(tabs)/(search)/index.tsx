@@ -1,10 +1,12 @@
 import { activeFilterCount, type SearchFilters } from '@bairmair/browse';
 import { LISTING_FRESHNESS, type SearchListingRow } from '@bairmair/db';
 import { Stack, useRouter } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -29,6 +31,10 @@ const SearchMap = lazy(() =>
 /** The search box sends at most this much text (the web's limit). */
 const MAX_QUERY_LENGTH = 100;
 
+const TOOLBAR_PADDING = 8;
+/** Large text sizes still grow the toolbar's labels, but not past one row. */
+const MAX_FONT_SCALE = 1.4;
+
 /** The buyers' home: search with filters, as a list or on the map. */
 export default function SearchScreen() {
   const { t } = useI18n();
@@ -36,6 +42,9 @@ export default function SearchScreen() {
   const router = useRouter();
   const filters = useSearchFilters();
   const filterCount = activeFilterCount(filters);
+  // With a search bar (and on iOS 26 always) the iOS header is translucent and the screen starts
+  // under it. The list insets itself; this fixed toolbar has to start below the header itself.
+  const headerHeight = useHeaderHeight();
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
@@ -50,8 +59,17 @@ export default function SearchScreen() {
           },
         }}
       />
-      <View style={[styles.toolbar, { borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          styles.toolbar,
+          {
+            borderBottomColor: colors.border,
+            paddingTop: (Platform.OS === 'ios' ? headerHeight : 0) + TOOLBAR_PADDING,
+          },
+        ]}
+      >
         <Segments
+          stretch
           value={filters.type ?? 'all'}
           options={(['all', 'sale', 'rent'] as const).map((type) => ({
             value: type,
@@ -72,6 +90,8 @@ export default function SearchScreen() {
             ]}
           >
             <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
               style={[styles.filterText, { color: filterCount > 0 ? colors.accent : colors.text }]}
             >
               {filterCount > 0
@@ -235,14 +255,20 @@ function ResultList({ filters }: { filters: SearchFilters }) {
   );
 }
 
+/**
+ * A segmented control. `stretch` fills the width with equal segments; otherwise each segment is
+ * as wide as its label. (A growing segment inside an unsized row would take the whole row.)
+ */
 function Segments<T extends string>({
   value,
   options,
   onChange,
+  stretch = false,
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
+  stretch?: boolean;
 }) {
   const colors = useColors();
   return (
@@ -258,9 +284,15 @@ function Segments<T extends string>({
             accessibilityRole="radio"
             accessibilityState={{ selected }}
             onPress={() => onChange(option.value)}
-            style={[styles.segment, selected && { backgroundColor: colors.background }]}
+            style={[
+              styles.segment,
+              stretch && styles.segmentStretch,
+              selected && { backgroundColor: colors.background },
+            ]}
           >
             <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
               style={[
                 styles.segmentText,
                 { color: selected ? colors.text : colors.textMuted },
@@ -281,20 +313,27 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   toolbar: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingBottom: TOOLBAR_PADDING,
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  toolbarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  toolbarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
   filterButton: {
     borderWidth: 1,
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 7,
+    flexShrink: 1,
   },
   filterText: { fontSize: 15, fontWeight: '600' },
   segments: { flexDirection: 'row', borderRadius: 10, padding: 2 },
-  segment: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, flexGrow: 1 },
+  segment: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  segmentStretch: { flex: 1 },
   segmentText: { fontSize: 14, textAlign: 'center' },
   segmentSelected: { fontWeight: '600' },
   list: { padding: 16, gap: 14 },
