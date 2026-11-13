@@ -13,6 +13,28 @@
 }
 
 /*
+ * Tailwind v4 gives buttons the browser's default arrow; links get the hand. Everything you can
+ * press shows the hand, and disabled controls say so.
+ */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  select:not(:disabled),
+  summary,
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  input[type='file']:not(:disabled),
+  input[type='file']:not(:disabled)::file-selector-button,
+  label:has(input[type='checkbox']:not(:disabled)),
+  label:has(input[type='radio']:not(:disabled)) {
+    cursor: pointer;
+  }
+  :is(button, select, input):disabled {
+    cursor: not-allowed;
+  }
+}
+
+/*
  * Colours are semantic tokens (`bg-surface`, `text-fg-muted`, `border-line`, ...) defined once
  * per theme below, so components never need `dark:` variants. Light values are the stone/amber
  * shades the site used before dark mode.
