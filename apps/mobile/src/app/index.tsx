@@ -3,6 +3,8 @@ import * as Device from 'expo-device';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '@/auth/auth-provider';
+import { formatMongolianPhone } from '@/auth/phone';
 import { useI18n } from '@/i18n/i18n';
 import { deviceFacts, scanSupport } from '@/scanner/device';
 import { formatScanTime } from '@/scanner/scan-meta';
@@ -37,6 +39,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const router = useRouter();
   const [scans, setScans] = useState<SavedScan[]>([]);
+  const user = useAuth().session?.user ?? null;
 
   useFocusEffect(
     useCallback(() => {
@@ -57,6 +60,24 @@ export default function HomeScreen() {
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/account')}
+        style={({ pressed }) => [
+          styles.row,
+          { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Text style={[styles.body, { color: colors.text }]}>{t('account.title')}</Text>
+        <Text style={[styles.muted, { color: colors.textMuted }]}>
+          {user
+            ? user.phone
+              ? formatMongolianPhone(user.phone)
+              : (user.email ?? '')
+            : t('account.signIn')}
+        </Text>
+      </Pressable>
+
       <Text style={[styles.muted, { color: colors.textMuted }]}>{t('scanTest.intro')}</Text>
 
       <View style={[styles.card, { backgroundColor: colors.surface }]}>

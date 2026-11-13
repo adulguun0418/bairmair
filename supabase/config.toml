@@ -162,8 +162,8 @@ site_url = "http://localhost:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-# The mobile app's deep-link scheme is added with the first EAS build (step 4).
-additional_redirect_urls = ["http://localhost:3000/**"]
+# bairmair://** is the mobile app (Google browser OAuth ends at bairmair://auth/callback).
+additional_redirect_urls = ["http://localhost:3000/**", "bairmair://**"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -342,11 +342,12 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack_oidc`, `spotify`, `workos`, `zoom`.
+# Native Sign in with Apple only (expo-apple-authentication + signInWithIdToken): the client id is
+# the iOS bundle id, and no Services ID or secret key is needed. The web OAuth flow would need both.
 [auth.external.apple]
-enabled = false
-client_id = ""
-# DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
-secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
+enabled = true
+client_id = "mn.bairmair.app"
+secret = ""
 # Overrides the default auth callback URL derived from auth.external_url.
 redirect_uri = ""
 # Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,

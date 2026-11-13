@@ -15,5 +15,6 @@ export { Constants } from './database.types';
 /** A supabase-js client typed against our schema. Apps create it with `createClient<Database>`. */
 export type TypedSupabaseClient = SupabaseClient<Database>;
 
+export * from './api';
 export * from './errors';
 export * from './storage';

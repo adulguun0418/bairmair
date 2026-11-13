@@ -528,6 +528,7 @@ export type Database = {
           listing_id: string;
           metrics: Json | null;
           model_path: string | null;
+          processing_error: string | null;
           raw_json_path: string;
           room_labels: Json;
           schema_version: number | null;
@@ -547,6 +548,7 @@ export type Database = {
           listing_id: string;
           metrics?: Json | null;
           model_path?: string | null;
+          processing_error?: string | null;
           raw_json_path: string;
           room_labels?: Json;
           schema_version?: number | null;
@@ -566,6 +568,7 @@ export type Database = {
           listing_id?: string;
           metrics?: Json | null;
           model_path?: string | null;
+          processing_error?: string | null;
           raw_json_path?: string;
           room_labels?: Json;
           schema_version?: number | null;
