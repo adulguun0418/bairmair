@@ -1,20 +1,35 @@
 import { BUCKETS, listingPhotoPath, publicObjectUrl } from '@bairmair/db';
+import Constants from 'expo-constants';
 import { randomUUID } from 'expo-crypto';
 import { File, UploadType } from 'expo-file-system';
 import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
-import { deletePhotoFile, filePersistence, listingFiles } from './files';
+import { analyzeExport } from '@/scanner/analyze';
+import { deleteScan as deleteScannerFolder, getScan } from '@/scanner/storage';
+import type { ListingStatus } from './form';
+import {
+  deleteListingFile,
+  deletePhotoFile,
+  filePersistence,
+  listingFiles,
+  moveScanFiles,
+} from './files';
 import {
   addPhotos,
+  attachScan,
   isUntouched,
   markDeleted,
   newListing,
   photoSlotsLeft,
   removePhoto,
+  removeScan,
+  setStatus,
+  touch,
   type LocalListing,
   type LocalPhoto,
+  type PinnedLocation,
 } from './model';
 import { preparePhoto } from './photos';
 import { createSupabaseRemote, type UploadFile } from './remote';
@@ -44,6 +59,7 @@ export const syncEngine = new SyncEngine(
     supabaseUrl: env.supabaseUrl,
     publishableKey: env.supabasePublishableKey,
     uploadFile,
+    apiUrl: env.apiUrl,
   }),
   listingFiles,
 );
@@ -154,6 +170,75 @@ export async function addPickedPhotos(id: string, uris: string[]): Promise<numbe
 export function removeListingPhoto(id: string, photo: LocalPhoto): void {
   editListing(id, (listing, now) => removePhoto(listing, photo.id, now));
   deletePhotoFile(id, photo.file);
+}
+
+export type AttachScanResult =
+  | { ok: true }
+  /** - `missing`: the scanner's files are gone; `noUsdz`: the export has no 3D file;
+   *  `unreadable`: the converter cannot read it (the scan stays in the RoomPlan test list) */
+  | { ok: false; reason: 'missing' | 'noUsdz' | 'unreadable' };
+
+/**
+ * Takes a scan the scanner just saved (`Documents/scans/<scannerId>/`) and makes it the
+ * listing's scan, replacing any previous one. The files move into the listing folder.
+ */
+export async function attachScannedRoom(
+  listingId: string,
+  scannerId: string,
+  location: PinnedLocation | null,
+): Promise<AttachScanResult> {
+  const saved = getScan(scannerId);
+  const listing = listingStore.get(listingId);
+  if (!saved || !listing) return { ok: false, reason: 'missing' };
+  if (!saved.usdz) return { ok: false, reason: 'noUsdz' };
+  // The server runs the same converter; a file the phone cannot convert would only fail there.
+  if (!analyzeExport(saved.rawJson.textSync()).ok) return { ok: false, reason: 'unreadable' };
+
+  const scanId = randomUUID();
+  const files = await moveScanFiles(listingId, scanId, { json: saved.rawJson, usdz: saved.usdz });
+  deleteScannerFolder(scannerId);
+
+  const previous = listing.scan?.files;
+  editListing(listingId, (current, now) =>
+    attachScan(
+      current,
+      {
+        id: scanId,
+        createdAt: saved.meta.createdAt || now,
+        files,
+        device: saved.meta.device,
+        appVersion: Constants.expoConfig?.version ?? null,
+        location,
+      },
+      now,
+    ),
+  );
+  if (previous) {
+    deleteListingFile(listingId, previous.json);
+    deleteListingFile(listingId, previous.usdz);
+  }
+  return { ok: true };
+}
+
+export function removeListingScan(id: string): void {
+  const files = listingStore.get(id)?.scan?.files;
+  editListing(id, removeScan);
+  if (files) {
+    deleteListingFile(id, files.json);
+    deleteListingFile(id, files.usdz);
+  }
+}
+
+/** Publish, archive, mark sold/rented, or go back to the server's status. */
+export function changeListingStatus(id: string, status: ListingStatus): void {
+  listingStore.update(id, (listing) => setStatus(listing, status, nowIso()));
+  void syncEngine.run();
+}
+
+/** Sends a refused change again, after the seller fixed the cause elsewhere (e.g. their phone). */
+export function retryRefusedSync(id: string): void {
+  listingStore.update(id, (listing) => touch(listing, nowIso()));
+  void syncEngine.run();
 }
 
 /** Downloads a listing from the server so it can be edited on this phone. */

@@ -27,7 +27,13 @@ function RootStack() {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ title: t('listings.title') }} />
-      <Stack.Screen name="listings/[id]" options={{ title: t('listingForm.editTitle') }} />
+      <Stack.Screen name="listings/[id]/index" options={{ title: t('listingForm.editTitle') }} />
+      <Stack.Screen
+        name="listings/[id]/scan"
+        options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen name="listings/[id]/rooms" options={{ title: t('roomReview.title') }} />
+      <Stack.Screen name="listings/[id]/photo-rooms" options={{ title: t('photoRooms.title') }} />
       <Stack.Screen name="scan-test" options={{ title: t('scanTest.title') }} />
       <Stack.Screen
         name="scan"

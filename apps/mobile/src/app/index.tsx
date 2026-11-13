@@ -178,7 +178,8 @@ function ListingRow({ listing, onPress }: { listing: LocalListing; onPress: () =
   const price = parseNumberInput(listing.form.price);
   const currency = listing.form.type === 'sale' ? 'MNT' : listing.form.currency;
   const details = [
-    t(`listings.statuses.${listing.status}`),
+    t(`listings.statuses.${listing.serverStatus}`),
+    listing.scan?.processing === 'ready' ? t('listings.badge3d') : null,
     t(`listingForm.types.${listing.form.type}`),
     price !== null && !Number.isNaN(price) ? formatMoneyCompact(price, currency, locale) : null,
     listing.photos.length > 0 ? t('listings.photoCount', { count: listing.photos.length }) : null,

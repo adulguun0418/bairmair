@@ -1,4 +1,5 @@
 import { LISTING_LIMITS } from '@bairmair/db';
+import type { RoomLabelOverride } from '@bairmair/room-model';
 import { EMPTY_FORM, PRIVATE_FIELDS, type ListingForm, type ListingStatus } from './form';
 
 // A listing as saved on the phone, and the pure changes made to it by the editor (user edits)
@@ -20,6 +21,12 @@ export interface PinnedLocation {
  */
 export type PhotoState = 'local' | 'uploaded' | 'saved';
 
+/** A photo's room in one scan (`listing_photos.scan_id` + `room_id`). */
+export interface PhotoRoom {
+  scanId: string;
+  roomId: string;
+}
+
 export interface LocalPhoto {
   /** Also the storage object name: `{listingId}/{id}.jpg`. */
   id: string;
@@ -30,6 +37,37 @@ export interface LocalPhoto {
   state: PhotoState;
   /** The `sort_order` last written to the row, or null before the row exists. */
   savedSortOrder: number | null;
+  /** The room of the listing's current scan the seller put this photo in. */
+  roomId: string | null;
+  /** The scan and room last written to the row (null: none). */
+  savedRoom: PhotoRoom | null;
+}
+
+/**
+ * Upload progress of a scan:
+ * - `row`: the `room_scans` row (`attempted`: an insert was sent, its response may be lost)
+ * - `uploaded`: the raw RoomPlan JSON and USDZ in the private `scan-raw` bucket
+ * - `processing`: the server's conversion (`POST /api/scans/{id}/process`)
+ */
+export interface LocalScan {
+  /** `room_scans.id`, chosen on the phone, so storage paths exist before the row does. */
+  id: string;
+  createdAt: string;
+  /** Raw files in the listing folder; null for a scan downloaded from the server. */
+  files: { json: string; usdz: string } | null;
+  device: { modelId: string | null; osVersion: string | null } | null;
+  appVersion: string | null;
+  /** The phone's best GPS fix during the scan ("scanned on-site"). */
+  location: PinnedLocation | null;
+  row: 'none' | 'attempted' | 'created';
+  uploaded: { json: boolean; usdz: boolean };
+  processing: 'pending' | 'ready' | 'failed';
+  /** Total scanned area reported by the server, once processed. */
+  totalAreaM2: number | null;
+  /** The seller's room label corrections (`room_scans.room_labels`), keyed by room id. */
+  roomLabels: Record<string, RoomLabelOverride>;
+  labelsRev: number;
+  labelsSyncedRev: number;
 }
 
 export interface LocalListing {
@@ -39,14 +77,22 @@ export interface LocalListing {
   ownerId: string;
   createdAt: string;
   updatedAt: string;
-  /** Last known server status. 5b only writes drafts; publishing comes with 5c. */
+  /** The status the seller chose. Sent to the server when `statusRev > statusSyncedRev`. */
   status: ListingStatus;
+  /** The last status the server accepted. */
+  serverStatus: ListingStatus;
+  statusRev: number;
+  statusSyncedRev: number;
   form: ListingForm;
   location: PinnedLocation | null;
   /** In display order: the first photo is the cover. */
   photos: LocalPhoto[];
   /** Photos removed on the phone that may still have a row or file on the server. */
   removedPhotoIds: string[];
+  /** The listing's scan (one at a time; a rescan replaces it). */
+  scan: LocalScan | null;
+  /** Replaced or removed scans that may still have a row or raw files on the server. */
+  removedScanIds: string[];
   /** Set when the seller deletes the listing; the sync engine removes it everywhere. */
   deleted: boolean;
   remote: {
@@ -72,10 +118,15 @@ export function newListing(id: string, ownerId: string, now: string): LocalListi
     createdAt: now,
     updatedAt: now,
     status: 'draft',
+    serverStatus: 'draft',
+    statusRev: 0,
+    statusSyncedRev: 0,
     form: { ...EMPTY_FORM },
     location: null,
     photos: [],
     removedPhotoIds: [],
+    scan: null,
+    removedScanIds: [],
     deleted: false,
     remote: { createAttempted: false, created: false },
     rev: 1,
@@ -86,14 +137,51 @@ export function newListing(id: string, ownerId: string, now: string): LocalListi
   };
 }
 
+/**
+ * Fills fields added after a listing was saved on the phone (5b files have no scan or status
+ * revisions). The file format stays version 1: every addition has a safe default.
+ */
+export function normalizeListing(saved: LocalListing): LocalListing {
+  const raw = saved as Partial<LocalListing> & LocalListing;
+  return {
+    ...raw,
+    serverStatus: raw.serverStatus ?? raw.status,
+    statusRev: raw.statusRev ?? 0,
+    statusSyncedRev: raw.statusSyncedRev ?? 0,
+    scan: raw.scan ?? null,
+    removedScanIds: raw.removedScanIds ?? [],
+    photos: raw.photos.map((photo) => ({
+      ...photo,
+      roomId: photo.roomId ?? null,
+      savedRoom: photo.savedRoom ?? null,
+    })),
+  };
+}
+
+/** The more accurate of two GPS fixes (a fix without accuracy counts as the least accurate). */
+export function betterFix(
+  current: PinnedLocation | null,
+  candidate: PinnedLocation,
+): PinnedLocation {
+  if (!current) return candidate;
+  const accuracy = (fix: PinnedLocation) => fix.accuracyM ?? Number.POSITIVE_INFINITY;
+  return accuracy(candidate) < accuracy(current) ? candidate : current;
+}
+
 /** Untouched and never sent: safe to drop when the seller backs out of "new listing". */
 export function isUntouched(listing: LocalListing): boolean {
   return (
     !listing.remote.createAttempted &&
     listing.editVersion === 0 &&
     listing.photos.length === 0 &&
-    listing.location === null
+    listing.location === null &&
+    listing.scan === null
   );
+}
+
+/** Published or sold/rented: publicly visible, so the row must stay complete. */
+export function isLive(status: ListingStatus): boolean {
+  return status === 'published' || status === 'sold_or_rented';
 }
 
 // User edits ----------------------------------------------------------------------------------
@@ -137,9 +225,13 @@ export function addPhotos(
   photos: Pick<LocalPhoto, 'id' | 'file' | 'width' | 'height'>[],
   now: string,
 ): LocalListing {
-  const added = photos
-    .slice(0, photoSlotsLeft(listing))
-    .map((photo): LocalPhoto => ({ ...photo, state: 'local', savedSortOrder: null }));
+  const added = photos.slice(0, photoSlotsLeft(listing)).map((photo): LocalPhoto => ({
+    ...photo,
+    state: 'local',
+    savedSortOrder: null,
+    roomId: null,
+    savedRoom: null,
+  }));
   if (added.length === 0) return listing;
   return edited(listing, now, { photos: [...listing.photos, ...added] });
 }
@@ -176,6 +268,106 @@ export function movePhoto(
 
 export function markDeleted(listing: LocalListing, now: string): LocalListing {
   return edited(listing, now, { deleted: true });
+}
+
+/** No change, but counts as an edit: a refused sync is tried again (after a fix elsewhere). */
+export function touch(listing: LocalListing, now: string): LocalListing {
+  return edited(listing, now, {});
+}
+
+/** The seller publishes, archives or marks the listing sold/rented. */
+export function setStatus(listing: LocalListing, status: ListingStatus, now: string): LocalListing {
+  if (status === listing.status) return listing;
+  return edited(listing, now, { status, statusRev: listing.statusRev + 1 });
+}
+
+/** Gives up a status change the server refused: back to the server's status. */
+export function revertStatus(listing: LocalListing, now: string): LocalListing {
+  return setStatus(listing, listing.serverStatus, now);
+}
+
+export type NewScan = Pick<
+  LocalScan,
+  'id' | 'createdAt' | 'files' | 'device' | 'appVersion' | 'location'
+>;
+
+/** Where a scan that is being replaced or removed still has to be cleaned up. */
+function retire(listing: LocalListing): string[] {
+  const old = listing.scan;
+  return old && old.row !== 'none' ? [...listing.removedScanIds, old.id] : listing.removedScanIds;
+}
+
+/** Room ids belong to one scan, so a new or removed scan clears every photo's room. */
+function clearPhotoRooms(photos: LocalPhoto[]): LocalPhoto[] {
+  return photos.map((photo) => (photo.roomId === null ? photo : { ...photo, roomId: null }));
+}
+
+/** Attaches a new scan, replacing the current one (a rescan). */
+export function attachScan(listing: LocalListing, scan: NewScan, now: string): LocalListing {
+  return edited(listing, now, {
+    scan: {
+      ...scan,
+      row: 'none',
+      uploaded: { json: false, usdz: false },
+      processing: 'pending',
+      totalAreaM2: null,
+      roomLabels: {},
+      labelsRev: 0,
+      labelsSyncedRev: 0,
+    },
+    removedScanIds: retire(listing),
+    photos: clearPhotoRooms(listing.photos),
+  });
+}
+
+export function removeScan(listing: LocalListing, now: string): LocalListing {
+  if (!listing.scan) return listing;
+  return edited(listing, now, {
+    scan: null,
+    removedScanIds: retire(listing),
+    photos: clearPhotoRooms(listing.photos),
+  });
+}
+
+/**
+ * Corrects one room's label and/or name. The name is kept as typed (`applyAnnotations` trims
+ * it); an empty name removes the custom name.
+ */
+export function setRoomLabel(
+  listing: LocalListing,
+  roomId: string,
+  change: RoomLabelOverride,
+  now: string,
+): LocalListing {
+  const scan = listing.scan;
+  if (!scan) return listing;
+  const current = scan.roomLabels[roomId] ?? {};
+  const next: RoomLabelOverride = { ...current, ...change };
+  if (next.name === null || next.name === '') delete next.name;
+  if (next.label === current.label && next.name === current.name) return listing;
+  return edited(listing, now, {
+    scan: {
+      ...scan,
+      roomLabels: { ...scan.roomLabels, [roomId]: next },
+      labelsRev: scan.labelsRev + 1,
+    },
+  });
+}
+
+/** Puts a photo in a room of the current scan, or takes it out (null). */
+export function assignPhotoRoom(
+  listing: LocalListing,
+  photoId: string,
+  roomId: string | null,
+  now: string,
+): LocalListing {
+  const photo = listing.photos.find((candidate) => candidate.id === photoId);
+  if (!photo || photo.roomId === roomId || (roomId !== null && !listing.scan)) return listing;
+  return edited(listing, now, {
+    photos: listing.photos.map((candidate) =>
+      candidate.id === photoId ? { ...candidate, roomId } : candidate,
+    ),
+  });
 }
 
 // Sync progress -------------------------------------------------------------------------------
@@ -228,6 +420,112 @@ export function markPhotoSaved(
     state: 'saved',
     savedSortOrder: sortOrder,
   }));
+}
+
+export function markPhotoRoomSaved(
+  listing: LocalListing,
+  photoId: string,
+  room: PhotoRoom | null,
+): LocalListing {
+  return mapPhoto(listing, photoId, (photo) => ({ ...photo, savedRoom: room }));
+}
+
+export function markStatusSynced(
+  listing: LocalListing,
+  rev: number,
+  status: ListingStatus,
+): LocalListing {
+  return {
+    ...listing,
+    serverStatus: status,
+    statusSyncedRev: Math.max(listing.statusSyncedRev, rev),
+  };
+}
+
+/** Applies a change to the scan, if it is still the listing's scan. */
+export function updateScan(
+  listing: LocalListing,
+  scanId: string,
+  change: (scan: LocalScan) => LocalScan,
+): LocalListing {
+  if (listing.scan?.id !== scanId) return listing;
+  return { ...listing, scan: change(listing.scan) };
+}
+
+export function markScanRowAttempted(listing: LocalListing, scanId: string): LocalListing {
+  return updateScan(listing, scanId, (scan) =>
+    scan.row === 'none' ? { ...scan, row: 'attempted' } : scan,
+  );
+}
+
+export function markScanRowCreated(listing: LocalListing, scanId: string): LocalListing {
+  return updateScan(listing, scanId, (scan) => ({ ...scan, row: 'created' }));
+}
+
+export function markScanFileUploaded(
+  listing: LocalListing,
+  scanId: string,
+  kind: 'json' | 'usdz',
+): LocalListing {
+  return updateScan(listing, scanId, (scan) => ({
+    ...scan,
+    uploaded: { ...scan.uploaded, [kind]: true },
+  }));
+}
+
+export function markScanLabelsSynced(
+  listing: LocalListing,
+  scanId: string,
+  rev: number,
+): LocalListing {
+  return updateScan(listing, scanId, (scan) => ({
+    ...scan,
+    labelsSyncedRev: Math.max(scan.labelsSyncedRev, rev),
+  }));
+}
+
+export function markScanProcessed(
+  listing: LocalListing,
+  scanId: string,
+  result: { ok: true; totalAreaM2: number } | { ok: false },
+): LocalListing {
+  return updateScan(listing, scanId, (scan) =>
+    result.ok
+      ? { ...scan, processing: 'ready', totalAreaM2: result.totalAreaM2 }
+      : { ...scan, processing: 'failed' },
+  );
+}
+
+/** The server lacks the scan's files or row: send everything again from the phone's copy. */
+export function resetScanUpload(listing: LocalListing, scanId: string): LocalListing {
+  return updateScan(listing, scanId, (scan) => ({
+    ...scan,
+    uploaded: { json: false, usdz: false },
+  }));
+}
+
+/**
+ * The server no longer has the scan row (deleted on another phone): create it again, with its
+ * labels. Deleting the row also cleared the photos' rooms on the server.
+ */
+export function resetScanRow(listing: LocalListing, scanId: string): LocalListing {
+  const reset = updateScan(listing, scanId, (scan) => ({
+    ...scan,
+    row: 'none',
+    uploaded: { json: false, usdz: false },
+    labelsSyncedRev: 0,
+  }));
+  if (reset === listing) return listing;
+  return {
+    ...reset,
+    photos: reset.photos.map((photo) =>
+      photo.savedRoom?.scanId === scanId ? { ...photo, savedRoom: null } : photo,
+    ),
+  };
+}
+
+export function markScanRemoved(listing: LocalListing, scanId: string): LocalListing {
+  return { ...listing, removedScanIds: listing.removedScanIds.filter((id) => id !== scanId) };
 }
 
 export function markPhotoRemoved(listing: LocalListing, photoId: string): LocalListing {

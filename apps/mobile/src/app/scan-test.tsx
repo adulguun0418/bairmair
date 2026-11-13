@@ -1,4 +1,4 @@
-import { formatFileSize, type Translator } from '@bairmair/i18n';
+import { formatFileSize } from '@bairmair/i18n';
 import * as Device from 'expo-device';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -7,29 +7,10 @@ import { useI18n } from '@/i18n/i18n';
 import { deviceFacts, scanSupport } from '@/scanner/device';
 import { formatScanTime } from '@/scanner/scan-meta';
 import { listScans, type SavedScan } from '@/scanner/storage';
-import { canStartScan, type ScanSupport } from '@/scanner/support';
+import { supportMessage } from '@/scanner/support-message';
+import { canStartScan } from '@/scanner/support';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
-
-function supportMessage(t: Translator, support: ScanSupport): string {
-  switch (support.status) {
-    case 'supported':
-      return t('scanSupport.supported');
-    case 'unverified':
-      return t('scanSupport.unverified');
-    case 'unsupported':
-      switch (support.reason) {
-        case 'not-ios':
-          return t('scanSupport.notIos');
-        case 'simulator':
-          return t('scanSupport.simulator');
-        case 'os-too-old':
-          return t('scanSupport.osTooOld');
-        case 'no-lidar':
-          return t('scanSupport.noLidar');
-      }
-  }
-}
 
 /** Step 4 test screen: device check, start a scan, list the scans saved on this phone. */
 export default function ScanTestScreen() {

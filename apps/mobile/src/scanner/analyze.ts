@@ -1,6 +1,7 @@
 import {
   computeMetrics,
   convertRoomPlan,
+  type ConversionWarning,
   type ConversionWarningCode,
   type ModelMetrics,
   type RoomModelV1,
@@ -14,8 +15,18 @@ export type ScanAnalysis =
       /** How often each conversion warning occurred. */
       warnings: Partial<Record<ConversionWarningCode, number>>;
       warningCount: number;
+      /** Rooms with fewer than 3 walls: the scan probably missed part of them. */
+      incompleteRoomIds: string[];
     }
   | { ok: false; error: string };
+
+export function countWarnings(
+  warnings: readonly ConversionWarning[],
+): Partial<Record<ConversionWarningCode, number>> {
+  const counts: Partial<Record<ConversionWarningCode, number>> = {};
+  for (const warning of warnings) counts[warning.code] = (counts[warning.code] ?? 0) + 1;
+  return counts;
+}
 
 /**
  * Converts a raw RoomPlan export with the shared converter, exactly as the server will.
@@ -24,14 +35,15 @@ export type ScanAnalysis =
 export function analyzeExport(rawJson: string): ScanAnalysis {
   try {
     const { model, warnings } = convertRoomPlan(JSON.parse(rawJson));
-    const counts: Partial<Record<ConversionWarningCode, number>> = {};
-    for (const warning of warnings) counts[warning.code] = (counts[warning.code] ?? 0) + 1;
     return {
       ok: true,
       model,
       metrics: computeMetrics(model),
-      warnings: counts,
+      warnings: countWarnings(warnings),
       warningCount: warnings.length,
+      incompleteRoomIds: warnings
+        .filter((warning) => warning.code === 'incomplete-room' && warning.elementId)
+        .map((warning) => warning.elementId!),
     };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };

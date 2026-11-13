@@ -1,5 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system';
-import type { LocalListing } from './model';
+import { normalizeListing, type LocalListing } from './model';
 import type { ListingPersistence } from './store';
 import type { ListingFiles } from './sync-engine';
 
@@ -29,7 +29,9 @@ export const filePersistence: ListingPersistence = {
       if (!file.exists) continue;
       try {
         const listing = JSON.parse(file.textSync()) as LocalListing;
-        if (listing.version === 1 && listing.id === entry.name) listings.push(listing);
+        if (listing.version === 1 && listing.id === entry.name) {
+          listings.push(normalizeListing(listing));
+        }
       } catch (error) {
         console.warn(`Skipping unreadable listing ${entry.name}`, error);
       }
@@ -67,7 +69,40 @@ export const listingFiles: ListingFiles = {
 };
 
 export function deletePhotoFile(listingId: string, file: string | null): void {
+  deleteListingFile(listingId, file);
+}
+
+export function deleteListingFile(listingId: string, file: string | null): void {
   if (!file) return;
-  const photo = new File(listingDir(listingId), file);
-  if (photo.exists) photo.delete();
+  const target = new File(listingDir(listingId), file);
+  if (target.exists) target.delete();
+}
+
+/** File names of a scan's raw files in its listing folder. */
+export function scanFileNames(scanId: string): { json: string; usdz: string } {
+  if (!UUID_RE.test(scanId)) throw new Error(`Invalid scan id: ${scanId}`);
+  return { json: `scan-${scanId}.json`, usdz: `scan-${scanId}.usdz` };
+}
+
+/**
+ * Moves a scan's raw files (saved by the scanner) into the listing folder, so they live and
+ * die with the listing. Returns their names there.
+ */
+export async function moveScanFiles(
+  listingId: string,
+  scanId: string,
+  source: { json: File; usdz: File },
+): Promise<{ json: string; usdz: string }> {
+  const dir = listingDir(listingId);
+  dir.create({ intermediates: true, idempotent: true });
+  const names = scanFileNames(scanId);
+  await source.json.move(new File(dir, names.json), { overwrite: true });
+  await source.usdz.move(new File(dir, names.usdz), { overwrite: true });
+  return names;
+}
+
+/** The text of a file in the listing folder, or null if it is not there. */
+export function readListingText(listingId: string, file: string): string | null {
+  const target = new File(listingDir(listingId), file);
+  return target.exists ? target.textSync() : null;
 }

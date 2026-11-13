@@ -13,23 +13,16 @@ import {
   updateForm,
   type LocalListing,
 } from '../src/listings/model';
-import { ListingStore, type ListingPersistence } from '../src/listings/store';
-import {
-  backoffMs,
-  SyncEngine,
-  type Clock,
-  type ListingFiles,
-  type ListingRemote,
-} from '../src/listings/sync-engine';
+import { backoffMs } from '../src/listings/sync-engine';
 import {
   classifyPostgrestError,
   classifyStorageResponse,
   SyncError,
 } from '../src/listings/sync-errors';
 import { isSynced, planSync } from '../src/listings/sync-plan';
+import { OWNER, setup } from './sync-fakes';
 
 const ID = '11111111-1111-4111-8111-111111111111';
-const OWNER = '22222222-2222-4222-8222-222222222222';
 const NOW = '2026-11-13T10:00:00.000Z';
 const ZAISAN = { lat: 47.8864, lng: 106.9057, accuracyM: 12, capturedAt: NOW };
 
@@ -206,111 +199,6 @@ describe('error classification', () => {
 });
 
 // Engine --------------------------------------------------------------------------------------
-
-class MemoryPersistence implements ListingPersistence {
-  saved = new Map<string, LocalListing>();
-  loadAll() {
-    return [...this.saved.values()];
-  }
-  async save(listing: LocalListing) {
-    this.saved.set(listing.id, listing);
-  }
-  async remove(id: string) {
-    this.saved.delete(id);
-  }
-}
-
-/** A server in memory that can be told to fail. */
-class FakeRemote implements ListingRemote {
-  userId: string | null = OWNER;
-  calls: string[] = [];
-  rows = new Map<string, unknown>();
-  photos = new Map<string, { sortOrder: number }>();
-  objects = new Set<string>();
-  /** Errors thrown by the next calls, in order. */
-  failures: Error[] = [];
-
-  private async call(name: string): Promise<void> {
-    this.calls.push(name);
-    const failure = this.failures.shift();
-    if (failure) throw failure;
-  }
-  async currentUserId() {
-    return this.userId;
-  }
-  async createListing(id: string, fields: unknown) {
-    await this.call('createListing');
-    this.rows.set(id, fields);
-  }
-  async updateListing(id: string, fields: unknown) {
-    await this.call('updateListing');
-    this.rows.set(id, fields);
-  }
-  async savePrivate() {
-    await this.call('savePrivate');
-  }
-  async uploadPhoto(listingId: string, photoId: string) {
-    await this.call('uploadPhoto');
-    this.objects.add(`${listingId}/${photoId}.jpg`);
-  }
-  async insertPhoto(_listingId: string, p: { id: string; sortOrder: number }) {
-    await this.call('insertPhoto');
-    this.photos.set(p.id, { sortOrder: p.sortOrder });
-  }
-  async reorderPhoto(photoId: string, sortOrder: number) {
-    await this.call('reorderPhoto');
-    this.photos.set(photoId, { sortOrder });
-  }
-  async removePhoto(listingId: string, photoId: string) {
-    await this.call('removePhoto');
-    this.photos.delete(photoId);
-    this.objects.delete(`${listingId}/${photoId}.jpg`);
-  }
-  async deleteListing(id: string) {
-    await this.call('deleteListing');
-    this.rows.delete(id);
-  }
-}
-
-class FakeFiles implements ListingFiles {
-  missing = new Set<string>();
-  removedFolders: string[] = [];
-  uri(listingId: string, file: string) {
-    return `file:///listings/${listingId}/${file}`;
-  }
-  exists(_listingId: string, file: string) {
-    return !this.missing.has(file);
-  }
-  removeFolder(listingId: string) {
-    this.removedFolders.push(listingId);
-  }
-}
-
-class FakeClock implements Clock {
-  time = 1_000_000;
-  timers: { at: number; callback: () => void }[] = [];
-  now() {
-    return this.time;
-  }
-  setTimeout(callback: () => void, ms: number) {
-    const timer = { at: this.time + ms, callback };
-    this.timers.push(timer);
-    return timer;
-  }
-  clearTimeout(handle: unknown) {
-    this.timers = this.timers.filter((timer) => timer !== handle);
-  }
-}
-
-function setup(listing: LocalListing) {
-  const store = new ListingStore(new MemoryPersistence());
-  store.put(listing);
-  const remote = new FakeRemote();
-  const files = new FakeFiles();
-  const clock = new FakeClock();
-  const engine = new SyncEngine(store, remote, files, clock);
-  return { store, remote, files, clock, engine };
-}
 
 describe('SyncEngine', () => {
   it('sends a new listing with its location and photos', async () => {
