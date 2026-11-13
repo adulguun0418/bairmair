@@ -1,3 +1,4 @@
+import type { Viewport } from './map-pins';
 import {
   DISTRICTS,
   LISTING_LIMITS,
@@ -11,6 +12,7 @@ import {
 //   /search?type=sale&district=khan-uul&district=bayangol&rooms=2&priceMax=300&has3d=1&view=map
 // Prices are in the unit the form asks for: millions of tögrög (`priceMax=300` = 300 сая ₮), or
 // dollars when `currency=USD` (rents only). Districts use their slugs, rooms 1..5 (5 = "5+").
+// `bbox=west,south,east,north` keeps listings inside a map area ("search this area").
 
 export type SearchView = 'list' | 'map';
 
@@ -30,6 +32,8 @@ export interface SearchFilters {
   has3d: boolean;
   q: string;
   sort: SearchSort;
+  /** Only listings inside this map area (rounded to 5 decimals, about a metre). */
+  bounds: Viewport | null;
   /** 1-based. */
   page: number;
   view: SearchView;
@@ -47,6 +51,7 @@ export const DEFAULT_FILTERS: SearchFilters = {
   has3d: false,
   q: '',
   sort: 'recommended',
+  bounds: null,
   page: 1,
   view: 'list',
 };
@@ -121,9 +126,26 @@ export function parseSearchParams(raw: RawSearchParams): SearchFilters {
     has3d: ['1', 'true', 'on'].includes(first(raw, 'has3d')),
     q: first(raw, 'q').slice(0, MAX_QUERY_LENGTH),
     sort,
+    bounds: parseBounds(first(raw, 'bbox')),
     page: Number.isInteger(page) && page >= 1 ? Math.min(page, MAX_PAGE) : 1,
     view: first(raw, 'view') === 'map' ? 'map' : 'list',
   };
+}
+
+const roundCoordinate = (value: number) => Math.round(value * 1e5) / 1e5;
+
+/** A map area from `west,south,east,north`, or null when malformed or empty. */
+export function parseBounds(text: string): Viewport | null {
+  const parts = text.split(',').map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) return null;
+  const [west, south, east, north] = parts.map(roundCoordinate) as [number, number, number, number];
+  if (west < -180 || east > 180 || south < -90 || north > 90) return null;
+  if (west >= east || south >= north) return null;
+  return { west, south, east, north };
+}
+
+function formatBounds({ west, south, east, north }: Viewport): string {
+  return [west, south, east, north].map(roundCoordinate).join(',');
 }
 
 /** Swaps a min and max typed the wrong way round. */
@@ -149,6 +171,7 @@ export function searchQuery(filters: SearchFilters, changes: Partial<SearchFilte
   if (next.areaMax !== null) params.set('areaMax', String(next.areaMax));
   if (next.has3d) params.set('has3d', '1');
   if (next.sort !== 'recommended') params.set('sort', next.sort);
+  if (next.bounds) params.set('bbox', formatBounds(next.bounds));
   if (next.page > 1) params.set('page', String(next.page));
   if (next.view === 'map') params.set('view', 'map');
   const query = params.toString();
@@ -165,13 +188,15 @@ export function hasFilters(filters: SearchFilters): boolean {
     filters.areaMin !== null ||
     filters.areaMax !== null ||
     filters.has3d ||
-    filters.q !== ''
+    filters.q !== '' ||
+    filters.bounds !== null
   );
 }
 
 /**
  * How many filter groups narrow the results, for a "Filters (2)" button: districts, rooms, price,
- * area and 3D count once each. The text query has its own field and does not count.
+ * area and 3D count once each. The text query and the map area have their own controls and do
+ * not count.
  */
 export function activeFilterCount(filters: SearchFilters): number {
   return [
@@ -183,7 +208,7 @@ export function activeFilterCount(filters: SearchFilters): number {
   ].filter(Boolean).length;
 }
 
-/** The `search_listings` arguments for the filters, without paging or viewport. */
+/** The `search_listings` arguments for the filters (the map area included), without paging. */
 export function searchArgs(filters: SearchFilters): SearchListingsArgs {
   const args: SearchListingsArgs = { p_sort: filters.sort, p_currency: filters.currency };
   if (filters.type) args.p_type = filters.type;
@@ -200,6 +225,12 @@ export function searchArgs(filters: SearchFilters): SearchListingsArgs {
   if (filters.areaMax !== null) args.p_area_max = filters.areaMax;
   if (filters.has3d) args.p_has_3d = true;
   if (filters.q) args.p_query = filters.q;
+  if (filters.bounds) {
+    args.p_west = filters.bounds.west;
+    args.p_south = filters.bounds.south;
+    args.p_east = filters.bounds.east;
+    args.p_north = filters.bounds.north;
+  }
   return args;
 }
 

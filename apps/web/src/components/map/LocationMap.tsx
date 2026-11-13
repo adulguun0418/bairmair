@@ -59,7 +59,7 @@ export default function LocationMap({
     map.on('load', () => {
       localizeLabels(map, locale);
       if (exact) {
-        new Marker({ color: '#1c1917' }).setLngLat([lng, lat]).addTo(map);
+        new Marker({ color: '#1a2b60' }).setLngLat([lng, lat]).addTo(map);
         return;
       }
       map.addSource('approximate', {
@@ -79,9 +79,9 @@ export default function LocationMap({
             APPROXIMATE_RADIUS_M,
             lat,
           ) as DataDrivenPropertyValueSpecification<number>,
-          'circle-color': '#f59e0b',
-          'circle-opacity': 0.25,
-          'circle-stroke-color': '#b45309',
+          'circle-color': '#199ed6',
+          'circle-opacity': 0.18,
+          'circle-stroke-color': '#1a2b60',
           'circle-stroke-width': 2,
         },
       });

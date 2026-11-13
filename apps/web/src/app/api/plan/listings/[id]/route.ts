@@ -1,4 +1,10 @@
-import { createTranslator, formatArea, isLocale, roomDisplayName, type Locale } from '@bairmair/i18n';
+import {
+  createTranslator,
+  formatArea,
+  isLocale,
+  roomDisplayName,
+  type Locale,
+} from '@bairmair/i18n';
 import { renderFloorPlanSvg } from '@bairmair/room-model';
 import { CARD_PLAN_THEME } from '@/lib/listing-plan';
 import { getListingPage } from '@/server/listing-page';

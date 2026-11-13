@@ -178,8 +178,16 @@ body {
 /* A faint blueprint grid, for the home page hero and plan panels. Colour from `currentColor`. */
 @utility bg-blueprint {
   background-image:
-    linear-gradient(to right, color-mix(in oklab, currentColor 9%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, currentColor 9%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      to right,
+      color-mix(in oklab, currentColor 9%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, currentColor 9%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 32px 32px;
 }
 

@@ -93,7 +93,7 @@ export default function PinPicker({
     const instance = map.current;
     if (!instance || !pin) return;
     if (!marker.current) {
-      const created = new Marker({ color: '#1c1917', draggable: true });
+      const created = new Marker({ color: '#1a2b60', draggable: true });
       created.on('dragend', () => {
         const at = created.getLngLat();
         const next = { lat: round(at.lat), lng: round(at.lng) };
