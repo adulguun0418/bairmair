@@ -6,7 +6,7 @@ import {
   type Tables,
 } from '@bairmair/db';
 
-// The listing form as the seller edits it, and its mapping to and from the `listings` row.
+// The listing form as the seller edits it (in the app and on the website), and its mapping to and from the `listings` row.
 // Pure: no React Native imports, so it runs in unit tests.
 
 type Enums = Database['public']['Enums'];
@@ -109,8 +109,8 @@ export type FormErrors = Partial<Record<FormField, FieldError>>;
 
 // Numbers ------------------------------------------------------------------------------------
 
-/** Spaces of any kind, as typed or pasted (no-break and thin spaces included). */
-const SPACES = /[\s   ]/g;
+/** Spaces of any kind, as typed or pasted: `\s` covers no-break and thin spaces too. */
+const SPACES = /\s/g;
 
 /**
  * Parses a number as people type it: `250 000 000`, `250,000,000`, `65.5`, or `65,5` (a decimal

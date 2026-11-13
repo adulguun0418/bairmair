@@ -4,7 +4,7 @@ import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
-import type { ListingStatus } from './form';
+import type { ListingStatus } from '@bairmair/browse';
 import { FreshnessSection } from './freshness-section';
 import { changeListingStatus, retryRefusedSync, useSyncStatus } from './listings';
 import { isLive, type LocalListing } from './model';

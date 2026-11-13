@@ -1,5 +1,5 @@
 import type { RoomLabelOverride } from '@bairmair/room-model';
-import type { ListingFields, ListingStatus } from './form';
+import type { ListingFields, ListingStatus } from '@bairmair/browse';
 import {
   dropPhoto,
   markCreateAttempted,

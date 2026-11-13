@@ -4,6 +4,7 @@ export * from './embed';
 export * from './favorites-remote';
 export * from './favorites-store';
 export * from './listing-card';
+export * from './listing-form';
 export * from './listing-page';
 export * from './listing-text';
 export * from './map-pins';
