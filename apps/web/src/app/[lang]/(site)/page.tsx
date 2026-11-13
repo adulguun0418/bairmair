@@ -1,5 +1,7 @@
 import { DISTRICTS } from '@bairmair/db';
+import type { Locale, Translator } from '@bairmair/i18n';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { ListingGrid } from '@/components/listing/ListingCard';
 import { getI18n, localePath } from '@/lib/i18n';
 import { publicEnv } from '@/lib/public-env';
@@ -9,15 +11,14 @@ import { searchListings } from '@/server/search';
 /** Main districts offered as shortcuts (the outlying ones are in the search filters). */
 const CENTRAL_DISTRICTS = DISTRICTS.slice(0, 6);
 
-/** Home: search entry points, then the newest 3D listings and the newest listings overall. */
+/**
+ * Home: search entry points, then the newest 3D listings and the newest listings overall.
+ * The listings stream in (search results are cached for a minute only, so they are not part of
+ * the prerendered shell); everything above them shows at once.
+ */
 export default async function HomePage() {
   const { locale, t } = await getI18n();
   const search = (query: string) => `${localePath(locale, '/search')}${query}`;
-  const [with3d, newest] = await Promise.all([
-    searchListings({ p_has_3d: true, p_sort: 'newest', p_limit: 4 }),
-    searchListings({ p_sort: 'newest', p_limit: 8 }),
-  ]);
-  const supabaseUrl = publicEnv.supabaseUrl;
 
   return (
     <div className="mx-auto max-w-7xl space-y-12 px-4 py-10">
@@ -54,6 +55,22 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <Suspense fallback={<ListingsSkeleton />}>
+        <HomeListings locale={locale} t={t} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function HomeListings({ locale, t }: { locale: Locale; t: Translator }) {
+  const search = (query: string) => `${localePath(locale, '/search')}${query}`;
+  const [with3d, newest] = await Promise.all([
+    searchListings({ p_has_3d: true, p_sort: 'newest', p_limit: 4 }),
+    searchListings({ p_sort: 'newest', p_limit: 8 }),
+  ]);
+  const supabaseUrl = publicEnv.supabaseUrl;
+  return (
+    <>
       {with3d.rows.length > 0 && (
         <section className="space-y-4">
           <Heading
@@ -77,7 +94,21 @@ export default async function HomePage() {
           <ListingGrid cards={newest.rows} locale={locale} supabaseUrl={supabaseUrl} />
         )}
       </section>
-    </div>
+    </>
+  );
+}
+
+/** Card-shaped placeholders while the listings load. */
+function ListingsSkeleton() {
+  return (
+    <section className="space-y-4" aria-hidden>
+      <div className="h-7 w-48 animate-pulse rounded-lg bg-surface-3" />
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="h-80 animate-pulse rounded-2xl bg-surface-3" />
+        ))}
+      </div>
+    </section>
   );
 }
 

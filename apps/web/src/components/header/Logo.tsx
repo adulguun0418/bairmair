@@ -13,7 +13,8 @@ export function Logo({
   className: string;
   preload?: boolean;
 }) {
-  const size = { width: 116, height: 32, unoptimized: true, preload } as const;
+  // 115 × 32 matches the 3.608 aspect, so a CSS height with `w-auto` keeps both in proportion.
+  const size = { width: 115, height: 32, unoptimized: true, preload } as const;
   return (
     <>
       <Image

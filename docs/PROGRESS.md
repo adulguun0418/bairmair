@@ -129,11 +129,13 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Footer: logo + tagline, columns Хайх / bairmair / Эрх зүй, copyright, language links, system/light/dark switch.
   - Pages: `/about`, `/support` (contact + FAQ), `/terms`, `/privacy`, `/delete-account` (the URL Google Play asks for), mn + en. Content in `apps/web/src/content/` (structured, per language); company details in one place, `content/site-info.ts` (**placeholders in [brackets]**). `formatDate` added to `@bairmair/i18n`.
   - Dark mode: colours are semantic tokens (`bg-surface`, `text-fg-muted`, `border-line`, `bg-primary`/`text-on-primary`, `bg-accent`…) in `globals.css`, one set per theme; light values equal the old stone/amber shades, so light mode looks as before. All web components moved to them. The theme follows the system unless the visitor picks one (localStorage); an inline script in `<head>` applies it before the first paint. A `dark:` variant exists for the rare non-colour case (logo swap). Dark logo: `logo-horizontal-dark.svg` from `build-horizontal.mjs`. Maps, floor-plan drawing, OG images and the app's 3D embed stay light (the embed is forced light; the app draws its own chrome).
+  - Fix after merge: the home page now streams its two listing rows inside `<Suspense>` (card skeletons). Next 16.4 validates every page in dev ("instant" navigation) and flagged the uncached-for-the-shell search awaited outside Suspense. Logo size 115×32 matches its aspect (the dev "width or height modified" warning).
   - Verified: typecheck, lint, tests, production build; headless Chrome on the production build: header/footer/legal pages in light and dark, desktop and 390 px, open mobile menu and language menu, a chosen theme surviving a reload, embed light under a dark system.
 - Tests: 458 unit (room-model 189, browse 104, mobile 85, i18n 29, web 26, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
+- A running `pnpm dev:web` can keep a stale `globals.css` after branch switches (e.g. switching to an old `main` before pulling): pages then lose their colours. Restart it; if that is not enough, delete `apps/web/.next`.
 - `pnpm dev:mobile` (Metro for the development build). Runs with `--max-workers 2`: with one worker per CPU thread, Metro crashed out of memory on this PC (exit code -1073740791 = 0xC0000409).
 - In `apps/mobile`: `pnpm eas <command>` (EAS CLI 27.7.2 via `pnpm dlx`), `pnpm doctor`
 - `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm format`
