@@ -40,7 +40,8 @@ export default function VerifyScreen() {
     setBusy(true);
     try {
       await verifyPhoneCode(phone, value, mode);
-      router.dismissTo('/account');
+      // Close this screen and sign-in: back to whatever asked for it.
+      router.dismiss(2);
     } catch (cause) {
       setError(t(`auth.errors.${authErrorKey(cause)}`));
       setCode('');

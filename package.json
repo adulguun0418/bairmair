@@ -17,6 +17,8 @@
     "test:remote": "pnpm --filter @bairmair/db test:remote && pnpm --filter @bairmair/web test:remote && pnpm --filter @bairmair/mobile test:remote",
     "db:push": "supabase db push --remote",
     "db:types": "supabase gen types typescript --schema public --remote > packages/db/src/database.types.ts && prettier --write packages/db/src/database.types.ts",
+    "auth:diff": "node supabase/scripts/auth-config.mjs diff",
+    "auth:push": "node supabase/scripts/auth-config.mjs push",
     "functions:deploy": "supabase functions deploy send-sms --use-api --no-verify-jwt"
   },
   "devDependencies": {

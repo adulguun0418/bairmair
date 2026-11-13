@@ -18,14 +18,14 @@ import {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListingCard } from '@/components/listing/ListingCard';
-import { fetchListingCards, type ListingCardData } from '@/lib/listing-card';
+import { fetchListingCards, type ListingCardData } from '@bairmair/browse';
 import {
   covers,
   paddedViewport,
   pinCollection,
   type PinCollection,
   type Viewport,
-} from '@/lib/map-pins';
+} from '@bairmair/browse';
 import { publicClient } from '@/lib/supabase-public';
 import {
   addPinImage,

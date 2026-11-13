@@ -12,6 +12,7 @@
     "test:remote": "vitest run --config vitest.remote.config.mts"
   },
   "dependencies": {
+    "@bairmair/browse": "workspace:*",
     "@bairmair/db": "workspace:*",
     "@bairmair/i18n": "workspace:*",
     "@bairmair/room-model": "workspace:*",

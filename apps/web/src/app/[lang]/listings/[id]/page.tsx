@@ -1,6 +1,15 @@
-import { CITIES, districtById, LISTING_FRESHNESS } from '@bairmair/db';
 import {
-  formatArea,
+  cityName,
+  listingFacts,
+  listingSummary,
+  locationLine,
+  placeName,
+  updatedText,
+  type ListingPageData,
+  type ListingRow,
+} from '@bairmair/browse';
+import { districtById, LISTING_FRESHNESS } from '@bairmair/db';
+import {
   formatListingPost,
   formatListingPrice,
   formatMoney,
@@ -19,7 +28,6 @@ import { ViewCounter } from '@/components/listing/ViewCounter';
 import { ListingScene } from '@/components/ListingScene';
 import { LocationMap } from '@/components/map/maps';
 import { getI18n, localePath } from '@/lib/i18n';
-import type { ListingPageData, ListingRow } from '@/lib/listing-view';
 import { publicEnv } from '@/lib/public-env';
 import { getListingPage } from '@/server/listing-page';
 
@@ -30,7 +38,7 @@ export async function generateMetadata({
   const page = await getListingPage(id);
   if (!page) return {};
   const { locale, t } = await getI18n();
-  const description = summaryLine(page.listing, locale, t);
+  const description = listingSummary(page.listing, locale, t);
   return {
     title: page.listing.title,
     description,
@@ -89,7 +97,7 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
       rooms: listing.rooms,
       areaM2: listing.area_official_m2 ?? listing.area_scanned_m2,
       pricePerM2: page.pricePerM2,
-      districtName: district ? districtName(district, locale) : null,
+      districtName: district ? placeName(district, locale) : null,
       cityName: cityName(listing.city_id, locale),
       complexName: listing.complex_name,
       has3d: model !== null,
@@ -129,7 +137,7 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
             )}
           </div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{listing.title}</h1>
-          <p className="text-stone-700">{summaryLine(listing, locale, t)}</p>
+          <p className="text-stone-700">{listingSummary(listing, locale, t)}</p>
           <PriceBlock page={page} locale={locale} t={t} />
           {page.freshness.daysAgo !== null && (
             <p className="text-sm text-stone-500">{updatedText(page.freshness.daysAgo, t)}</p>
@@ -231,7 +239,7 @@ function PriceBlock({ page, locale, t }: { page: ListingPageData; locale: Locale
           {page.districtMedian && district && (
             <span className="block text-stone-500">
               {t('listingPage.districtMedian', {
-                district: districtName(district, locale),
+                district: placeName(district, locale),
                 price: formatPricePerArea(page.districtMedian.pricePerM2, listing.currency, locale),
                 count: page.districtMedian.listingCount,
               })}
@@ -252,15 +260,9 @@ function LocationText({
   locale: Locale;
   t: Translator;
 }) {
-  const district = districtById(listing.district_id);
-  const parts = [
-    cityName(listing.city_id, locale),
-    district && t('listingPage.district', { district: districtName(district, locale) }),
-    listing.khoroo !== null && t('listingPage.khoroo', { khoroo: listing.khoroo }),
-  ].filter(Boolean);
   return (
     <div className="space-y-2 text-stone-800">
-      <p>{parts.join(', ')}</p>
+      <p>{locationLine(listing, locale, t)}</p>
       {listing.complex_name && <p className="font-medium">{listing.complex_name}</p>}
       {listing.address_text && <p className="whitespace-pre-line">{listing.address_text}</p>}
       {!listing.show_exact_location && (
@@ -271,81 +273,14 @@ function LocationText({
 }
 
 function Facts({ listing, locale, t }: { listing: ListingRow; locale: Locale; t: Translator }) {
-  const yesNo = (value: boolean) =>
-    value ? t('listingPage.facts.yes') : t('listingPage.facts.no');
-  const rows: [string, string | null][] = [
-    [
-      t('listingPage.facts.areaOfficial'),
-      listing.area_official_m2 === null ? null : formatArea(listing.area_official_m2, locale),
-    ],
-    [
-      t('listingPage.facts.areaScanned'),
-      listing.area_scanned_m2 === null ? null : formatArea(listing.area_scanned_m2, locale),
-    ],
-    [t('listingPage.facts.rooms'), listing.rooms === null ? null : String(listing.rooms)],
-    [
-      t('listingPage.facts.floor'),
-      listing.floor === null
-        ? null
-        : listing.total_floors === null
-          ? String(listing.floor)
-          : t('listingPage.facts.floorOf', { floor: listing.floor, total: listing.total_floors }),
-    ],
-    [
-      t('listingPage.facts.buildingYear'),
-      listing.building_year === null ? null : String(listing.building_year),
-    ],
-    [
-      t('listingPage.facts.material'),
-      listing.building_material && t(`listingForm.materials.${listing.building_material}`),
-    ],
-    [t('listingPage.facts.newBuilding'), listing.new_building ? yesNo(true) : null],
-    [
-      t('listingPage.facts.heating'),
-      listing.heating && t(`listingForm.heatings.${listing.heating}`),
-    ],
-    [t('listingPage.facts.balconies'), listing.balconies > 0 ? String(listing.balconies) : null],
-    [
-      t('listingPage.facts.parking'),
-      listing.parking && t(`listingForm.parkings.${listing.parking}`),
-    ],
-    [
-      t('listingPage.facts.furnishing'),
-      listing.furnishing && t(`listingForm.furnishings.${listing.furnishing}`),
-    ],
-    [
-      t('listingPage.facts.mortgage'),
-      listing.mortgage_eligible === null ? null : yesNo(listing.mortgage_eligible),
-    ],
-    [
-      t('listingPage.facts.deposit'),
-      listing.deposit === null ? null : formatMoney(listing.deposit, listing.currency),
-    ],
-    [
-      t('listingPage.facts.minTerm'),
-      listing.min_term_months
-        ? t('listingPage.facts.minTermMonths', { count: listing.min_term_months })
-        : null,
-    ],
-    [
-      t('listingPage.facts.utilities'),
-      listing.utilities_included === null
-        ? null
-        : listing.utilities_included
-          ? t('listingPage.facts.utilitiesIncluded')
-          : t('listingPage.facts.utilitiesExtra'),
-    ],
-  ];
   return (
     <dl className="divide-y divide-stone-100">
-      {rows
-        .filter((row): row is [string, string] => Boolean(row[1]))
-        .map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-4 py-2">
-            <dt className="text-stone-600">{label}</dt>
-            <dd className="text-right font-medium">{value}</dd>
-          </div>
-        ))}
+      {listingFacts(listing, locale, t).map(({ label, value }) => (
+        <div key={label} className="flex justify-between gap-4 py-2">
+          <dt className="text-stone-600">{label}</dt>
+          <dd className="text-right font-medium">{value}</dd>
+        </div>
+      ))}
     </dl>
   );
 }
@@ -369,36 +304,6 @@ function Badge({
       {children}
     </span>
   );
-}
-
-/** "2 өрөө · 65 м² · Хан-Уул дүүрэг", for the header and the page description. */
-function summaryLine(listing: ListingRow, locale: Locale, t: Translator): string {
-  const district = districtById(listing.district_id);
-  const area = listing.area_official_m2 ?? listing.area_scanned_m2;
-  return [
-    listing.rooms !== null && t('listingPage.roomsCount', { count: listing.rooms }),
-    area !== null && formatArea(area, locale),
-    district && t('listingPage.district', { district: districtName(district, locale) }),
-    listing.complex_name,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
-
-function updatedText(days: number, t: Translator): string {
-  if (days === 0) return t('listingPage.updatedToday');
-  if (days === 1) return t('listingPage.updatedYesterday');
-  return t('listingPage.updatedDaysAgo', { count: days });
-}
-
-function districtName(district: { nameMn: string; nameEn: string }, locale: Locale): string {
-  return locale === 'mn' ? district.nameMn : district.nameEn;
-}
-
-function cityName(cityId: number, locale: Locale): string {
-  const city = CITIES.find((candidate) => candidate.id === cityId);
-  if (!city) return '';
-  return locale === 'mn' ? city.nameMn : city.nameEn;
 }
 
 function listingUrl(locale: Locale, id: string): string {

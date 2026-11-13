@@ -1,0 +1,28 @@
+{
+  "name": "@bairmair/browse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The buyer side, shared by web and mobile: search filters, listing cards and pages, map pins and map style helpers. Pure TypeScript, no UI.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bairmair/db": "workspace:*",
+    "@bairmair/i18n": "workspace:*",
+    "@bairmair/room-model": "workspace:*"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.119.0"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.119.0",
+    "i18next": "^27.1.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

@@ -36,11 +36,12 @@ export function coverUrl(supabaseUrl: string, card: ListingCardData): string | n
     : null;
 }
 
-const CARD_COLUMNS =
+/** The `listings` columns (with photos) that make a card; see `cardFromRow`. */
+export const CARD_COLUMNS =
   'id, type, title, price, currency, rooms, area_official_m2, area_scanned_m2, district_id, ' +
   'complex_name, has_3d, scan_verified, listing_photos(id, sort_order, created_at)';
 
-type CardListingRow = Pick<
+export type CardListingRow = Pick<
   Tables<'listings'>,
   | 'id'
   | 'type'

@@ -1,7 +1,7 @@
 import type { MapPinRow } from '@bairmair/db';
 import { describe, expect, it } from 'vitest';
-import { skipTraditionalScript } from '@/components/map/map-style';
-import { covers, paddedViewport, pinCollection } from '@/lib/map-pins';
+import { countInViewport, covers, paddedViewport, pinCollection } from '../src/map-pins';
+import { skipTraditionalScript } from '../src/map-style';
 
 /** The no-break space the formatters put between a number and its unit. */
 const NB = ' ';
@@ -87,5 +87,14 @@ describe('viewports', () => {
     const loaded = paddedViewport(view);
     expect(covers(loaded, view)).toBe(true);
     expect(covers(loaded, { ...view, east: 107.1 })).toBe(false);
+  });
+
+  it('counts the pins inside a view', () => {
+    const pins = [
+      { lat: 47.9, lng: 106.9 },
+      { lat: 48.0, lng: 107.0 },
+      { lat: 48.1, lng: 106.9 },
+    ];
+    expect(countInViewport(pins, view)).toBe(2);
   });
 });

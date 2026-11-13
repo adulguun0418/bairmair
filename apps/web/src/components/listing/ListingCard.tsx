@@ -8,7 +8,7 @@ import {
   type Locale,
 } from '@bairmair/i18n';
 import Link from 'next/link';
-import { coverUrl, type ListingCardData } from '@/lib/listing-card';
+import { coverUrl, type ListingCardData } from '@bairmair/browse';
 
 /**
  * One listing in a grid or on the map: cover photo, badges, price, rooms, area and district.

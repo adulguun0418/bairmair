@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activeFilterCount,
   DEFAULT_FILTERS,
   expandRooms,
   hasFilters,
@@ -9,7 +10,7 @@ import {
   parseSearchParams,
   searchArgs,
   searchQuery,
-} from '@/lib/search-params';
+} from '../src/search-filters';
 
 describe('parseSearchParams', () => {
   it('reads an empty URL as the defaults', () => {
@@ -177,5 +178,25 @@ describe('helpers', () => {
       false,
     );
     expect(hasFilters({ ...DEFAULT_FILTERS, rooms: [2] })).toBe(true);
+  });
+});
+
+describe('activeFilterCount', () => {
+  it('counts each narrowing filter group once, not the text, type or sort', () => {
+    expect(activeFilterCount(DEFAULT_FILTERS)).toBe(0);
+    expect(
+      activeFilterCount({
+        ...DEFAULT_FILTERS,
+        type: 'rent',
+        q: 'Зайсан',
+        sort: 'newest',
+        districts: ['khan-uul', 'bayangol'],
+        rooms: [2, 3],
+        priceMax: 300,
+        areaMin: 40,
+        areaMax: 80,
+        has3d: true,
+      }),
+    ).toBe(5);
   });
 });

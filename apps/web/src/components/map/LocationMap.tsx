@@ -1,6 +1,8 @@
 'use client';
 
+import { APPROXIMATE_RADIUS_M, LOCATION_ZOOM, metersCircleRadius } from '@bairmair/browse';
 import { createTranslator, type Locale } from '@bairmair/i18n';
+import type { DataDrivenPropertyValueSpecification } from 'maplibre-gl';
 import { Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -14,15 +16,6 @@ import {
 
 // This module loads in the browser only (see maps.tsx).
 setUpWorker();
-
-/** Radius of the "approximate location" circle: the public pin is a 0.0025° cell centre. */
-const APPROXIMATE_RADIUS_M = 200;
-
-/** Pixels per metre at a zoom level and latitude (Web Mercator, 512 px tiles). */
-function pixelsPerMeter(zoom: number, lat: number): number {
-  const metersPerPixel = (40_075_016.686 * Math.cos((lat * Math.PI) / 180)) / (512 * 2 ** zoom);
-  return 1 / metersPerPixel;
-}
 
 /**
  * A listing's public location: a marker when the owner shows the exact spot, otherwise a shaded
@@ -50,7 +43,7 @@ export default function LocationMap({
       container: element,
       style: MAP_STYLE_URL,
       center: [lng, lat],
-      zoom: exact ? 15.5 : 14.5,
+      zoom: exact ? LOCATION_ZOOM.exact : LOCATION_ZOOM.approximate,
       minZoom: 10,
       maxZoom: exact ? 18 : 16,
       scrollZoom: false,
@@ -82,16 +75,10 @@ export default function LocationMap({
         type: 'circle',
         source: 'approximate',
         paint: {
-          // A circle of APPROXIMATE_RADIUS_M at every zoom (pixels double per zoom level).
-          'circle-radius': [
-            'interpolate',
-            ['exponential', 2],
-            ['zoom'],
-            10,
-            APPROXIMATE_RADIUS_M * pixelsPerMeter(10, lat),
-            18,
-            APPROXIMATE_RADIUS_M * pixelsPerMeter(18, lat),
-          ],
+          'circle-radius': metersCircleRadius(
+            APPROXIMATE_RADIUS_M,
+            lat,
+          ) as DataDrivenPropertyValueSpecification<number>,
           'circle-color': '#f59e0b',
           'circle-opacity': 0.25,
           'circle-stroke-color': '#b45309',

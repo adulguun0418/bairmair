@@ -5,7 +5,9 @@ import {
   isListingFresh,
   listingPhotoPath,
   publicObjectUrl,
+  scanModelPaths,
   type Tables,
+  type TypedSupabaseClient,
 } from '@bairmair/db';
 import {
   applyAnnotations,
@@ -187,4 +189,103 @@ export function buildListingPage(input: ListingPageInput): ListingPageData {
       daysAgo: listing.last_confirmed_at ? daysSince(listing.last_confirmed_at, now) : null,
     },
   };
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Whether a URL segment is a (lowercase) UUID, before it reaches a uuid column. */
+export function isUuid(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
+/**
+ * Everything a public listing page shows, or null when the listing does not exist or the caller
+ * may not see it (RLS decides). Web reads as `anon` and caches the result; the app reads with
+ * its own session.
+ */
+export async function loadListingPage(
+  client: TypedSupabaseClient,
+  supabaseUrl: string,
+  id: string,
+  now: Date = new Date(),
+): Promise<ListingPageData | null> {
+  if (!isUuid(id)) return null;
+
+  const [listing, photos, scans] = await Promise.all([
+    client.from('listings').select(LISTING_COLUMNS).eq('id', id).maybeSingle<ListingRow>(),
+    client
+      .from('listing_photos')
+      .select('id, width, height, sort_order, scan_id, room_id')
+      .eq('listing_id', id)
+      .order('sort_order')
+      .order('created_at'),
+    // RLS shows only the current ready scan of a live listing.
+    client
+      .from('room_scans')
+      .select('id, room_labels')
+      .eq('listing_id', id)
+      .eq('is_current', true)
+      .eq('status', 'ready')
+      .limit(1),
+  ]);
+  for (const result of [listing, photos, scans]) {
+    if (result.error) throw new Error(`listing ${id}: ${result.error.message}`);
+  }
+  const row = listing.data;
+  if (!row) return null;
+  const scan = scans.data?.[0] ?? null;
+
+  const [seller, stats, modelJson] = await Promise.all([
+    client
+      .from('profiles')
+      .select('display_name, role, agent_profiles(agency_name, verified)')
+      .eq('id', row.owner_id)
+      .maybeSingle(),
+    row.district_id === null
+      ? null
+      : client
+          .from('district_price_stats')
+          .select('listing_count, median_price_per_m2')
+          .eq('type', row.type)
+          .eq('district_id', row.district_id)
+          .eq('currency', row.currency)
+          .maybeSingle(),
+    scan ? fetchScanModel(supabaseUrl, row.id, scan.id) : null,
+  ]);
+  if (seller.error) throw new Error(`seller of ${id}: ${seller.error.message}`);
+  // The median is a nice-to-have; the page works without it.
+  if (stats?.error) console.warn(`price stats for ${id}: ${stats.error.message}`);
+
+  return buildListingPage({
+    listing: row,
+    photos: photos.data ?? [],
+    seller: seller.data,
+    scan,
+    modelJson,
+    stats: stats?.data ?? null,
+    supabaseUrl,
+    now,
+  });
+}
+
+/** A scan's public `model.json` (written by the scan processing route), or null. */
+async function fetchScanModel(
+  supabaseUrl: string,
+  listingId: string,
+  scanId: string,
+): Promise<unknown> {
+  const url = publicObjectUrl(
+    supabaseUrl,
+    BUCKETS.scanModels,
+    scanModelPaths(listingId, scanId).model,
+  );
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return (await response.json()) as unknown;
+  } catch (error) {
+    // Without the model the page still shows photos and details.
+    console.warn(`model of scan ${scanId}:`, error);
+    return null;
+  }
 }
