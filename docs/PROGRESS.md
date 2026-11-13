@@ -1,11 +1,12 @@
 # Progress
 
-## Current state (2026-11-12)
-**Step 4 done**, except one check that needs a multi-room scan (see Next).
-- Part 1 is merged to `main` (branch `step-4-roomplan`).
-- Part 2 is in a pull request (branch `step-4-part-2`) for your review. From now on, each step goes up as a pull request and you merge it on GitHub.
+## Current state (2026-11-13)
+**Step 5, part 5a done** (pull request `step-5a-auth-processing`): mobile sign-in and the server-side scan processing endpoint. Step 5 is split into three pull requests:
+- 5a: sign-in (phone OTP, Apple, Google in the browser), account screen, `POST /api/scans/{id}/process`. Also adds `expo-image-manipulator`, so **build 2** is due (see Next).
+- 5b: create/edit a listing (draft), location (GPS + district fields), photos resized on the phone, background upload with retry.
+- 5c: attach a scan, upload, process, confirm room labels, assign photos to rooms, publish.
 
-The SMS gateway adapter (step 3) still waits on your gateway details.
+Step 4 is merged. The SMS gateway adapter (step 3) still waits on your gateway details.
 
 ## Done
 - Step 1: monorepo + `@bairmair/room-model` (schema, geometry, areas, annotations, RoomPlan converter, 3 samples).
@@ -28,7 +29,13 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
   - Two real single-room exports as byte-for-byte fixtures (`packages/room-model/test/fixtures/roomplan/`), tested in `real-scans.test.ts`. Answers to the format questions are in `docs/proposal/00-expo-roomplan-findings.md`.
   - Converter 0.2.0 fixes: drops the top-level floor copy, which carries a new identifier (each scan had become two rooms, double area); adds an `incomplete-room` warning for rooms with fewer than 3 walls.
   - The complete L-shaped room is a web sample: `/samples/scan-l-room`.
-- Tests: 211 unit (room-model 158, mobile 21, i18n 16, send-sms 12, db 4) + 37 integration tests against the dev project.
+- Step 5a:
+  - `apps/web`: `POST /api/scans/{id}/process` (Bearer access token). Rebuilds the raw paths from the listing and scan ids (never trusts the row's paths), converts with the shared converter, writes `model.json` to `scan-models`, sets `ready` + metrics (with warning counts). Missing upload → 409, scan untouched; unconvertible → 422, `failed` + `processing_error`. Logic in `src/server/process-scan.ts` with an injected store, unit-tested on the real fixtures; route tested end to end on the dev project (`test-remote/`).
+  - Migration 8: `room_scans.processing_error` (server-written).
+  - `@bairmair/db`: API contract (`processScanPath`, `ProcessScanResponse`) and API error keys.
+  - `apps/mobile`: Supabase client (AsyncStorage, refresh only in the foreground), `AuthProvider`, `/account` (phone status, name, sign-out), `/sign-in` (phone; Apple and Google buttons only when the project enables them, read from `/auth/v1/settings`), `/verify` (6-digit code, 60 s resend). Apple/Google users add a phone through `updateUser` + `phone_change` OTP. Home screen links to the account.
+  - Auth config pushed: Apple on (client id `mn.bairmair.app`, native only, no secret), redirect `bairmair://**`.
+- Tests: 251 unit (room-model 158, mobile 50, i18n 16, send-sms 12, web 11, db 4) + 43 integration tests against the dev project (db 37, web 6).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -36,7 +43,10 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - In `apps/mobile`: `pnpm eas <command>` (EAS CLI 27.7.2 via `pnpm dlx`), `pnpm doctor`
 - `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm format`
 - `pnpm --filter @bairmair/room-model samples` regenerates the sample JSON
-- `pnpm test:remote`: integration tests on the dev project (needs `packages/db/.env`; creates and deletes test users)
+- `pnpm test:remote`: integration tests on the dev project (needs `packages/db/.env` and `apps/web/.env.local`; creates and deletes test users)
+- Env files (gitignored, copy from each `.env.example`): `packages/db/.env`, `apps/web/.env.local`, `apps/mobile/.env` (`EXPO_PUBLIC_API_URL` = your PC's Wi-Fi IP, port 3000; restart Metro after changes)
+- `pnpm run doctor` in `apps/mobile` (plain `pnpm doctor` runs pnpm's own check)
+- Route types for the mobile app (`.expo/types/router.d.ts`) are regenerated only by starting Metro; start it once after adding a screen, before `pnpm typecheck`.
 - `pnpm db:push` (new migrations), then `pnpm db:types`; `pnpm functions:deploy`
 - Auth settings: `pnpm supabase config diff --remote`, then `pnpm supabase config push --remote`
 - SQL: `pnpm supabase db query --read-only "<sql>" --remote`
@@ -73,12 +83,17 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - EAS CLI runs through `pnpm dlx`, not as a devDependency: it added ~8,000 lockfile lines and build scripts pnpm 12 refuses until approved.
 - No `.easignore`: EAS then uses `.gitignore`, which keeps `.env` files off the build servers. An `.easignore` would have to exclude them itself.
 - pnpm adds packages younger than its minimum release age to `minimumReleaseAgeExclude` when they are installed explicitly (all of today's Expo patch releases). Prune the list later.
+- Step 5 choices (yours): scan processing in a Next.js route handler; photos resized on the phone (`expo-image-manipulator`, build 2); Google through browser OAuth for now (no rebuild, no Google Cloud iOS client); location in 5b from GPS + district fields, the map pin picker in step 6.
+- The floor-plan PNG for Open Graph is not made during processing; step 6 renders it in Next.js on request. `floor_plan_path` stays empty until then.
+- Mobile auth follows Supabase's Expo guide: implicit flow, `setSession` from the redirect fragment, `react-native-url-polyfill`. Apple sign-in passes no nonce (as in the guide).
+- Mobile config comes from `EXPO_PUBLIC_*` variables inlined by Metro. Development builds need no EAS env setup; release builds will (step 7 or before launch).
 
 ## Notes for later steps
 - Wall height: RoomPlan measures walls behind tall furniture lower (2.39 m vs 2.82 m in the same room). Option: raise walls of a room that are almost as tall as its tallest wall to that height. Not done yet; needs your call.
-- Step 5 review screen: show the `incomplete-room` warning and offer a rescan. Raw exports are small (42–91 KB per room), far under the 50 MB `scan-raw` limit.
-- Step 5: mobile auth. Apple: add the bundle id to Supabase's Apple client IDs, then `signInWithIdToken`. Google: choose native (rebuild) or browser OAuth. Add `bairmair://**` to the Auth redirect URLs. Record the GPS position during a scan (expo-location is in build 1). Uploads: `File.createUploadTask` (expo-file-system) supports background sessions.
-- Step 5: supabase-js sends a Blob's own `type` and ignores `contentType`. Deleting a listing leaves its storage objects; add cleanup.
+- 5c review screen: show the `incomplete-room` warning (now also in `metrics.warnings`) and offer a rescan. Raw exports are small (42–91 KB per room), far under the 50 MB `scan-raw` limit.
+- 5b/5c: record the GPS position during a scan (expo-location is in build 1). Uploads: `File.createUploadTask` (expo-file-system) supports background sessions. supabase-js sends a Blob's own `type` and ignores `contentType`. Deleting a listing leaves its storage objects; add cleanup.
+- 5c: the app calls the process endpoint after both raw files are uploaded, and again for any scan still `uploaded` on the next launch (409 means "upload not finished").
+- Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
 - Before an App Store build: real app icon and splash (the Expo placeholders are still in `apps/mobile/assets`).
 - Before production: separate project, remove the test OTP number, turn off the email provider (kept on in dev for the tests).
 
@@ -87,14 +102,16 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - OTP SMS text: "Bairmair код: 123456. Хэнд ч бүү хэлээрэй." (`supabase/functions/send-sms/handler.ts`).
 - Scanner copy (`scanSupport`, `scan`, `scanResult` in `mn.ts`) and the iOS permission prompts (`apps/mobile/app.json`).
 - Sample name "Бодит скан: Г хэлбэрийн өрөө" and the updated `samples.intro`.
+- Sign-in and account copy (`auth`, `account` in `mn.ts`).
 
 ## Next
-- You: review and merge the step 4 part 2 pull request.
+- You: review and merge the 5a pull request, and test sign-in on the iPhone (instructions in the PR).
+- You: start EAS development build 2 (adds `expo-image-manipulator` and Expo patch updates). 5a runs on build 1; 5b needs build 2.
 - You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). It answers the last format question (are shared walls duplicated or merged?) and checks the merged-floor handling with several rooms. No code waits on it.
-- Then step 5: listing creation and upload flow (decide first where server-side scan processing runs).
+- Then 5b: listing form, location, photos and upload queue.
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.
-- Where server-side scan processing runs (Next.js route handler recommended), needed at step 5.
+- Google sign-in credentials (Google Cloud OAuth web client), whenever you want Google on.
 - Map library: MapLibre vs Mapbox, compare Ulaanbaatar coverage first (brief "Additions"), needed at step 6.
-- Web hosting.
+- Web hosting. Until then the phone reaches the scan-processing API on your PC (`pnpm dev:web`, same Wi-Fi).

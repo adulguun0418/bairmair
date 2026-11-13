@@ -7,12 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:remote": "vitest run --config vitest.remote.config.mts"
   },
   "dependencies": {
+    "@bairmair/db": "workspace:*",
     "@bairmair/i18n": "workspace:*",
     "@bairmair/room-model": "workspace:*",
     "@bairmair/viewer": "workspace:*",
+    "@supabase/supabase-js": "2.119.0",
     "i18next": "^27.1.0",
     "next": "16.4.6",
     "react": "19.3.0",
@@ -26,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
   }
 }

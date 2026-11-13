@@ -10,7 +10,8 @@
         "functions/**",
         "package.json",
         "tsconfig.json",
-        "vitest.config.ts"
+        "vitest.config.ts",
+        "vitest.config.mts"
       ]
     },
     "typecheck": {
