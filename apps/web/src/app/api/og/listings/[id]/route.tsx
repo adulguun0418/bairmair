@@ -25,15 +25,20 @@ const OG_SIZE = { width: 1200, height: 630 };
 const PLAN = { width: 630, height: 630 };
 
 /**
- * Noto Sans from @fontsource, one family per subset: Latin, Latin Extended (₮), Cyrillic and
- * Cyrillic Extended (Ө, Ү). Satori keeps one font per name and weight, so subsets sharing a
- * name would replace each other; with distinct names, the font stack falls back per glyph.
+ * Noto Sans (from @fontsource/noto-sans 5.3.0, OFL), one family per subset: Latin, Latin
+ * Extended (₮), Cyrillic and Cyrillic Extended (Ө, Ү). Satori keeps one font per name and
+ * weight, so subsets sharing a name would replace each other; with distinct names, the font
+ * stack falls back per glyph.
+ *
+ * The files live in the app (`assets/og-fonts`, listed in `outputFileTracingIncludes`), not in
+ * node_modules: on Vercel the package is deployed under pnpm's `.pnpm` store path only, without
+ * the `node_modules/@fontsource` link, so reading it there failed with ENOENT.
  */
 const SUBSETS = ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext'] as const;
 const FONT_STACK = SUBSETS.map((subset) => `Noto Sans ${subset}`).join(', ');
 
 async function loadFonts() {
-  const dir = join(process.cwd(), 'node_modules', '@fontsource', 'noto-sans', 'files');
+  const dir = join(process.cwd(), 'assets', 'og-fonts');
   const weights = [400, 700] as const;
   return Promise.all(
     weights.flatMap((weight) =>

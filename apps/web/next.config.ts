@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   // localhost unless listed. Development only; private LAN ranges.
   allowedDevOrigins: ['192.168.*.*', '10.*.*.*', '172.*.*.*'],
   partialPrefetching: true,
+  // The Open Graph image reads these fonts with a computed file name, which file tracing cannot
+  // follow; without this, the deployed route would not have them.
+  outputFileTracingIncludes: {
+    '/api/og/listings/[id]': ['./assets/og-fonts/*.woff'],
+  },
   turbopack: {
     rules: {
       '*.css': {

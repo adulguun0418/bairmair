@@ -1,11 +1,11 @@
 # Progress
 
 ## Current state (2026-11-13)
-**Step 7 done** (pull request `step-7-embed`, stacked on `step-6c-mobile-browse`: merge #9 first). The app shows a listing's 3D model through the web's `/embed/listings/[id]` page in a WebView, so the 3D view is built once. **No new EAS build for step 7** (react-native-webview is in build 1). The brand logo (icons, splash, web header) went into the 6c pull request.
+**All seven build steps are merged and running without your PC:** the web is live at https://bairmair-bairmair.vercel.app (Vercel Hobby, dev Supabase project), and the iOS **preview build** (standalone, ad hoc, pointing at Vercel) is installed on your iPhone and works. Everything still runs on the dev Supabase project.
 
-Step 6c still **needs EAS development build 3** (MapLibre native module). Until build 3 is installed, everything except the two maps works on build 2.
+The SMS gateway adapter (step 3) still waits on your gateway details: real phone numbers get no code yet.
 
-All seven build steps of the brief are done. The SMS gateway adapter (step 3) still waits on your gateway details.
+Fix after going live: the Open Graph image returned 500 on Vercel (fonts read through `node_modules/@fontsource`, a pnpm link that is not deployed). The fonts now live in `apps/web/assets/og-fonts/` (OFL) and the `@fontsource` dependency is gone.
 
 ## Done
 - Step 1: monorepo + `@bairmair/room-model` (schema, geometry, areas, annotations, RoomPlan converter, 3 samples).

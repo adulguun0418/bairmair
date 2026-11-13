@@ -362,9 +362,6 @@ importers:
       '@bairmair/viewer':
         specifier: workspace:*
         version: link:../../packages/viewer
-      '@fontsource/noto-sans':
-        specifier: 5.3.0
-        version: 5.3.0
       '@supabase/supabase-js':
         specifier: 2.119.0
         version: 2.119.0
@@ -1402,9 +1399,6 @@ packages:
   '@expo/xcpretty@4.4.7':
     resolution: {integrity: sha512-EbxYllZ7/ozONVZd425cm4XnolfW+AmSFT5aP7Jdno6oc3WrYQcHz2CO20z/2rwWwYgztmV2PXvYH+BQ8YFjqg==}
     hasBin: true
-
-  '@fontsource/noto-sans@5.3.0':
-    resolution: {integrity: sha512-fBCog2PY7DiVVTEEqtI/Qdinx/knobHYfoGpjFXdfBX5RoJaBp1Prw2G75p0OIsdlMZg3cLo0c+YbIUYOxnQJw==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -6995,8 +6989,6 @@ snapshots:
       '@babel/code-frame': 7.29.7
       chalk: 4.1.2
       js-yaml: 4.3.2
-
-  '@fontsource/noto-sans@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
