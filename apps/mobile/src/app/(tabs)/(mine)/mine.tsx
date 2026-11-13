@@ -12,6 +12,7 @@ import {
   downloadToPhone,
   isKnownLocally,
   photoUri,
+  refreshFromServer,
   useLocalListings,
 } from '@/listings/listings';
 import type { LocalListing } from '@/listings/model';
@@ -42,6 +43,8 @@ export default function MyListingsScreen() {
         return;
       }
       let active = true;
+      // Edits made on the website or another phone reach this phone's copies.
+      void refreshFromServer();
       fetchMyListings(supabase, userId)
         .then((rows) => {
           if (!active) return;

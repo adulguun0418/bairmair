@@ -33,7 +33,8 @@ import {
 } from './model';
 import { preparePhoto } from './photos';
 import { createSupabaseRemote, type UploadFile } from './remote';
-import { downloadListing } from './server-listings';
+import { ListingRefresher, type RefreshOptions } from './refresh';
+import { downloadListing, fetchServerCopies } from './server-listings';
 import { ListingStore } from './store';
 import { SyncEngine, type SyncStatus } from './sync-engine';
 
@@ -53,16 +54,42 @@ const uploadFile: UploadFile = async (url, fileUri, headers) => {
 export const listingStore = new ListingStore(filePersistence);
 listingStore.load();
 
-export const syncEngine = new SyncEngine(
-  listingStore,
-  createSupabaseRemote(supabase, {
-    supabaseUrl: env.supabaseUrl,
-    publishableKey: env.supabasePublishableKey,
-    uploadFile,
-    apiUrl: env.apiUrl,
-  }),
-  listingFiles,
-);
+const remote = createSupabaseRemote(supabase, {
+  supabaseUrl: env.supabaseUrl,
+  publishableKey: env.supabasePublishableKey,
+  uploadFile,
+  apiUrl: env.apiUrl,
+});
+
+export const syncEngine = new SyncEngine(listingStore, remote, listingFiles);
+
+const refresher = new ListingRefresher({
+  store: listingStore,
+  currentUserId: () => remote.currentUserId(),
+  fetchCopies: (ownerId, ids, knownScans, now) =>
+    fetchServerCopies(supabase, ownerId, ids, knownScans, now),
+  removeFiles: (listingId, files) => {
+    for (const file of files) deleteListingFile(listingId, file);
+  },
+  removeFolder: (listingId) => listingFiles.removeFolder(listingId),
+  now: () => Date.now(),
+});
+
+/**
+ * Takes newer versions of the seller's listings from the server (edited on the website or
+ * another phone). Listings with unsent changes on this phone are left alone. Never throws:
+ * offline, the phone's copies simply stay as they are.
+ */
+export async function refreshFromServer(options?: RefreshOptions): Promise<void> {
+  try {
+    const result = await refresher.refresh(options);
+    for (const id of result.removed) deletedIds.add(id);
+    // A merged listing may still need a step (e.g. renumbering photos the website reordered).
+    if (result.updated.length > 0) void syncEngine.run();
+  } catch (error) {
+    console.warn('Could not refresh listings from the server', error);
+  }
+}
 
 let started = false;
 let debounce: ReturnType<typeof setTimeout> | null = null;
@@ -71,9 +98,12 @@ let debounce: ReturnType<typeof setTimeout> | null = null;
 export function startListingSync(): void {
   if (started) return;
   started = true;
-  void syncEngine.run();
+  void syncEngine.run().then(() => refreshFromServer());
   AppState.addEventListener('change', (state) => {
-    if (state === 'active') void syncEngine.retryNow();
+    if (state === 'active') {
+      void syncEngine.retryNow();
+      void refreshFromServer();
+    }
   });
   supabase.auth.onAuthStateChange((event) => {
     // Supabase advises against calling its client inside this callback; defer.

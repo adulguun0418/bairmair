@@ -36,7 +36,8 @@ import {
   type LocalListing,
 } from '../src/listings/model';
 import { createSupabaseRemote, type UploadFile } from '../src/listings/remote';
-import { downloadListing } from '../src/listings/server-listings';
+import { ListingRefresher } from '../src/listings/refresh';
+import { downloadListing, fetchServerCopies } from '../src/listings/server-listings';
 import { ListingStore, type ListingPersistence } from '../src/listings/store';
 import { SyncEngine, type ListingFiles } from '../src/listings/sync-engine';
 import { SyncError } from '../src/listings/sync-errors';
@@ -414,6 +415,67 @@ describe('listing sync against the dev project', () => {
       location: { lat: ZAISAN.lat, lng: ZAISAN.lng, accuracyM: 8 },
     });
     expect(isSynced(copy)).toBe(true);
+  });
+
+  it('takes edits made on the website into the phone copy', async () => {
+    // What the web editor does: direct writes to the tables and storage.
+    const added = photo('web.jpg');
+    const remote = remoteFor(alice);
+    await remote.uploadPhoto(listingId, added.id, join(dir, added.file));
+    await remote.insertPhoto(listingId, { id: added.id, sortOrder: 1, width: 1024, height: 768 });
+    const updated = await alice.client
+      .from('listings')
+      .update({ title: 'Зайсан хотхон, вэбээс засав', price: 420_000_000 })
+      .eq('id', listingId);
+    expect(updated.error).toBeNull();
+    const unit = await alice.client
+      .from('listing_private')
+      .update({ unit_number: '47' })
+      .eq('listing_id', listingId);
+    expect(unit.error).toBeNull();
+
+    const before = store.get(listingId)!;
+    const removedFiles: string[] = [];
+    const refresher = new ListingRefresher({
+      store,
+      currentUserId: () => remote.currentUserId(),
+      fetchCopies: (ownerId, ids, knownScans, now) =>
+        fetchServerCopies(alice.client, ownerId, ids, knownScans, now),
+      removeFiles: (_id, names) => removedFiles.push(...names),
+      removeFolder: () => {},
+      now: () => Date.now(),
+    });
+    expect(await refresher.refresh()).toEqual({ updated: [listingId], removed: [] });
+
+    const after = store.get(listingId)!;
+    expect(after.form).toMatchObject({
+      title: 'Зайсан хотхон, вэбээс засав',
+      price: '420000000',
+      unitNumber: '47',
+    });
+    expect(after.photos.map((p) => [p.id, p.file])).toEqual([
+      [second.id, before.photos[0]!.file],
+      [added.id, null],
+    ]);
+    // The same scan: the phone keeps its raw files and GPS fix.
+    expect(after.scan).toBe(before.scan);
+    expect(removedFiles).toEqual([]);
+    expect(isSynced(after)).toBe(true);
+
+    // Nothing changed since: the next check finds the same listing.
+    expect(await refresher.refresh({ maxAgeMs: 0 })).toEqual({ updated: [], removed: [] });
+    // Another user, or a listing that is not there, gets no copy.
+    expect((await fetchServerCopies(bob.client, alice.id, [listingId], new Map(), NOW)).size).toBe(
+      0,
+    );
+    const missing = await fetchServerCopies(
+      alice.client,
+      alice.id,
+      [listingId, randomUUID()],
+      new Map(),
+      NOW,
+    );
+    expect([...missing.keys()]).toEqual([listingId]);
   });
 
   it('deletes the listing with its photos and raw scan files', async () => {

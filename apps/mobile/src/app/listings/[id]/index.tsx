@@ -1,8 +1,8 @@
 import { DISTRICTS, LISTING_LIMITS } from '@bairmair/db';
 import { formatMoney, formatMoneyCompact } from '@bairmair/i18n';
 import { Image } from 'expo-image';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -24,6 +24,7 @@ import {
   discardIfUntouched,
   editListing,
   photoUri,
+  refreshFromServer,
   removeListingPhoto,
   useLocalListing,
 } from '@/listings/listings';
@@ -49,6 +50,9 @@ import { ToggleRow } from '@/ui/toggle-row';
 
 const nowIso = () => new Date().toISOString();
 
+/** The editor checks the server again when reopened after this long. */
+const EDITOR_REFRESH_MS = 5_000;
+
 /** Form fields edited as text. */
 type TextFormField = {
   [K in FormField]: ListingForm[K] extends string ? K : never;
@@ -63,6 +67,13 @@ export default function ListingEditScreen() {
 
   // A new listing the seller backs out of without entering anything is not kept.
   useEffect(() => () => discardIfUntouched(id), [id]);
+
+  // Takes the server's version if it changed elsewhere (the website) and nothing here is unsent.
+  useFocusEffect(
+    useCallback(() => {
+      void refreshFromServer({ ids: [id], maxAgeMs: EDITOR_REFRESH_MS });
+    }, [id]),
+  );
 
   if (!listing || listing.deleted) {
     return (
