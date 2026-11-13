@@ -8,7 +8,7 @@ import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
 import { analyzeExport } from '@/scanner/analyze';
 import { deleteScan as deleteScannerFolder, getScan } from '@/scanner/storage';
-import type { ListingStatus } from './form';
+import type { ListingStatus } from '@bairmair/browse';
 import {
   deleteListingFile,
   deletePhotoFile,

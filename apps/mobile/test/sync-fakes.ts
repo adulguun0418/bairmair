@@ -1,5 +1,5 @@
 import type { RoomLabelOverride } from '@bairmair/room-model';
-import type { ListingStatus } from '../src/listings/form';
+import type { ListingStatus } from '@bairmair/browse';
 import type { LocalListing, LocalScan, PhotoRoom } from '../src/listings/model';
 import { ListingStore, type ListingPersistence } from '../src/listings/store';
 import {

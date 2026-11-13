@@ -17,3 +17,8 @@ export const LocationMap = dynamic(() => import('./LocationMap'), {
   ssr: false,
   loading: Placeholder,
 });
+
+export const PinPicker = dynamic(() => import('./PinPicker'), {
+  ssr: false,
+  loading: Placeholder,
+});

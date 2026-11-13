@@ -1,6 +1,6 @@
 import type { Tables, TypedSupabaseClient } from '@bairmair/db';
 import { parseRoomLabelOverrides } from '@bairmair/room-model';
-import { formFromRow } from './form';
+import { formFromRow } from '@bairmair/browse';
 import type { LocalListing, LocalPhoto, LocalScan } from './model';
 import { classifyPostgrestError } from './sync-errors';
 

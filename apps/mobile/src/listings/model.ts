@@ -1,6 +1,6 @@
 import { LISTING_LIMITS } from '@bairmair/db';
 import type { RoomLabelOverride } from '@bairmair/room-model';
-import { EMPTY_FORM, PRIVATE_FIELDS, type ListingForm, type ListingStatus } from './form';
+import { EMPTY_FORM, PRIVATE_FIELDS, type ListingForm, type ListingStatus } from '@bairmair/browse';
 
 // A listing as saved on the phone, and the pure changes made to it by the editor (user edits)
 // and by the sync engine (progress). Saved as JSON in `Documents/listings/<id>/listing.json`.

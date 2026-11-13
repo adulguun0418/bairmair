@@ -81,6 +81,9 @@ export function AccountView({ locale }: { locale: Locale }) {
       <AgentForm userId={user.id} locale={locale} />
 
       <section className="flex flex-wrap items-center gap-3">
+        <Link href={localePath(locale, '/my-listings')} className={secondary}>
+          {t('nav.myListings')}
+        </Link>
         <Link href={localePath(locale, '/saved')} className={secondary}>
           ♡ {t('favorites.title')}
         </Link>

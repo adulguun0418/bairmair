@@ -6,7 +6,7 @@ import {
   type ListingFields,
   type ListingStatus,
   type PublishRequirement,
-} from './form';
+} from '@bairmair/browse';
 import { isLive, type LocalListing, type LocalScan, type PhotoRoom } from './model';
 
 // What to send next for one listing. Pure, so the order of operations is unit-tested.

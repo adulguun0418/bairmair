@@ -17,7 +17,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
-import { formToFields, parseNumberInput, type FormField, type ListingForm } from '@/listings/form';
+import { formToFields, parseNumberInput, type FormField, type ListingForm } from '@bairmair/browse';
 import {
   addPickedPhotos,
   deleteListing,

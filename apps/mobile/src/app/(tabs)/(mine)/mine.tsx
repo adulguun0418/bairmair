@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
-import { parseNumberInput } from '@/listings/form';
+import { parseNumberInput } from '@bairmair/browse';
 import {
   createDraft,
   downloadToPhone,

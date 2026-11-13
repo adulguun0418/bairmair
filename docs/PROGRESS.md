@@ -103,8 +103,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Shared with the app through `@bairmair/browse` (moved from `apps/mobile`, with their tests): `normalizeMongolianPhone`/`formatMongolianPhone`, `authErrorKey` (now also `captcha_failed` → "Робот биш гэдгээ…"), the favorites store, and new `supabaseFavoritesRemote` + `fetchFavoriteCards`.
   - Captcha limits (your choice: web form now, Supabase-wide later): Turnstile guards our form only. Auth's own endpoint stays reachable with the public key, so the 30 SMS/hour project cap and WeSend's per-number limits bound abuse. Before the public launch: Supabase captcha for every client (the app solves Turnstile in a WebView; the password-based integration tests need a workaround). Code requests from the website reach Supabase from Vercel's IPs, so Auth's per-IP limits count all web visitors together.
   - Verified: production build; locally against the dev project with Turnstile's test keys: bad number and missing captcha refused, the test number gets a code, `verifyOtp` gives a session, a favorite saved and removed under it; pages `/sign-in`, `/account`, `/saved` answer 200. Not verified: the forms in a real browser, and real Turnstile keys.
-- Tests: 407 unit (room-model 160, mobile 99, browse 74, i18n 27, web 22, send-sms 18, db 7) + 76 integration tests against the dev project (db 57, mobile 11, web 8).
-- Tests before web sign-in: 400 unit + 76 integration.
+- Web "Миний зарууд" (part A; part B = the app refreshing its copy, next):
+  - `/my-listings` (all statuses), `/my-listings/new`, `/my-listings/[id]` (`noindex`, client-rendered, signed out → sign-in). Header and account page link to it.
+  - Editor: the app's form, moved to `@bairmair/browse` (`listing-form.ts`, with its tests: same validation, number parsing and publish checklist on both). Fields save with "Хадгалах" (a new listing gets its client id on the first save); map pin picker (MapLibre, click or drag, "use my location", Mongolia only) + unit number in `listing_private`; photos save at once (resized in the browser to 2048 px JPEG 0.8 through a canvas, which drops EXIF/GPS; make cover, move, remove; 40 max); publishing (checklist, verified phone, no unsaved changes), still available, sold/rented, hide, publish again, delete (files first, then the row). 3D scans stay in the app; the editor says so.
+  - `src/lib/my-listings.ts`: the same tables, paths and order of operations as the app's sync remote, run directly (the website is online).
+  - Until part B ships, edit a listing in one place: the app still sends its whole copy and would overwrite web edits.
+  - Verified: integration test on the dev project (`apps/web/test-remote/my-listings.test.ts`: draft → filled in → pin/unit insert then update → publish refused without a photo → photos added, reordered, removed → published → still available → sold → deleted with files; another user's listing neither loads nor saves); production build; pages answer 200. Not verified: the editor in a real browser (map clicks, photo picking).
+- Tests: 407 unit (room-model 160, browse 104, mobile 69, i18n 27, web 22, send-sms 18, db 7) + 78 integration tests against the dev project (db 57, mobile 11, web 10).
+- Tests before web listings: 407 unit + 76 integration.
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples

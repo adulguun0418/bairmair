@@ -20,7 +20,7 @@ import {
 } from '../../../packages/db/test-remote/helpers';
 import { processScan } from '../../web/src/server/process-scan';
 import { supabaseScanStore } from '../../web/src/server/supabase';
-import { formToFields } from '../src/listings/form';
+import { formToFields } from '@bairmair/browse';
 import {
   addPhotos,
   assignPhotoRoom,

@@ -37,6 +37,9 @@ export function HeaderAuthLinks({ locale }: { locale: Locale }) {
   }
   return (
     <>
+      <Link href={localePath(locale, '/my-listings')} className="hover:underline">
+        {t('nav.myListings')}
+      </Link>
       <Link href={localePath(locale, '/saved')} className="hover:underline">
         ♡ {t('nav.saved')}
       </Link>

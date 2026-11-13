@@ -6,7 +6,7 @@ import {
   missingForPublish,
   parseNumberInput,
   type ListingForm,
-} from '../src/listings/form';
+} from '../src/listing-form';
 
 const form = (patch: Partial<ListingForm>): ListingForm => ({ ...EMPTY_FORM, ...patch });
 
