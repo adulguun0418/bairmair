@@ -1,15 +1,16 @@
 /**
  * State of one scan session, driven by the user's taps and by expo-roomplan's events.
  *
+ * One continuous capture covers the whole apartment: the seller walks through every room, then
+ * taps "Finish". The converter splits the floor into rooms along the walls afterwards.
+ * expo-roomplan's own "add room" is not used: in 1.3.2 it restarts the capture before the
+ * finished room is delivered, and that room never arrives (seen on an iPhone, 2026-11-13).
+ *
  * What the native view (expo-roomplan 1.3.2) does, and why the rules below exist:
- * - "Next room" stops the current capture and immediately starts the next one. The finished
- *   room is processed in the background and reported with an `OK` status.
- * - "Finish" stops the capture, processes the last room, then exports every room. `OK` arrives
- *   before the export is written, so `OK` is not a completion signal; `onExported` is.
- * - If "Finish" is tapped while the previous room is still processing, that room's result can
- *   trigger the export before the last room is added. So both buttons wait for the pending room.
- * - After an error, the rooms already processed are still held natively and can be exported.
- *   Exporting with no processed room would wait forever, so that is only offered with rooms.
+ * - "Finish" stops the capture, processes the room, then exports it. `OK` arrives before the
+ *   export is written, so `OK` is not a completion signal; `onExported` is.
+ * - After an error nothing has been processed, so there is nothing to export: the seller
+ *   starts again.
  *
  * Pure: no React Native imports, so it is unit-tested without a device.
  */
@@ -24,10 +25,6 @@ export interface ScanError {
 
 export interface ScanState {
   phase: 'intro' | 'scanning' | 'building' | 'saving' | 'failed';
-  /** Rooms RoomPlan has finished processing. */
-  roomsDone: number;
-  /** A room was closed with "Next room" and is still being processed. */
-  roomPending: boolean;
   error: ScanError | null;
 }
 
@@ -35,19 +32,12 @@ export type NativeStatus = 'NotStarted' | 'Canceled' | 'Error' | 'OK';
 
 export type ScanEvent =
   | { type: 'start' }
-  | { type: 'nextRoom' }
   | { type: 'finish' }
   | { type: 'status'; status: NativeStatus; message?: string }
   | { type: 'exported' }
-  | { type: 'exportCaptured' }
   | { type: 'saveFailed'; message?: string };
 
-export const initialScanState: ScanState = {
-  phase: 'intro',
-  roomsDone: 0,
-  roomPending: false,
-  error: null,
-};
+export const initialScanState: ScanState = { phase: 'intro', error: null };
 
 /** Maps expo-roomplan's native error messages to something the app can explain. */
 export function classifyScanError(message: string | undefined): ScanErrorKind {
@@ -57,48 +47,29 @@ export function classifyScanError(message: string | undefined): ScanErrorKind {
   return 'unknown';
 }
 
-export const canAdvance = (state: ScanState): boolean =>
-  state.phase === 'scanning' && !state.roomPending;
-
-export const canExportCaptured = (state: ScanState): boolean =>
-  state.phase === 'failed' && state.error?.kind !== 'save' && state.roomsDone > 0;
-
 export function scanReducer(state: ScanState, event: ScanEvent): ScanState {
   switch (event.type) {
     case 'start':
       return state.phase === 'intro' ? { ...state, phase: 'scanning' } : state;
 
-    case 'nextRoom':
-      return canAdvance(state) ? { ...state, roomPending: true } : state;
-
     case 'finish':
-      return canAdvance(state) ? { ...state, phase: 'building' } : state;
+      return state.phase === 'scanning' ? { ...state, phase: 'building' } : state;
 
     case 'status':
-      if (event.status === 'OK') {
-        return state.roomPending
-          ? { ...state, roomsDone: state.roomsDone + 1, roomPending: false }
-          : state;
-      }
       if (event.status === 'Error') {
         // Once the files are exported, a late native error no longer matters.
         if (state.phase === 'saving') return state;
         return {
-          ...state,
           phase: 'failed',
-          roomPending: false,
           error: { kind: classifyScanError(event.message), message: event.message },
         };
       }
       return state;
 
     case 'exported':
-      return state.phase === 'building' ? { ...state, phase: 'saving', error: null } : state;
-
-    case 'exportCaptured':
-      return canExportCaptured(state) ? { ...state, phase: 'building', error: null } : state;
+      return state.phase === 'building' ? { phase: 'saving', error: null } : state;
 
     case 'saveFailed':
-      return { ...state, phase: 'failed', error: { kind: 'save', message: event.message } };
+      return { phase: 'failed', error: { kind: 'save', message: event.message } };
   }
 }

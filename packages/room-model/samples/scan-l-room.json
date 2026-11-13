@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": {
     "kind": "roomplan",
-    "converterVersion": "0.2.0",
+    "converterVersion": "0.3.0",
     "formatVersion": 2
   },
   "frame": {

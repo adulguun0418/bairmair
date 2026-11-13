@@ -7,20 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { deviceFacts } from './device';
-import {
-  canAdvance,
-  canExportCaptured,
-  initialScanState,
-  scanReducer,
-  type NativeStatus,
-  type ScanError,
-} from './scan-state';
+import { initialScanState, scanReducer, type NativeStatus, type ScanError } from './scan-state';
 import { newScanId } from './scan-meta';
 import type { ScanSessionProps } from './scan-session.types';
 import { saveExport } from './storage';
 
 /**
- * One multi-room scan with expo-roomplan's embedded `RoomPlanView` and our own localized
+ * One whole-apartment scan with expo-roomplan's embedded `RoomPlanView` and our own localized
  * controls. The screen mounts a fresh native view per scan, because the view never clears the
  * rooms it has captured.
  */
@@ -74,17 +67,9 @@ export function ScanSession({ onSaved, onCancel }: ScanSessionProps) {
     dispatch({ type: 'start' });
     controls.start();
   };
-  const nextRoom = () => {
-    dispatch({ type: 'nextRoom' });
-    controls.addRoom();
-  };
   const finish = () => {
     dispatch({ type: 'finish' });
     controls.finishScan();
-  };
-  const exportCaptured = () => {
-    dispatch({ type: 'exportCaptured' });
-    controls.exportScan();
   };
   const close = () => {
     controls.cancel();
@@ -137,32 +122,9 @@ export function ScanSession({ onSaved, onCancel }: ScanSessionProps) {
         <>
           <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
             <Button title={t('scan.cancel')} variant="secondary" onPress={confirmCancel} />
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>{t('scan.roomsDone', { count: state.roomsDone })}</Text>
-            </View>
           </View>
           <View style={[styles.bottomBar, bottom]}>
-            {state.roomPending && (
-              <View style={styles.pending}>
-                <ActivityIndicator color="#ffffff" />
-                <Text style={styles.pillText}>{t('scan.processingRoom')}</Text>
-              </View>
-            )}
-            <View style={styles.row}>
-              <Button
-                title={t('scan.nextRoom')}
-                variant="secondary"
-                disabled={!canAdvance(state)}
-                onPress={nextRoom}
-                style={styles.grow}
-              />
-              <Button
-                title={t('scan.finish')}
-                disabled={!canAdvance(state)}
-                onPress={finish}
-                style={styles.grow}
-              />
-            </View>
+            <Button title={t('scan.finish')} onPress={finish} />
           </View>
         </>
       )}
@@ -183,9 +145,6 @@ export function ScanSession({ onSaved, onCancel }: ScanSessionProps) {
           {state.error?.message ? <Text style={styles.detail}>{state.error.message}</Text> : null}
           {state.error?.kind === 'camera' && (
             <Button title={t('scan.openSettings')} onPress={() => void Linking.openSettings()} />
-          )}
-          {canExportCaptured(state) && (
-            <Button title={t('scan.saveCaptured')} onPress={exportCaptured} />
           )}
           <Button title={t('scan.close')} variant="secondary" onPress={close} />
         </View>
@@ -220,26 +179,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  pillText: { color: '#ffffff', fontSize: 15, fontWeight: '600' },
   bottomBar: { position: 'absolute', left: 16, right: 16, bottom: 0, gap: 12 },
-  pending: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  row: { flexDirection: 'row', gap: 12 },
-  grow: { flex: 1 },
   overlay: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',

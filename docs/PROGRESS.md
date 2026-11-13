@@ -116,7 +116,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - When: app start (after the first sync pass), app back in the foreground, "Миний зарууд" tab focused (each listing at most every 30 s), editor opened (5 s).
   - Still last write wins: a phone edit sent before the phone saw a web edit overwrites it.
   - Verified: unit tests (merge cases; refresher: unsent changes, edit during the check, deleted elsewhere, ended session, throttling, other owners); integration test on the dev project (web-style edits of title, price, unit number and a new photo reach the phone copy; the scan and the phone's photo file are kept; another user gets no copy). Not verified: on the iPhone.
-- Tests: 425 unit (room-model 160, browse 104, mobile 87, i18n 27, web 22, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
+- Whole-apartment scans, rooms split by walls (JS only; OTA update, and the server converts on Vercel after merge):
+  - Why: "Дараагийн өрөө" hung on "Өрөөг боловсруулж байна…" on the iPhone. expo-roomplan 1.3.2 restarts the capture before the finished room is delivered, so it never arrives (details in `docs/proposal/00-expo-roomplan-findings.md`).
+  - Scanner: one continuous capture. Start → walk through every room → "Дуусгах". The "next room" button, room counter and "save the captured rooms" are gone (also from `scan-state.ts`); new intro copy.
+  - Converter 0.3.0: a floor is split into the areas its walls close off (`enclosedFaces` in `geometry/faces.ts`: walls joined at corners, crossings and T-junctions, gaps up to 15 cm closed, dead ends ignored). Parts under 1 m² or under 0.4 m wide are ignored. The split is used only when the parts cover the floor to within 5%; otherwise one room plus a `rooms-not-split` warning. Labels come from RoomPlan's section points; ids are `<floor id>-<hash of the room's wall ids>` (stable across re-conversions). A single-room scan keeps its floor id and converts exactly as before.
+  - Walls go to the room most of their length runs along (ties: the closer outline). "Incomplete room" now counts walls along the room's outline, whichever room they belong to (`incompleteRoomIds`, used by the converter and the app's review screens), so a small room between shared walls is not flagged.
+  - New fixture `apartment-living-corridor` (your scan): living room 17.53 m² + corridor 3.27 m² = 20.80 m², no warnings. Web sample `/samples/scan-living-corridor`.
+  - Verified: unit tests (face finding, synthetic one-session splits incl. a short divider, a passage, a missing wall; the real scan); the sample page on the dev server (17.5 + 3.3 m², total 20.8 m²). Not verified: on the iPhone.
+- Tests: 447 unit (room-model 184, browse 104, mobile 85, i18n 27, web 22, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -236,8 +243,15 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - 6b copy (`search`, `map`, `listingCard`, `agentPage`, `home`, `account.agent`, `listingStatus.freshness` in `mn.ts`), e.g. "Зарагдах байр" / "Түрээсийн байр", "Санал болгох", "Байр боломжтой хэвээр байна".
 - 6c copy (`tabs`, `browse`, `favorites`, `report` in `mn.ts`), e.g. "Хадгалсан", "Зөрчилтэй зар мэдээлэх", "Мэдээлэл нь буруу", "Зар харах".
 - 7 copy: `browse.view3d` "3D-ээр үзэх", `browse.model3dFailed`, `viewer.noModel` "Энэ зарт 3D загвар алга.".
+- Whole-apartment scan copy (`scan.introTitle`, `step1`–`step3`, `discardBody` in `mn.ts`), e.g. "Байраа бүтнээр нь нэг дор скан хийнэ"; sample name "Бодит скан: зочны өрөө ба коридор (нэг сканаар)".
+- Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 
 ## Next
+- You: ship the whole-apartment scan after merging (Vercel redeploys `main`, so the server converts with 0.3.0 too): `pnpm update:preview -m "Whole-apartment scan, rooms split by walls"` in `apps/mobile`, then close and reopen the app twice. On the iPhone:
+  - A listing → "3D скан": the intro describes one scan for the whole apartment; while scanning there is only "Болих" and "Дуусгах".
+  - Scan several rooms, doors open, walking through each doorway → "Дуусгах" → the room review screen lists each room with its own area; no "incomplete" warning on rooms that were scanned all the way round.
+  - Assign photos to the rooms, publish, open the listing on the web: floor plan and 3D show the same rooms.
+  - Send me the raw JSON of a scan that comes out as one room (Бүртгэл → RoomPlan туршилт → share), so I can see which wall was missing.
 - You: ship part B to the preview builds after merging: `pnpm update:preview -m "App takes listing edits from the website"` in `apps/mobile`. It reaches builds made with `expo-updates` (Бүртгэл shows a version line). On the iPhone, close and reopen the app twice (download, then run). Then check:
   - Edit a listing on the website (title, add a photo, move the pin) → "Миний зарууд" in the app shows the new title and photo; the editor has the website's values.
   - Delete a listing on the website → it disappears from the app.
@@ -255,7 +269,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - 3D ↔ Төлөвлөлт; tapping a room chip highlights it in both; a photo hotspot opens the photo.
   - the room strip sits above the home indicator; back swipe returns to the listing.
   - with the web server stopped: the failed message, "Дахин оролдох" and "3D загварыг хөтөч дээр үзэх".
-- You, still open: 5c and 6b checks on the iPhone (now on build 3), and one scan of two neighbouring rooms in a single session (shared walls duplicated or merged?).
+- You, still open: 5c and 6b checks on the iPhone (now on build 3).
 - Then (your call on the order): error reporting (Sentry) before others test; production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Before launch: Supabase-wide captcha (see web sign-in).
 
 ## SMS (WeSend, live since 2026-11-13)

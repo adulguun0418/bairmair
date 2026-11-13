@@ -1,13 +1,20 @@
 import { applyAnnotations, parseRoomModel, type RoomModelV1 } from '@bairmair/room-model';
 import lShaped from '@bairmair/room-model/samples/l-shaped.json';
 import scanLRoom from '@bairmair/room-model/samples/scan-l-room.json';
+import scanLivingCorridor from '@bairmair/room-model/samples/scan-living-corridor.json';
 import studio from '@bairmair/room-model/samples/studio.json';
 import twoRoom from '@bairmair/room-model/samples/two-room.json';
 
-// Sample apartments until real listings exist: three hand-made ones and one real iPhone scan,
-// converted from the raw RoomPlan export in packages/room-model/test/fixtures/roomplan/.
+// Sample apartments until real listings exist: three hand-made ones and two real iPhone scans,
+// converted from the raw RoomPlan exports in packages/room-model/test/fixtures/roomplan/.
 
-export const SAMPLE_NAMES = ['two-room', 'studio', 'l-shaped', 'scan-l-room'] as const;
+export const SAMPLE_NAMES = [
+  'two-room',
+  'studio',
+  'l-shaped',
+  'scan-l-room',
+  'scan-living-corridor',
+] as const;
 export type SampleName = (typeof SAMPLE_NAMES)[number];
 
 export function isSampleName(value: string): value is SampleName {
@@ -25,6 +32,7 @@ const MODELS: Record<SampleName, unknown> = {
   'two-room': twoRoom,
   'l-shaped': lShaped,
   'scan-l-room': scanLRoom,
+  'scan-living-corridor': scanLivingCorridor,
 };
 
 const photo = (id: string, roomId: string, image: string): SamplePhoto => ({
@@ -54,6 +62,7 @@ const PHOTOS: Record<SampleName, SamplePhoto[]> = {
     photo('l-shaped-3', 'kitchen', 'kitchen'),
   ],
   'scan-l-room': [],
+  'scan-living-corridor': [],
 };
 
 export interface Sample {

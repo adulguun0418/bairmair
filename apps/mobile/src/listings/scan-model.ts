@@ -2,6 +2,7 @@ import { BUCKETS, publicObjectUrl, scanModelPaths } from '@bairmair/db';
 import {
   applyAnnotations,
   computeMetrics,
+  incompleteRoomIds,
   safeParseRoomModel,
   type ModelMetrics,
   type RoomModelV1,
@@ -27,19 +28,13 @@ const LOADING: ScanModelState = { status: 'loading' };
 const UNAVAILABLE: ScanModelState = { status: 'unavailable' };
 const ERROR: ScanModelState = { status: 'error' };
 
-/** Same rule as the converter's `incomplete-room` warning. */
-const MIN_ROOM_WALLS = 3;
-
 function ready(model: RoomModelV1): ScanModelState {
   return {
     status: 'ready',
     model,
     metrics: computeMetrics(model),
-    incompleteRoomIds: model.rooms
-      .filter(
-        (room) => model.walls.filter((wall) => wall.roomId === room.id).length < MIN_ROOM_WALLS,
-      )
-      .map((room) => room.id),
+    // The converter's `incomplete-room` rule, so a downloaded model gives the same answer.
+    incompleteRoomIds: incompleteRoomIds(model),
   };
 }
 

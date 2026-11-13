@@ -15,7 +15,7 @@ export type ScanAnalysis =
       /** How often each conversion warning occurred. */
       warnings: Partial<Record<ConversionWarningCode, number>>;
       warningCount: number;
-      /** Rooms with fewer than 3 walls: the scan probably missed part of them. */
+      /** Rooms with fewer than 3 walls along their outline: the scan probably missed part. */
       incompleteRoomIds: string[];
     }
   | { ok: false; error: string };

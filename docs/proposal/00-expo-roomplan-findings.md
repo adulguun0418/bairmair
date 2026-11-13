@@ -37,7 +37,7 @@ Two single-room scans from the step 4 test screen (iPhone, expo-roomplan 1.3.2),
 
 1. **Yes, `rooms[]` is there.** Each entry is a full `CapturedRoom`: `walls`, `doors`, `windows`, `openings`, `floors`, `objects`, `sections`, `story`, `version` (2), `coreModel`, `referenceOriginTransform`. The top-level arrays repeat the rooms' walls, doors and objects with the **same identifiers** (transforms equal up to float noise). **Floors are the exception:** the top-level floor has a **new identifier** and a different local frame, with the same outline. The converter now drops such merged copies; before the fix, each scan came out as two overlapping rooms with double the area.
 2. **Polygons.** `polygonCorners` in the floor's local XY plane (z ≈ 1e-7), 4 corners for a rectangle, 8 for the L-shaped room. `dimensions` is a bounding size and can be larger than the polygon (6.20 × 3.12 for a 6.20 × 1.95 outline), so it must not be used when corners exist.
-3. **Not answered yet.** Both exports are single-room scans. Needs one scan of two neighbouring rooms in one session ("Next room").
+3. **Answered by a whole-apartment scan (2026-11-13, see below): one wall.** Walked through in one continuous capture, the wall between two rooms is a single surface.
 4. **Keyed objects** for `category` (`{"wall":{}}`, `{"door":{"isOpen":false}}`, `{"table":{}}`) and `confidence` (`{"high":{}}`). Section `label` is a **plain string** (`"unidentified"`). Transforms are flat arrays of 16 numbers, column-major. Optional values are written as explicit `null` (`"curve": null`, `"parentIdentifier": null`). Objects also carry `attributes` (e.g. `ChairType`, `TableShapeType`, `StorageType`) and chairs have their table as `parentIdentifier`.
 5. **Small.** `coreModel` is base64 inside each room only: 31,036 and 82,628 characters. Whole files: 42 KB and 91 KB. Far below the 50 MB `scan-raw` limit, even for a large apartment.
 6. **One section per room, but unlabelled.** Both rooms came back as `"unidentified"` (read as `other`). Room labels cannot be relied on; the user's label step stays essential.
@@ -46,6 +46,17 @@ Also seen:
 - An incomplete scan (only 2 of the walls captured) still has a floor, cut off at the captured walls; the table sticks out of it. The converter now reports `incomplete-room` for a room with fewer than 3 walls, so the review step can ask for a rescan.
 - Walls hidden behind tall furniture are measured lower: 2.39 m behind the shelves vs 2.82 m elsewhere in the same room, so the 2.5 m shelves rise above those walls in the 3D view.
 - expo-roomplan 1.3.2 builds and scans on Expo SDK 58: the first EAS development build installed, and scanning and export worked (gap 10 below).
+
+## Several rooms (2026-11-13)
+
+**"Add room" does not work in 1.3.2.** On the iPhone, the scanner stayed on "Өрөөг боловсруулж байна…" after "Дараагийн өрөө" while the camera kept scanning. The package's `handleAddAnotherTrigger` calls `captureSession.stop(pauseARSession: false)` and then `run()` on the next main-queue tick, without waiting for `captureSession(_:didEndWith:)`. Apple's multi-room sample waits for the room before running again; here the finished room is never delivered, so no `OK` arrives. Fixing it would mean patching the Swift (custom native code + a new build).
+
+**One continuous capture instead.** The app now scans the whole apartment in one session (start → walk through every room → "Finish"). Fixture `apartment-living-corridor.json` (a living room with a dining area and the corridor next to it) shows what that exports:
+- **One floor** for everything (10 corners, 20.80 m²), one `rooms[]` entry.
+- **The walls separate the rooms.** The corridor's five walls end on the living room's west wall (T-junctions), and the door between them sits in that wall. The shared wall is one surface, not two.
+- **Sections are points, not outlines**: `livingRoom` and `diningRoom` inside the living room, `unidentified` inside the corridor.
+
+The converter (0.3.0) therefore splits a floor along its walls: the areas the walls close off become rooms (17.53 + 3.27 m² here) when together they cover the floor to within 5%; otherwise the floor stays one room with a `rooms-not-split` warning. Split rooms get ids from the floor id and their walls, so they are stable across re-conversions.
 
 ## Gaps and how I plan to handle them
 
