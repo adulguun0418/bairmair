@@ -17,7 +17,6 @@
     "@bairmair/i18n": "workspace:*",
     "@bairmair/room-model": "workspace:*",
     "@bairmair/viewer": "workspace:*",
-    "@fontsource/noto-sans": "5.3.0",
     "@supabase/supabase-js": "2.119.0",
     "i18next": "^27.1.0",
     "maplibre-gl": "6.18.0",
