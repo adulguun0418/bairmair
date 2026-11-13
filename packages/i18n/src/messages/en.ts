@@ -189,6 +189,9 @@ export const en: Messages = {
     deleting: 'Deleting your account…',
     deleted: 'Your account has been deleted.',
     deleteFailed: 'Could not delete your account. Check your connection and try again.',
+    version: 'Version {{version}}',
+    versionBuiltIn: 'built-in',
+    versionUpdate: 'update {{date}}',
     agent: {
       title: 'Agent',
       intro:

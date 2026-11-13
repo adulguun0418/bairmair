@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:remote": "vitest run --config vitest.remote.config.mts",
     "doctor": "pnpm dlx expo-doctor",
-    "eas": "pnpm dlx eas-cli@27.7.2"
+    "eas": "pnpm dlx eas-cli@27.7.2",
+    "update:preview": "pnpm dlx eas-cli@27.7.2 update --channel preview --environment preview"
   },
   "dependencies": {
     "@bairmair/browse": "workspace:*",
@@ -45,6 +46,7 @@
     "expo-status-bar": "~58.0.5",
     "expo-symbols": "~58.0.5",
     "expo-system-ui": "~58.0.7",
+    "expo-updates": "~58.0.22",
     "expo-web-browser": "~58.0.8",
     "i18next": "^27.1.0",
     "react": "19.3.0",
