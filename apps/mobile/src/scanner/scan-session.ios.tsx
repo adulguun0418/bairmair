@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ExportType, RoomPlanView, useRoomPlanView } from 'expo-roomplan';
 import { useReducer, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
@@ -11,6 +11,7 @@ import { initialScanState, scanReducer, type NativeStatus, type ScanError } from
 import { newScanId } from './scan-meta';
 import type { ScanSessionProps } from './scan-session.types';
 import { saveExport } from './storage';
+import { Text } from '@/ui/text';
 
 /**
  * One whole-apartment scan with expo-roomplan's embedded `RoomPlanView` and our own localized

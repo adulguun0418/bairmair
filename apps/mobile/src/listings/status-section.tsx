@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
@@ -9,6 +9,7 @@ import { FreshnessSection } from './freshness-section';
 import { changeListingStatus, retryRefusedSync, useSyncStatus } from './listings';
 import { isLive, type LocalListing } from './model';
 import { missingToPublish } from './sync-plan';
+import { Text } from '@/ui/text';
 
 /**
  * Publishing and the listing's life after it: publish, mark sold/rented, hide, publish again.

@@ -1,7 +1,7 @@
 import { Constants, type Enums } from '@bairmair/db';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
@@ -9,6 +9,7 @@ import { Button } from '@/ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 type Reason = Enums<'report_reason'>;
 

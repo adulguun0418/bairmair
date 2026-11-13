@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 /** agent_profiles CHECK constraints. */
 const AGENCY_NAME_MAX = 120;

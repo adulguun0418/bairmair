@@ -4,7 +4,7 @@ import type { File } from 'expo-file-system';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useMemo } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { analyzeExport } from '@/scanner/analyze';
 import { formatScanTime } from '@/scanner/scan-meta';
@@ -12,6 +12,7 @@ import { deleteScan, getScan, writeModelJson } from '@/scanner/storage';
 import { Button } from '@/ui/button';
 import { FloorPlanView } from '@/ui/floor-plan-view';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 const JSON_TYPE = { mimeType: 'application/json', UTI: 'public.json' };
 const USDZ_TYPE = {

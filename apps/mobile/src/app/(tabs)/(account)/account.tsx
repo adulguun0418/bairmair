@@ -3,15 +3,7 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AgentSection } from '@/account/agent-section';
 import { deleteAccount } from '@/account/delete-account';
 import { signOut } from '@/auth/actions';
@@ -22,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 const METHODS = ['phone', 'apple', 'google', 'email'] as const;
 type Method = (typeof METHODS)[number];

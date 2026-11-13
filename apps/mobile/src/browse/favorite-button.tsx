@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Pressable, StyleSheet, Text } from 'react-native';
+import { Alert, Pressable, StyleSheet } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { useColors } from '@/ui/theme';
 import { SignedOutError, toggleFavorite, useIsFavorite } from './favorites';
+import { Text } from '@/ui/text';
 
 /** A heart that saves the listing; signed out, it opens sign-in. */
 export function FavoriteButton({
@@ -34,7 +35,7 @@ export function FavoriteButton({
     });
   };
 
-  const tint = saved ? colors.danger : onImage ? '#ffffff' : colors.text;
+  const tint = saved ? colors.favorite : onImage ? '#ffffff' : colors.text;
   return (
     <Pressable
       accessibilityRole="button"

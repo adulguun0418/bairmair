@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import {
   fetchFavoriteCards,
   reloadFavorites,
@@ -12,6 +12,7 @@ import { ListingCard } from '@/browse/listing-card';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 type State = { kind: 'loading' } | { kind: 'ready'; items: FavoriteCard[] } | { kind: 'error' };
 

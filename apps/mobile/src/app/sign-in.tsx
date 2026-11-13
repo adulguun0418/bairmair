@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, useColorScheme, View } from 'react-native';
 import {
   sendPhoneCode,
   signInWithApple,
@@ -15,6 +15,7 @@ import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
+import { Text } from '@/ui/text';
 
 /**
  * Phone sign-in (primary), plus Apple and Google when they are enabled in the project.

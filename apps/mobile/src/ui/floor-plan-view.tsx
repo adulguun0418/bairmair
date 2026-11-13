@@ -27,6 +27,6 @@ export function FloorPlanView({ svg, height = 320 }: { svg: string; height?: num
 }
 
 const styles = StyleSheet.create({
-  frame: { borderRadius: 12, overflow: 'hidden', backgroundColor: '#ffffff' },
+  frame: { borderRadius: 20, overflow: 'hidden', backgroundColor: '#ffffff' },
   webview: { flex: 1, backgroundColor: '#ffffff' },
 });

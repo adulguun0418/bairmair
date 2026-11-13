@@ -17,8 +17,8 @@ const RADIUS = 10;
 const BORDER = 1;
 
 const PINS = {
-  pin: { fill: '#ffffff', stroke: '#a8a29e' },
-  'pin-3d': { fill: '#fcd34d', stroke: '#b45309' },
+  pin: { fill: '#ffffff', stroke: '#cfd6e3' },
+  'pin-3d': { fill: '#1a2b60', stroke: '#1a2b60' },
 };
 
 function rgb(hex) {

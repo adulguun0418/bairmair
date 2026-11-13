@@ -12,7 +12,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   type TextInputProps,
 } from 'react-native';
@@ -47,6 +46,7 @@ import { Section } from '@/ui/section';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
+import { Text } from '@/ui/text';
 
 const nowIso = () => new Date().toISOString();
 
