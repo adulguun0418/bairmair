@@ -20,7 +20,7 @@ import {
   type LocalListing,
   type NewScan,
 } from '../src/listings/model';
-import { parseRoomLabels, scanFromRow } from '../src/listings/server-listings';
+import { scanFromRow } from '../src/listings/server-listings';
 import { classifyPostgrestError, SyncError } from '../src/listings/sync-errors';
 import {
   isSynced,
@@ -315,19 +315,19 @@ describe('SyncEngine: scans and publishing', () => {
   });
 
   it('gives up on a scan from another phone whose files never arrived', async () => {
-    const scan = scanFromRow({
-      id: SCAN_A,
-      status: 'uploaded',
-      metrics: null,
-      room_labels: {},
-      created_at: NOW,
-      device_model: null,
-      ios_version: null,
-      app_version: null,
-      scan_lat: null,
-      scan_lng: null,
-      scan_accuracy_m: null,
-    });
+    const scan = scanFromRow(
+      {
+        id: SCAN_A,
+        status: 'uploaded',
+        metrics: null,
+        room_labels: {},
+        created_at: NOW,
+        device_model: null,
+        ios_version: null,
+        app_version: null,
+      },
+      null,
+    );
     const { store, remote, engine } = setup({ ...synced(), scan });
     remote.processResults = [{ kind: 'filesMissing' }];
     await engine.run();
@@ -381,32 +381,20 @@ describe('server data', () => {
     expect(classifyPostgrestError(check, 400).key).toBe('incomplete');
   });
 
-  it('keeps only well-formed room labels from the server', () => {
-    expect(
-      parseRoomLabels({
-        a: { label: 'kitchen', name: 'Том гал тогоо' },
-        b: { label: 'garage', name: '  ' },
-        c: 'nope',
-        d: { name: 7 },
-      }),
-    ).toEqual({ a: { label: 'kitchen', name: 'Том гал тогоо' }, b: {}, d: {} });
-    expect(parseRoomLabels(null)).toEqual({});
-  });
-
   it('turns a scan row into a scan this phone can follow', () => {
-    const scan = scanFromRow({
-      id: SCAN_A,
-      status: 'ready',
-      metrics: { totalAreaM2: 64.2 },
-      room_labels: { r1: { label: 'bedroom' } },
-      created_at: NOW,
-      device_model: 'iPhone16,2',
-      ios_version: '26.1',
-      app_version: '0.1.0',
-      scan_lat: ZAISAN.lat,
-      scan_lng: ZAISAN.lng,
-      scan_accuracy_m: 9,
-    });
+    const scan = scanFromRow(
+      {
+        id: SCAN_A,
+        status: 'ready',
+        metrics: { totalAreaM2: 64.2 },
+        room_labels: { r1: { label: 'bedroom' } },
+        created_at: NOW,
+        device_model: 'iPhone16,2',
+        ios_version: '26.1',
+        app_version: '0.1.0',
+      },
+      { lat: ZAISAN.lat, lng: ZAISAN.lng, accuracy_m: 9 },
+    );
     expect(scan).toMatchObject({
       files: null,
       row: 'created',

@@ -2,8 +2,10 @@ import { LOCALES } from '@bairmair/i18n/locales';
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
 import Link from 'next/link';
-import { LanguageSwitch } from '@/components/LanguageSwitch';
+import { Suspense } from 'react';
+import { LanguageLinks, LanguageSwitch } from '@/components/LanguageSwitch';
 import { getI18n, localePath } from '@/lib/i18n';
+import { publicEnv } from '@/lib/public-env';
 import '../globals.css';
 
 // Mongolian needs Ө and Ү, which are in the extended Cyrillic subset.
@@ -19,6 +21,8 @@ export async function generateStaticParams() {
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
   return {
+    // Open Graph and canonical URLs are absolute; shared links must point at the public site.
+    metadataBase: new URL(publicEnv.siteUrl),
     title: { default: t('app.name'), template: `%s · ${t('app.name')}` },
     description: t('app.tagline'),
   };
@@ -26,6 +30,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
   const { locale, t } = await getI18n();
+  const languageProps = {
+    current: locale,
+    label: t('language.label'),
+    names: { mn: t('language.mn'), en: t('language.en') },
+  };
   return (
     <html lang={locale} className={`${geist.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-stone-50 text-stone-900">
@@ -38,11 +47,9 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
               <Link href={localePath(locale, '/samples')} className="hover:underline">
                 {t('nav.samples')}
               </Link>
-              <LanguageSwitch
-                current={locale}
-                label={t('language.label')}
-                names={{ mn: t('language.mn'), en: t('language.en') }}
-              />
+              <Suspense fallback={<LanguageLinks {...languageProps} path="/" />}>
+                <LanguageSwitch {...languageProps} />
+              </Suspense>
             </nav>
           </div>
         </header>

@@ -597,7 +597,16 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      district_price_stats: {
+        Row: {
+          currency: Database['public']['Enums']['currency_code'] | null;
+          district_id: number | null;
+          listing_count: number | null;
+          median_price_per_m2: number | null;
+          type: Database['public']['Enums']['listing_type'] | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       confirm_listing_available: {
@@ -611,6 +620,14 @@ export type Database = {
       reveal_listing_contact: {
         Args: { p_listing_id: string };
         Returns: string;
+      };
+      scan_location: {
+        Args: { p_scan_id: string };
+        Returns: {
+          accuracy_m: number;
+          lat: number;
+          lng: number;
+        }[];
       };
     };
     Enums: {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyAnnotations, parseRoomModel } from '../src/index';
+import { applyAnnotations, parseRoomLabelOverrides, parseRoomModel } from '../src/index';
 import { minimalModel } from './helpers';
 
 describe('applyAnnotations', () => {
@@ -91,5 +91,24 @@ describe('applyAnnotations', () => {
       ],
     });
     expect(parseRoomModel(result)).toEqual(result);
+  });
+});
+
+describe('parseRoomLabelOverrides', () => {
+  it('keeps only well-formed room labels', () => {
+    expect(
+      parseRoomLabelOverrides({
+        a: { label: 'kitchen', name: 'Том гал тогоо' },
+        b: { label: 'garage', name: '  ' },
+        c: 'nope',
+        d: { name: 7 },
+      }),
+    ).toEqual({ a: { label: 'kitchen', name: 'Том гал тогоо' }, b: {}, d: {} });
+  });
+
+  it('returns no labels for anything but an object', () => {
+    expect(parseRoomLabelOverrides(null)).toEqual({});
+    expect(parseRoomLabelOverrides([{ label: 'kitchen' }])).toEqual({});
+    expect(parseRoomLabelOverrides('kitchen')).toEqual({});
   });
 });

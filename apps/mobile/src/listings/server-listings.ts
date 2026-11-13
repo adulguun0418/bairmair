@@ -1,5 +1,5 @@
-import type { Json, Tables, TypedSupabaseClient } from '@bairmair/db';
-import { ROOM_LABELS, type RoomLabel, type RoomLabelOverride } from '@bairmair/room-model';
+import type { Tables, TypedSupabaseClient } from '@bairmair/db';
+import { parseRoomLabelOverrides } from '@bairmair/room-model';
 import { formFromRow } from './form';
 import type { LocalListing, LocalPhoto, LocalScan } from './model';
 import { classifyPostgrestError } from './sync-errors';
@@ -50,7 +50,7 @@ export async function downloadListing(
     client
       .from('room_scans')
       .select(
-        'id, status, metrics, room_labels, created_at, device_model, ios_version, app_version, scan_lat, scan_lng, scan_accuracy_m',
+        'id, status, metrics, room_labels, created_at, device_model, ios_version, app_version',
       )
       .eq('listing_id', id)
       .order('is_current', { ascending: false })
@@ -63,7 +63,14 @@ export async function downloadListing(
   const row = listing.data!;
   const location = privateRow.data;
   const scanRow = scans.data?.[0];
-  const scan = scanRow ? scanFromRow(scanRow) : null;
+  let scan: LocalScan | null = null;
+  if (scanRow) {
+    // The scan's GPS fix is not readable from the table (it is close to the exact location);
+    // the owner gets it through an RPC.
+    const fix = await client.rpc('scan_location', { p_scan_id: scanRow.id }).maybeSingle();
+    if (fix.error) throw classifyPostgrestError(fix.error, fix.status);
+    scan = scanFromRow(scanRow, fix.data);
+  }
 
   const localPhotos = (photos.data ?? []).map((photo, index): LocalPhoto => ({
     id: photo.id,
@@ -116,31 +123,17 @@ type ScanRow = Pick<
   | 'device_model'
   | 'ios_version'
   | 'app_version'
-  | 'scan_lat'
-  | 'scan_lng'
-  | 'scan_accuracy_m'
 >;
 
-const LABELS: ReadonlySet<string> = new Set(ROOM_LABELS);
-
-/** `room_scans.room_labels` is JSON written by phones; keep only well-formed entries. */
-export function parseRoomLabels(value: Json): Record<string, RoomLabelOverride> {
-  const labels: Record<string, RoomLabelOverride> = {};
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return labels;
-  for (const [roomId, entry] of Object.entries(value)) {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
-    const override: RoomLabelOverride = {};
-    if (typeof entry.label === 'string' && LABELS.has(entry.label)) {
-      override.label = entry.label as RoomLabel;
-    }
-    if (typeof entry.name === 'string' && entry.name.trim() !== '') override.name = entry.name;
-    labels[roomId] = override;
-  }
-  return labels;
+/** A row of the `scan_location` RPC. */
+export interface ScanFix {
+  lat: number;
+  lng: number;
+  accuracy_m: number | null;
 }
 
 /** A scan on the server, as this phone tracks it. Its raw files stay on the server. */
-export function scanFromRow(row: ScanRow): LocalScan {
+export function scanFromRow(row: ScanRow, fix: ScanFix | null): LocalScan {
   const metrics = row.metrics as { totalAreaM2?: unknown } | null;
   return {
     id: row.id,
@@ -148,21 +141,15 @@ export function scanFromRow(row: ScanRow): LocalScan {
     files: null,
     device: { modelId: row.device_model, osVersion: row.ios_version },
     appVersion: row.app_version,
-    location:
-      row.scan_lat !== null && row.scan_lng !== null
-        ? {
-            lat: row.scan_lat,
-            lng: row.scan_lng,
-            accuracyM: row.scan_accuracy_m,
-            capturedAt: row.created_at,
-          }
-        : null,
+    location: fix
+      ? { lat: fix.lat, lng: fix.lng, accuracyM: fix.accuracy_m, capturedAt: row.created_at }
+      : null,
     row: 'created',
     // Only the phone that scanned could upload; this one asks the server to process, at most.
     uploaded: { json: true, usdz: true },
     processing: row.status === 'ready' ? 'ready' : row.status === 'failed' ? 'failed' : 'pending',
     totalAreaM2: typeof metrics?.totalAreaM2 === 'number' ? metrics.totalAreaM2 : null,
-    roomLabels: parseRoomLabels(row.room_labels),
+    roomLabels: parseRoomLabelOverrides(row.room_labels),
     labelsRev: 0,
     labelsSyncedRev: 0,
   };

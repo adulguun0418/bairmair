@@ -64,6 +64,30 @@ export function formatMoneyCompact(amount: number, currency: CurrencyCode, local
   return `${formatDecimal(value, 1)}${unit}${NBSP}₮`;
 }
 
+export type ListingType = 'sale' | 'rent';
+
+const PER_MONTH: Record<Locale, string> = { mn: '/сар', en: '/mo' };
+const PER_AREA: Record<Locale, string> = { mn: '/м²', en: '/m²' };
+
+/**
+ * A listing's price as shown on cards, pins and pages: `250 сая ₮` for a sale, `1.8 сая ₮/сар`
+ * or `$1,200/сар` for a rent.
+ */
+export function formatListingPrice(
+  amount: number,
+  currency: CurrencyCode,
+  type: ListingType,
+  locale: Locale,
+): string {
+  const price = formatMoneyCompact(amount, currency, locale);
+  return type === 'rent' ? `${price}${PER_MONTH[locale]}` : price;
+}
+
+/** A price per square meter: `3.8 сая ₮/м²`, `$15/m²`. */
+export function formatPricePerArea(amount: number, currency: CurrencyCode, locale: Locale): string {
+  return `${formatMoneyCompact(amount, currency, locale)}${PER_AREA[locale]}`;
+}
+
 const FILE_SIZE_UNITS: Record<Locale, readonly [string, string, string]> = {
   mn: ['Б', 'КБ', 'МБ'],
   en: ['B', 'KB', 'MB'],

@@ -4,18 +4,29 @@ import { LOCALES, localePath, stripLocale, type Locale } from '@bairmair/i18n/lo
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-/** Links to the current page in each language. */
-export function LanguageSwitch({
-  current,
-  label,
-  names,
-}: {
+interface LanguageSwitchProps {
   current: Locale;
   label: string;
   names: Record<Locale, string>;
-}) {
+}
+
+/**
+ * Links to the current page in each language. Reads the URL, so pages whose path is only known
+ * at request time (listings) render it inside `<Suspense>` with `LanguageLinks` as the fallback.
+ */
+export function LanguageSwitch(props: LanguageSwitchProps) {
   // Without its locale prefix, whether the path is the address bar URL or the rewritten one.
   const path = stripLocale(usePathname() ?? '/');
+  return <LanguageLinks {...props} path={path} />;
+}
+
+/** Links to `path` (without a locale prefix) in each language. */
+export function LanguageLinks({
+  current,
+  label,
+  names,
+  path,
+}: LanguageSwitchProps & { path: string }) {
   return (
     <div role="group" aria-label={label} className="flex gap-1 rounded-full bg-stone-100 p-0.5">
       {LOCALES.map((locale) => (
