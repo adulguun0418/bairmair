@@ -124,7 +124,13 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - New fixture `apartment-living-corridor` (your scan): living room 17.53 m² + corridor 3.27 m² = 20.80 m², no warnings. Web sample `/samples/scan-living-corridor`.
   - Verified: unit tests (face finding, synthetic one-session splits incl. a short divider, a passage, a missing wall; the real scan); the sample page on the dev server (17.5 + 3.3 m², total 20.8 m²). Not verified: on the iPhone.
   - Fix (converter 0.3.1), from your second scan (`apartment-kitchen-living`): a partition scanned from both sides (0.39 m apart) leaves the floor under the wall closed off but in no room, so the rooms covered only 94.7% and the floor stayed one room (`rooms-not-split`). Areas too small or narrow to be rooms (wall interiors, columns, passage reveals) now count toward covering the floor. Result: living room 17.35 m² + kitchen 5.73 m² (labels from RoomPlan), total 23.08 m² between the walls instead of 24.37 m² for the whole floor.
-- Tests: 452 unit (room-model 189, browse 104, mobile 85, i18n 27, web 22, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
+- Web polish: header, footer, dark mode, legal pages:
+  - Header (`components/header/`): sticky with blur, main sections as pills with the current one highlighted (`nav-items.ts`, tested), language as a globe + "MN/EN" menu, light/dark button, "Зар нэмэх" (through sign-in for visitors), ♡ and an account menu (phone, my listings, saved, account, sign out). Below `md` everything moves into a full-screen menu (portaled to `body`: the header's `backdrop-filter` would otherwise trap a fixed panel inside it). "3D жишээ" moved to the footer.
+  - Footer: logo + tagline, columns Хайх / bairmair / Эрх зүй, copyright, language links, system/light/dark switch.
+  - Pages: `/about`, `/support` (contact + FAQ), `/terms`, `/privacy`, `/delete-account` (the URL Google Play asks for), mn + en. Content in `apps/web/src/content/` (structured, per language); company details in one place, `content/site-info.ts` (**placeholders in [brackets]**). `formatDate` added to `@bairmair/i18n`.
+  - Dark mode: colours are semantic tokens (`bg-surface`, `text-fg-muted`, `border-line`, `bg-primary`/`text-on-primary`, `bg-accent`…) in `globals.css`, one set per theme; light values equal the old stone/amber shades, so light mode looks as before. All web components moved to them. The theme follows the system unless the visitor picks one (localStorage); an inline script in `<head>` applies it before the first paint. A `dark:` variant exists for the rare non-colour case (logo swap). Dark logo: `logo-horizontal-dark.svg` from `build-horizontal.mjs`. Maps, floor-plan drawing, OG images and the app's 3D embed stay light (the embed is forced light; the app draws its own chrome).
+  - Verified: typecheck, lint, tests, production build; headless Chrome on the production build: header/footer/legal pages in light and dark, desktop and 390 px, open mobile menu and language menu, a chosen theme surviving a reload, embed light under a dark system.
+- Tests: 458 unit (room-model 189, browse 104, mobile 85, i18n 29, web 26, send-sms 18, db 7) + 79 integration tests against the dev project (db 57, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -232,6 +238,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Before production: separate project, remove the test OTP number, turn off the email provider (kept on in dev for the tests).
 
 ## To review
+- Header/footer/legal copy (`nav`, `theme`, `footer`, `legal`, `contact` in `mn.ts`) and the page texts in `apps/web/src/content/` (drafts, not legal advice).
 - Mongolian UI copy (`packages/i18n/src/messages/mn.ts`), e.g. "Төлөвлөлт" for floor plan.
 - OTP SMS text: "Bairmair код: 123456. Хэнд ч бүү хэлээрэй." (`supabase/functions/send-sms/handler.ts`).
 - Scanner copy (`scanSupport`, `scan`, `scanResult` in `mn.ts`) and the iOS permission prompts (`apps/mobile/app.json`).
@@ -248,6 +255,8 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 
 ## Next
+- You: fill in `apps/web/src/content/site-info.ts` (company name, registration number, address, support e-mail and phone; the pages show the [bracket] placeholders until then), and have the terms and privacy drafts checked (they describe what the code does today; update them when Sentry, analytics or payments arrive).
+- Store review: the app needs links to the privacy policy and terms (Бүртгэл and sign-in), and App Store Connect needs the privacy policy URL (`/privacy`) and a support URL (`/support`); Google Play needs the account-deletion URL (`/delete-account`).
 - You, on the iPhone dev build (`pnpm dev:mobile`; the server converts on Vercel, which redeploys `main`): check the whole-apartment scan. Your earlier scans re-convert on the phone with the new converter when you open them.
   - A listing → "3D скан": the intro describes one scan for the whole apartment; while scanning there is only "Болих" and "Дуусгах".
   - Scan several rooms, doors open, walking through each doorway → "Дуусгах" → the room review screen lists each room with its own area; no "incomplete" warning on rooms that were scanned all the way round.

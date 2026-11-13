@@ -54,7 +54,7 @@ export function SearchForm({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="w-full rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium lg:hidden"
+        className="w-full rounded-full border border-line-2 bg-surface px-4 py-2 text-sm font-medium lg:hidden"
       >
         {t('search.filters')}
         {hasFilters(filters) ? ' •' : ''}
@@ -64,7 +64,7 @@ export function SearchForm({
         method="get"
         action={action}
         onSubmit={submit}
-        className={`${open ? 'mt-3 block' : 'hidden'} space-y-5 rounded-2xl bg-white p-4 shadow-sm lg:block`}
+        className={`${open ? 'mt-3 block' : 'hidden'} space-y-5 rounded-2xl bg-surface p-4 shadow-sm lg:block`}
       >
         {filters.type && <input type="hidden" name="type" value={filters.type} />}
         {filters.view === 'map' && <input type="hidden" name="view" value="map" />}
@@ -128,7 +128,7 @@ export function SearchForm({
               <option value="MNT">₮ MNT</option>
               <option value="USD">$ USD</option>
             </select>
-            <p className="mt-1 text-xs text-stone-500">{t('search.currencyNote')}</p>
+            <p className="mt-1 text-xs text-fg-subtle">{t('search.currencyNote')}</p>
           </Field>
         )}
 
@@ -155,7 +155,7 @@ export function SearchForm({
             name="has3d"
             value="1"
             defaultChecked={filters.has3d}
-            className="size-4 accent-stone-900"
+            className="size-4 accent-primary"
           />
           {t('search.has3d')}
         </label>
@@ -163,12 +163,12 @@ export function SearchForm({
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            className="flex-1 rounded-full bg-stone-900 px-5 py-2.5 font-medium text-white hover:bg-stone-700"
+            className="flex-1 rounded-full bg-primary px-5 py-2.5 font-medium text-on-primary hover:bg-primary-hover"
           >
             {t('search.submit')}
           </button>
           {hasFilters(filters) && (
-            <a href={`${action}${cleared}`} className="text-sm text-stone-600 hover:underline">
+            <a href={`${action}${cleared}`} className="text-sm text-fg-muted hover:underline">
               {t('search.reset')}
             </a>
           )}
@@ -179,8 +179,8 @@ export function SearchForm({
 }
 
 const inputClass =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-900 focus:outline-none';
-const legendClass = 'mb-2 text-sm font-medium text-stone-700';
+  'w-full rounded-lg border border-line-2 bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none';
+const legendClass = 'mb-2 text-sm font-medium text-fg-2';
 
 function Field({
   label,
@@ -213,7 +213,7 @@ function Chip({
   children: ReactNode;
 }) {
   return (
-    <label className="cursor-pointer rounded-full border border-stone-300 px-3 py-1 text-sm has-checked:border-stone-900 has-checked:bg-stone-900 has-checked:text-white has-focus-visible:ring-2 has-focus-visible:ring-amber-400">
+    <label className="cursor-pointer rounded-full border border-line-2 px-3 py-1 text-sm has-checked:border-primary has-checked:bg-primary has-checked:text-on-primary has-focus-visible:ring-2 has-focus-visible:ring-amber-400">
       <input
         type="checkbox"
         name={name}
@@ -253,7 +253,7 @@ function Range({
           defaultValue={min ?? ''}
           className={inputClass}
         />
-        <span className="text-stone-400">–</span>
+        <span className="text-fg-subtle">–</span>
         <input
           name={`${name}Max`}
           inputMode="decimal"

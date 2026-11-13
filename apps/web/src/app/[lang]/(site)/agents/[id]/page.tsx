@@ -26,7 +26,7 @@ export async function generateMetadata({
 export default function AgentPage(props: PageProps<'/[lang]/agents/[id]'>) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-stone-200" />}>
+      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-surface-3" />}>
         <AgentContent params={props.params} />
       </Suspense>
     </div>
@@ -41,29 +41,29 @@ async function AgentContent({ params }: Pick<PageProps<'/[lang]/agents/[id]'>, '
 
   return (
     <div className="space-y-8">
-      <header className="space-y-3 rounded-2xl bg-white p-6 shadow-sm">
+      <header className="space-y-3 rounded-2xl bg-surface p-6 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-800">
+          <span className="rounded-full bg-surface-3 px-3 py-1 text-fg-2">
             {t('agentPage.agent')}
           </span>
           {agent.verified && (
             <span
               title={t('agentPage.verifiedHint')}
-              className="rounded-full bg-amber-200 px-3 py-1 text-amber-950"
+              className="rounded-full bg-accent-soft px-3 py-1 text-on-accent-soft"
             >
               {t('agentPage.verified')}
             </span>
           )}
         </div>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{agent.agencyName}</h1>
-        {agent.displayName && <p className="text-stone-700">{agent.displayName}</p>}
-        <p className="text-sm text-stone-500">
+        {agent.displayName && <p className="text-fg-2">{agent.displayName}</p>}
+        <p className="text-sm text-fg-subtle">
           {t('agentPage.since', { year: new Date(agent.since).getUTCFullYear() })}
         </p>
         {agent.bio && (
-          <div className="border-t border-stone-100 pt-3">
-            <h2 className="mb-1 text-sm font-medium text-stone-500">{t('agentPage.about')}</h2>
-            <p className="max-w-3xl whitespace-pre-line text-stone-800">{agent.bio}</p>
+          <div className="border-t border-line pt-3">
+            <h2 className="mb-1 text-sm font-medium text-fg-subtle">{t('agentPage.about')}</h2>
+            <p className="max-w-3xl whitespace-pre-line text-fg-2">{agent.bio}</p>
           </div>
         )}
       </header>
@@ -72,13 +72,13 @@ async function AgentContent({ params }: Pick<PageProps<'/[lang]/agents/[id]'>, '
         <h2 className="text-xl font-semibold">
           {t('agentPage.listings')}
           {agent.listingCount > 0 && (
-            <span className="ml-2 text-base font-normal text-stone-500">
+            <span className="ml-2 text-base font-normal text-fg-subtle">
               {t('search.results', { count: agent.listingCount })}
             </span>
           )}
         </h2>
         {agent.listings.length === 0 ? (
-          <p className="text-stone-600">{t('agentPage.noListings')}</p>
+          <p className="text-fg-muted">{t('agentPage.noListings')}</p>
         ) : (
           <ListingGrid cards={agent.listings} locale={locale} supabaseUrl={publicEnv.supabaseUrl} />
         )}

@@ -1,11 +1,148 @@
 @import 'tailwindcss';
 
-@theme inline {
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+/* `dark:` for the rare case a token cannot express (e.g. swapping the logo image). */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
 }
 
-html {
+/*
+ * Colours are semantic tokens (`bg-surface`, `text-fg-muted`, `border-line`, ...) defined once
+ * per theme below, so components never need `dark:` variants. Light values are the stone/amber
+ * shades the site used before dark mode.
+ *
+ * Theme choice: `data-theme="light" | "dark"` on <html> (set before paint by the script in the
+ * root layout, from the visitor's choice); without it, the system setting decides.
+ * Maps, the floor plan drawing and Open Graph images keep their own light palette.
+ */
+@theme inline {
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-on-accent-soft: var(--on-accent-soft);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-on-success-soft: var(--on-success-soft);
+  --color-favorite: var(--favorite);
+  --color-scene-from: var(--scene-from);
+  --color-scene-to: var(--scene-to);
+}
+
+:root {
   color-scheme: light;
+  --page: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f5f5f4;
+  --surface-3: #e7e5e4;
+  --line: #e7e5e4;
+  --line-2: #d6d3d1;
+  --fg: #1c1917;
+  --fg-2: #44403c;
+  --fg-muted: #57534e;
+  --fg-subtle: #78716c;
+  --primary: #1c1917;
+  --primary-hover: #44403c;
+  --on-primary: #ffffff;
+  --accent: #fcd34d;
+  --on-accent: #451a03;
+  --accent-soft: #fde68a;
+  --accent-subtle: #fef3c7;
+  --on-accent-soft: #451a03;
+  --warning: #92400e;
+  --danger: #b91c1c;
+  --success: #047857;
+  --success-soft: #d1fae5;
+  --on-success-soft: #064e3b;
+  --favorite: #e11d48;
+  --scene-from: #f5f5f4;
+  --scene-to: #d6d3d1;
+}
+
+/* Kept in sync with the block below: one for the system setting, one for an explicit choice. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --page: #0c0a09;
+    --surface: #1c1917;
+    --surface-2: #292524;
+    --surface-3: #3a3633;
+    --line: #2e2a27;
+    --line-2: #44403c;
+    --fg: #fafaf9;
+    --fg-2: #e7e5e4;
+    --fg-muted: #a8a29e;
+    --fg-subtle: #8a847e;
+    --primary: #f5f5f4;
+    --primary-hover: #d6d3d1;
+    --on-primary: #1c1917;
+    --accent: #fbbf24;
+    --on-accent: #451a03;
+    --accent-soft: #4a3510;
+    --accent-subtle: #33260c;
+    --on-accent-soft: #fef3c7;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --success: #34d399;
+    --success-soft: #063b2c;
+    --on-success-soft: #a7f3d0;
+    --favorite: #fb7185;
+    --scene-from: #292524;
+    --scene-to: #1c1917;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0c0a09;
+  --surface: #1c1917;
+  --surface-2: #292524;
+  --surface-3: #3a3633;
+  --line: #2e2a27;
+  --line-2: #44403c;
+  --fg: #fafaf9;
+  --fg-2: #e7e5e4;
+  --fg-muted: #a8a29e;
+  --fg-subtle: #8a847e;
+  --primary: #f5f5f4;
+  --primary-hover: #d6d3d1;
+  --on-primary: #1c1917;
+  --accent: #fbbf24;
+  --on-accent: #451a03;
+  --accent-soft: #4a3510;
+  --accent-subtle: #33260c;
+  --on-accent-soft: #fef3c7;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --success: #34d399;
+  --success-soft: #063b2c;
+  --on-success-soft: #a7f3d0;
+  --favorite: #fb7185;
+  --scene-from: #292524;
+  --scene-to: #1c1917;
 }
 
 body {

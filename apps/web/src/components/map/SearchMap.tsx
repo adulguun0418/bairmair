@@ -316,7 +316,7 @@ export default function SearchMap({
 
   if (!supported) {
     return (
-      <div className="flex h-full items-center justify-center bg-stone-100 p-6 text-center text-stone-600">
+      <div className="flex h-full items-center justify-center bg-surface-2 p-6 text-center text-fg-muted">
         {t('map.unsupported')}
       </div>
     );
@@ -328,7 +328,7 @@ export default function SearchMap({
       aria-pressed={mode === value}
       onClick={() => setMode(value)}
       className={`rounded-full px-3 py-1 text-sm ${
-        mode === value ? 'bg-stone-900 text-white' : 'text-stone-700'
+        mode === value ? 'bg-primary text-on-primary' : 'text-fg-2'
       }`}
     >
       {label}
@@ -347,7 +347,7 @@ export default function SearchMap({
       <div
         role="group"
         aria-label={t('map.labelMode')}
-        className="absolute left-3 top-3 inline-flex rounded-full bg-white p-1 shadow"
+        className="absolute left-3 top-3 inline-flex rounded-full bg-surface p-1 shadow"
       >
         {modeButton('price', t('map.showPrice'))}
         {modeButton('perArea', t('map.showPerArea'))}
@@ -359,7 +359,7 @@ export default function SearchMap({
       >
         {load.kind === 'loading' && <Pill>{t('map.loading')}</Pill>}
         {load.kind === 'error' && (
-          <span className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm text-red-700 shadow">
+          <span className="pointer-events-auto flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-sm text-danger shadow">
             {t('map.error')}
             <button
               type="button"
@@ -379,21 +379,21 @@ export default function SearchMap({
       </div>
 
       {selection && (
-        <div className="absolute inset-x-3 bottom-8 z-10 mx-auto max-w-md rounded-2xl bg-white/95 p-3 shadow-lg">
+        <div className="absolute inset-x-3 bottom-8 z-10 mx-auto max-w-md rounded-2xl bg-surface/95 p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <span className="text-sm text-stone-600">
+            <span className="text-sm text-fg-muted">
               {selection.length > 1 ? t('map.listingsHere', { count: selection.length }) : ''}
             </span>
             <button
               type="button"
               onClick={close}
-              className="rounded-full px-3 py-1 text-sm font-medium hover:bg-stone-100"
+              className="rounded-full px-3 py-1 text-sm font-medium hover:bg-surface-2"
             >
               {t('map.close')}
             </button>
           </div>
           {cards === null ? (
-            <div className="h-24 animate-pulse rounded-xl bg-stone-200" />
+            <div className="h-24 animate-pulse rounded-xl bg-surface-3" />
           ) : (
             <ul className="max-h-[45vh] space-y-2 overflow-y-auto">
               {cards.map((card) => (
@@ -410,5 +410,5 @@ export default function SearchMap({
 }
 
 function Pill({ children }: { children: string }) {
-  return <span className="rounded-full bg-white px-3 py-1 text-sm shadow">{children}</span>;
+  return <span className="rounded-full bg-surface px-3 py-1 text-sm shadow">{children}</span>;
 }

@@ -6,6 +6,7 @@ import {
   en,
   formatArea,
   formatDecimal,
+  formatDate,
   formatFileSize,
   formatMoney,
   formatMoneyCompact,
@@ -182,5 +183,17 @@ describe('locale paths', () => {
     expect(stripLocale('/mn/samples')).toBe('/samples');
     expect(stripLocale('/samples')).toBe('/samples');
     expect(stripLocale('/english')).toBe('/english');
+  });
+});
+
+describe('formatDate', () => {
+  it('writes a calendar date in each language', () => {
+    expect(formatDate('2026-11-13', 'mn')).toBe('2026 оны 11 сарын 13');
+    expect(formatDate('2026-01-05', 'en')).toBe('5 January 2026');
+    expect(formatDate('2026-11-13T08:00:00Z', 'en')).toBe('13 November 2026');
+  });
+
+  it('returns other strings unchanged', () => {
+    expect(formatDate('soon', 'mn')).toBe('soon');
   });
 });

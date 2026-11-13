@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { signInHref } from '@/components/auth/HeaderAuthLinks';
+import { signInHref } from '@/components/auth/sign-in-href';
 import { PinPicker } from '@/components/map/maps';
 import {
   deleteMyListing,
@@ -107,9 +107,9 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
     };
   }, [listingId, userId, t]);
 
-  if (missing) return <p className="text-stone-600">{t('listingForm.notFound')}</p>;
+  if (missing) return <p className="text-fg-muted">{t('listingForm.notFound')}</p>;
   if (!ready || !userId || !loaded) {
-    return <div className="h-96 animate-pulse rounded-2xl bg-stone-200" />;
+    return <div className="h-96 animate-pulse rounded-2xl bg-surface-3" />;
   }
 
   const unsaved = JSON.stringify(form) !== JSON.stringify(loaded.form) || !samePin(pin, loaded.pin);
@@ -373,7 +373,7 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
             multiline
           />
           <Labeled label={t('listingForm.pin')}>
-            <p className="text-sm text-stone-600">{t('listingForm.pinWeb')}</p>
+            <p className="text-sm text-fg-muted">{t('listingForm.pinWeb')}</p>
             <PinPicker
               pin={pin}
               locale={locale}
@@ -382,7 +382,7 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
                 setNotice(null);
               }}
             />
-            {!pin && <p className="text-sm text-stone-500">{t('listingForm.notPinned')}</p>}
+            {!pin && <p className="text-sm text-fg-subtle">{t('listingForm.notPinned')}</p>}
           </Labeled>
           <Check
             label={t('listingForm.showExact')}
@@ -398,21 +398,21 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
           />
         </Section>
 
-        <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-stone-200 bg-stone-50/95 px-4 py-3">
+        <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-line bg-page/95 px-4 py-3">
           <button
             type="submit"
             disabled={busy || (row !== null && !unsaved)}
-            className="rounded-full bg-stone-900 px-5 py-2.5 font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+            className="rounded-full bg-primary px-5 py-2.5 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50"
           >
             {busy ? t('listingForm.saving') : t('listingForm.save')}
           </button>
           {unsaved && !notice && (
-            <span className="text-sm text-amber-800">{t('listingForm.unsaved')}</span>
+            <span className="text-sm text-warning">{t('listingForm.unsaved')}</span>
           )}
           {notice && (
             <span
               role={notice.error ? 'alert' : 'status'}
-              className={`text-sm ${notice.error ? 'text-red-700' : 'text-emerald-700'}`}
+              className={`text-sm ${notice.error ? 'text-danger' : 'text-success'}`}
             >
               {notice.text}
             </span>
@@ -430,7 +430,7 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
       </Section>
 
       <Section title={t('listingForm.sections.scan')}>
-        <p className="text-sm text-stone-600">
+        <p className="text-sm text-fg-muted">
           {row?.has_3d ? `${t('listingForm.scanDone')} ` : ''}
           {t('listingForm.scanInApp')}
         </p>
@@ -457,7 +457,7 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
           type="button"
           disabled={busy}
           onClick={() => void remove()}
-          className="text-sm text-red-700 underline disabled:opacity-50"
+          className="text-sm text-danger underline disabled:opacity-50"
         >
           {t('listingForm.delete')}
         </button>
@@ -467,11 +467,11 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
 }
 
 const inputClass =
-  'w-full rounded-xl border border-stone-300 bg-white px-3 py-2 outline-none focus:border-stone-900';
+  'w-full rounded-xl border border-line-2 bg-surface px-3 py-2 outline-none focus:border-primary';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
+    <section className="space-y-4 rounded-2xl bg-surface p-5 shadow-sm">
       <h2 className="text-lg font-semibold">{title}</h2>
       {children}
     </section>
@@ -517,7 +517,7 @@ function Text({
     value,
     placeholder,
     'aria-invalid': error ? true : undefined,
-    className: `${inputClass} ${error ? 'border-red-500' : ''}`,
+    className: `${inputClass} ${error ? 'border-danger' : ''}`,
   };
   return (
     <label className="block space-y-1.5">
@@ -531,9 +531,9 @@ function Text({
           onChange={(event) => set(name, event.target.value)}
         />
       )}
-      {hint && !error && <span className="block text-xs text-stone-500">{hint}</span>}
+      {hint && !error && <span className="block text-xs text-fg-subtle">{hint}</span>}
       {error && (
-        <span className="block text-sm text-red-700">{t(`listingForm.errors.${error}`)}</span>
+        <span className="block text-sm text-danger">{t(`listingForm.errors.${error}`)}</span>
       )}
     </label>
   );
@@ -566,8 +566,8 @@ function Choice<T extends string>({
             }
             className={`rounded-full border px-3 py-1.5 text-sm ${
               selected
-                ? 'border-stone-900 bg-stone-900 text-white'
-                : 'border-stone-300 hover:bg-stone-50'
+                ? 'border-primary bg-primary text-on-primary'
+                : 'border-line-2 hover:bg-surface-2'
             }`}
           >
             {option.label}
@@ -599,7 +599,7 @@ function Check({
       />
       <span>
         {label}
-        {hint && <span className="block text-xs text-stone-500">{hint}</span>}
+        {hint && <span className="block text-xs text-fg-subtle">{hint}</span>}
       </span>
     </label>
   );

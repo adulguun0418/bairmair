@@ -26,10 +26,7 @@ export default async function SamplePage({ params }: PageProps<'/[lang]/samples/
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <Link
-        href={localePath(locale, '/samples')}
-        className="text-sm text-stone-600 hover:underline"
-      >
+      <Link href={localePath(locale, '/samples')} className="text-sm text-fg-muted hover:underline">
         ← {t('samples.title')}
       </Link>
       <h1 className="mt-2 mb-5 text-2xl font-semibold tracking-tight">

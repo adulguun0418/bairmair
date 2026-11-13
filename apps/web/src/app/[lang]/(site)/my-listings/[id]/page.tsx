@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function EditListingPage(props: PageProps<'/[lang]/my-listings/[id]'>) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-stone-200" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-surface-3" />}>
         <Editor params={props.params} />
       </Suspense>
     </div>

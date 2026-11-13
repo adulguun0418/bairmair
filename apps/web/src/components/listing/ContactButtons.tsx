@@ -49,9 +49,9 @@ export function ContactButtons({ listingId, locale }: { listingId: string; local
   };
 
   const primary =
-    'flex w-full items-center justify-center rounded-full bg-stone-900 px-5 py-3 font-medium text-white hover:bg-stone-700 disabled:opacity-60';
+    'flex w-full items-center justify-center rounded-full bg-primary px-5 py-3 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-60';
   const secondary =
-    'flex flex-1 items-center justify-center rounded-full border border-stone-300 px-4 py-2.5 font-medium hover:bg-stone-50';
+    'flex flex-1 items-center justify-center rounded-full border border-line-2 px-4 py-2.5 font-medium hover:bg-surface-2';
 
   if (state.kind === 'shown') {
     return (
@@ -67,7 +67,7 @@ export function ContactButtons({ listingId, locale }: { listingId: string; local
             {t('listingPage.contact.sms')}
           </a>
         </div>
-        <p className="text-center text-xs text-stone-500">{t('listingPage.contact.mention')}</p>
+        <p className="text-center text-xs text-fg-subtle">{t('listingPage.contact.mention')}</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export function ContactButtons({ listingId, locale }: { listingId: string; local
           : t('listingPage.contact.show')}
       </button>
       {state.kind === 'error' && (
-        <p role="alert" className="text-center text-sm text-red-700">
+        <p role="alert" className="text-center text-sm text-danger">
           {t(`listingPage.contact.errors.${state.message}`)}
         </p>
       )}

@@ -75,7 +75,7 @@ export async function generateMetadata({
 export default function ListingPage(props: PageProps<'/[lang]/listings/[id]'>) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-stone-200" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-surface-3" />}>
         <ListingContent params={props.params} />
       </Suspense>
     </div>
@@ -117,12 +117,12 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
       <ViewCounter listingId={listing.id} />
 
       {!live && (
-        <p className="rounded-2xl bg-stone-900 px-5 py-4 font-medium text-white">
+        <p className="rounded-2xl bg-primary px-5 py-4 font-medium text-on-primary">
           {listing.type === 'sale' ? t('listingPage.sold') : t('listingPage.rented')}
         </p>
       )}
       {live && !page.freshness.fresh && (
-        <p className="rounded-2xl bg-amber-100 px-5 py-4 text-amber-950">
+        <p className="rounded-2xl bg-accent-subtle px-5 py-4 text-on-accent-soft">
           {t('listingPage.stale', { days: LISTING_FRESHNESS.confirmEveryDays })}
         </p>
       )}
@@ -139,14 +139,14 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
             )}
           </div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{listing.title}</h1>
-          <p className="text-stone-700">{listingSummary(listing, locale, t)}</p>
+          <p className="text-fg-2">{listingSummary(listing, locale, t)}</p>
           <PriceBlock page={page} locale={locale} t={t} />
           {page.freshness.daysAgo !== null && (
-            <p className="text-sm text-stone-500">{updatedText(page.freshness.daysAgo, t)}</p>
+            <p className="text-sm text-fg-subtle">{updatedText(page.freshness.daysAgo, t)}</p>
           )}
         </div>
 
-        <aside className="space-y-4 self-start rounded-2xl bg-white p-5 shadow-sm">
+        <aside className="space-y-4 self-start rounded-2xl bg-surface p-5 shadow-sm">
           {live && <ContactButtons listingId={listing.id} locale={locale} />}
           <div className="flex items-start gap-3">
             <FavoriteButton listingId={listing.id} locale={locale} className="shrink-0" />
@@ -154,12 +154,12 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
               <ShareActions post={post} url={url} locale={locale} />
             </div>
           </div>
-          <div className="border-t border-stone-100 pt-4">
-            <h2 className="text-sm text-stone-500">{t('listingPage.sections.seller')}</h2>
+          <div className="border-t border-line pt-4">
+            <h2 className="text-sm text-fg-subtle">{t('listingPage.sections.seller')}</h2>
             <p className="mt-1 font-medium">
               {seller.agencyName ?? seller.displayName ?? t('listingPage.seller.unnamed')}
             </p>
-            <p className="text-sm text-stone-600">
+            <p className="text-sm text-fg-muted">
               {seller.isAgent
                 ? seller.verifiedAgent
                   ? t('listingPage.seller.verifiedAgent')
@@ -177,7 +177,7 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
             )}
           </div>
           {live && (
-            <div className="border-t border-stone-100 pt-4">
+            <div className="border-t border-line pt-4">
               <ReportListing listingId={listing.id} ownerId={listing.owner_id} locale={locale} />
             </div>
           )}
@@ -198,18 +198,18 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           {listing.description && (
-            <section className="rounded-2xl bg-white p-5 shadow-sm">
+            <section className="rounded-2xl bg-surface p-5 shadow-sm">
               <h2 className="mb-2 text-lg font-semibold">
                 {t('listingPage.sections.description')}
               </h2>
-              <p className="whitespace-pre-line text-stone-800">{listing.description}</p>
+              <p className="whitespace-pre-line text-fg-2">{listing.description}</p>
             </section>
           )}
-          <section className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
+          <section className="space-y-4 rounded-2xl bg-surface p-5 shadow-sm">
             <h2 className="text-lg font-semibold">{t('listingPage.sections.location')}</h2>
             <LocationText listing={listing} locale={locale} t={t} />
             {listing.public_lat !== null && listing.public_lng !== null && (
-              <div className="h-64 overflow-hidden rounded-xl bg-stone-200">
+              <div className="h-64 overflow-hidden rounded-xl bg-surface-3">
                 <LocationMap
                   lat={listing.public_lat}
                   lng={listing.public_lng}
@@ -220,7 +220,7 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
             )}
           </section>
         </div>
-        <section className="rounded-2xl bg-white p-5 shadow-sm">
+        <section className="rounded-2xl bg-surface p-5 shadow-sm">
           <h2 className="mb-2 text-lg font-semibold">{t('listingPage.sections.details')}</h2>
           <Facts listing={listing} locale={locale} t={t} />
         </section>
@@ -238,18 +238,18 @@ function PriceBlock({ page, locale, t }: { page: ListingPageData; locale: Locale
       <p className="text-3xl font-semibold">
         {formatListingPrice(listing.price, listing.currency, listing.type, locale)}
         {listing.negotiable && (
-          <span className="ml-3 align-middle text-base font-normal text-stone-600">
+          <span className="ml-3 align-middle text-base font-normal text-fg-muted">
             {t('listingPage.negotiable')}
           </span>
         )}
       </p>
-      <p className="text-sm text-stone-500">{formatMoney(listing.price, listing.currency)}</p>
+      <p className="text-sm text-fg-subtle">{formatMoney(listing.price, listing.currency)}</p>
       {page.pricePerM2 !== null && (
-        <p className="text-sm text-stone-700">
+        <p className="text-sm text-fg-2">
           {t('listingPage.pricePerArea')}:{' '}
           {formatPricePerArea(page.pricePerM2, listing.currency, locale)}
           {page.districtMedian && district && (
-            <span className="block text-stone-500">
+            <span className="block text-fg-subtle">
               {t('listingPage.districtMedian', {
                 district: placeName(district, locale),
                 price: formatPricePerArea(page.districtMedian.pricePerM2, listing.currency, locale),
@@ -273,12 +273,12 @@ function LocationText({
   t: Translator;
 }) {
   return (
-    <div className="space-y-2 text-stone-800">
+    <div className="space-y-2 text-fg-2">
       <p>{locationLine(listing, locale, t)}</p>
       {listing.complex_name && <p className="font-medium">{listing.complex_name}</p>}
       {listing.address_text && <p className="whitespace-pre-line">{listing.address_text}</p>}
       {!listing.show_exact_location && (
-        <p className="text-sm text-stone-500">{t('listingPage.approximateLocation')}</p>
+        <p className="text-sm text-fg-subtle">{t('listingPage.approximateLocation')}</p>
       )}
     </div>
   );
@@ -286,10 +286,10 @@ function LocationText({
 
 function Facts({ listing, locale, t }: { listing: ListingRow; locale: Locale; t: Translator }) {
   return (
-    <dl className="divide-y divide-stone-100">
+    <dl className="divide-y divide-line">
       {listingFacts(listing, locale, t).map(({ label, value }) => (
         <div key={label} className="flex justify-between gap-4 py-2">
-          <dt className="text-stone-600">{label}</dt>
+          <dt className="text-fg-muted">{label}</dt>
           <dd className="text-right font-medium">{value}</dd>
         </div>
       ))}
@@ -310,7 +310,7 @@ function Badge({
     <span
       title={title}
       className={`rounded-full px-3 py-1 ${
-        tone === 'accent' ? 'bg-amber-200 text-amber-950' : 'bg-stone-200 text-stone-800'
+        tone === 'accent' ? 'bg-accent-soft text-on-accent-soft' : 'bg-surface-3 text-fg-2'
       }`}
     >
       {children}

@@ -18,7 +18,7 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
 
   if (photos.length === 0) {
     return (
-      <p className="rounded-2xl bg-stone-100 p-8 text-center text-stone-500">
+      <p className="rounded-2xl bg-surface-2 p-8 text-center text-fg-subtle">
         {t('listingPage.noPhotos')}
       </p>
     );
@@ -42,7 +42,7 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
             type="button"
             onClick={() => setOpen(index)}
             aria-label={label(index)}
-            className={`relative block overflow-hidden bg-stone-200 ${
+            className={`relative block overflow-hidden bg-surface-3 ${
               index === 0
                 ? 'aspect-[4/3] sm:col-span-2 sm:row-span-2 sm:aspect-auto sm:min-h-[22rem]'
                 : 'hidden aspect-[4/3] sm:block'
@@ -68,7 +68,7 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
       <button
         type="button"
         onClick={() => setOpen(0)}
-        className="mt-2 text-sm text-stone-600 hover:underline"
+        className="mt-2 text-sm text-fg-muted hover:underline"
       >
         {t('listingPage.photoCount', { count: photos.length })}
       </button>
@@ -123,7 +123,7 @@ function PhotoViewer({
     if (event.target === event.currentTarget) event.currentTarget.close();
   };
 
-  const button = 'rounded-full bg-white/90 px-4 py-1.5 text-sm text-stone-900 hover:bg-white';
+  const button = 'rounded-full bg-surface/90 px-4 py-1.5 text-sm text-fg hover:bg-surface';
   return (
     <dialog
       ref={ref}

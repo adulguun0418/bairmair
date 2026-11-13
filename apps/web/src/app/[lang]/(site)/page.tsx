@@ -24,7 +24,7 @@ export default async function HomePage() {
       <section className="space-y-6">
         <div className="max-w-2xl space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t('home.title')}</h1>
-          <p className="text-stone-600">{t('home.body')}</p>
+          <p className="text-fg-muted">{t('home.body')}</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link href={search('?type=sale')} className={primaryClass}>
@@ -38,13 +38,13 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="space-y-2">
-          <h2 className="text-sm font-medium text-stone-600">{t('home.byDistrict')}</h2>
+          <h2 className="text-sm font-medium text-fg-muted">{t('home.byDistrict')}</h2>
           <ul className="flex flex-wrap gap-2">
             {CENTRAL_DISTRICTS.map((district) => (
               <li key={district.slug}>
                 <Link
                   href={search(searchQuery({ ...DEFAULT_FILTERS, districts: [district.slug] }))}
-                  className="inline-block rounded-full border border-stone-300 bg-white px-3 py-1 text-sm hover:border-stone-900"
+                  className="inline-block rounded-full border border-line-2 bg-surface px-3 py-1 text-sm hover:border-primary"
                 >
                   {locale === 'mn' ? district.nameMn : district.nameEn}
                 </Link>
@@ -72,7 +72,7 @@ export default async function HomePage() {
           more={t('home.seeAll')}
         />
         {newest.rows.length === 0 ? (
-          <p className="text-stone-600">{t('home.empty')}</p>
+          <p className="text-fg-muted">{t('home.empty')}</p>
         ) : (
           <ListingGrid cards={newest.rows} locale={locale} supabaseUrl={supabaseUrl} />
         )}
@@ -93,6 +93,6 @@ function Heading({ title, href, more }: { title: string; href: string; more: str
 }
 
 const primaryClass =
-  'rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-700';
+  'rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-on-primary hover:bg-primary-hover';
 const secondaryClass =
-  'rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium hover:border-stone-900';
+  'rounded-full border border-line-2 bg-surface px-5 py-2.5 text-sm font-medium hover:border-primary';

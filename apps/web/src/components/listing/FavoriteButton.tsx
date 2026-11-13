@@ -4,7 +4,7 @@ import { createTranslator, type Locale } from '@bairmair/i18n';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toggleFavorite, useAuth, useFavorites } from '@/components/auth/AuthProvider';
-import { currentPath, signInHref } from '@/components/auth/HeaderAuthLinks';
+import { currentPath, signInHref } from '@/components/auth/sign-in-href';
 
 /**
  * ♡ for a listing. Shows the change at once and undoes it if the server refuses. A visitor who
@@ -42,9 +42,9 @@ export function FavoriteButton({
       aria-pressed={saved}
       aria-label={label}
       title={failed ? t('favorites.failed') : label}
-      className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-xl leading-none shadow-sm ring-1 ring-stone-200 hover:bg-white ${
-        saved ? 'text-rose-600' : 'text-stone-700'
-      } ${failed ? 'ring-red-400' : ''} ${className}`}
+      className={`flex h-9 w-9 items-center justify-center rounded-full bg-surface/90 text-xl leading-none shadow-sm ring-1 ring-line hover:bg-surface ${
+        saved ? 'text-favorite' : 'text-fg-2'
+      } ${failed ? 'ring-danger' : ''} ${className}`}
     >
       <span aria-hidden>{saved ? '♥' : '♡'}</span>
     </button>

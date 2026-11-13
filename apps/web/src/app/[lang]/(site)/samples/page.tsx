@@ -20,7 +20,7 @@ export default async function SamplesPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">{t('samples.title')}</h1>
-      <p className="mt-2 max-w-2xl text-stone-600">{t('samples.intro')}</p>
+      <p className="mt-2 max-w-2xl text-fg-muted">{t('samples.intro')}</p>
       <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {SAMPLE_NAMES.map((name) => {
           const { model } = getSample(name);
@@ -31,12 +31,12 @@ export default async function SamplesPage() {
             <li key={name}>
               <Link
                 href={localePath(locale, `/samples/${name}`)}
-                className="block overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200 transition hover:shadow-md"
+                className="block overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-line transition hover:shadow-md"
               >
                 <div className="aspect-[4/3] p-2" dangerouslySetInnerHTML={{ __html: svg }} />
-                <div className="flex items-baseline justify-between gap-3 border-t border-stone-100 p-4">
+                <div className="flex items-baseline justify-between gap-3 border-t border-line p-4">
                   <h2 className="font-medium">{title}</h2>
-                  <span className="shrink-0 text-sm text-stone-600">
+                  <span className="shrink-0 text-sm text-fg-muted">
                     {formatArea(computeMetrics(model).totalAreaM2, locale)}
                   </span>
                 </div>

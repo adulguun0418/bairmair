@@ -129,3 +129,28 @@ export function formatFileSize(bytes: number, locale: Locale): string {
   if (bytes < 1_000_000) return `${formatDecimal(bytes / 1000, 0)}${NBSP}${kb}`;
   return `${formatDecimal(bytes / 1_000_000, 1)}${NBSP}${mb}`;
 }
+
+const EN_MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const;
+
+/** A calendar date (`2026-11-13`) as `2026 оны 11 сарын 13` or `13 November 2026`. */
+export function formatDate(isoDate: string, locale: Locale): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate);
+  if (!match) return isoDate;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  return locale === 'mn'
+    ? `${year} оны ${month} сарын ${day}`
+    : `${day} ${EN_MONTHS[month - 1]} ${year}`;
+}

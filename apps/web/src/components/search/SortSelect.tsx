@@ -20,7 +20,7 @@ export function SortSelect({
   const router = useRouter();
   return (
     <label className="flex items-center gap-2 text-sm">
-      <span className="text-stone-600">{t('search.sort')}</span>
+      <span className="text-fg-muted">{t('search.sort')}</span>
       <select
         value={filters.sort}
         onChange={(event) =>
@@ -28,7 +28,7 @@ export function SortSelect({
             `${action}${searchQuery(filters, { sort: event.target.value as SearchSort })}`,
           )
         }
-        className="rounded-lg border border-stone-300 bg-white px-2 py-1.5"
+        className="rounded-lg border border-line-2 bg-surface px-2 py-1.5"
       >
         {SEARCH_SORTS.map((sort) => (
           <option key={sort} value={sort}>

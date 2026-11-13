@@ -63,7 +63,7 @@ export function ListingEmbed({
       aria-pressed={view === value}
       onClick={() => setView(value)}
       className={`rounded-full px-4 py-1.5 text-sm ${
-        view === value ? 'bg-white font-medium shadow-sm' : 'text-stone-600'
+        view === value ? 'bg-surface font-medium shadow-sm' : 'text-fg-muted'
       }`}
     >
       {label}
@@ -72,12 +72,12 @@ export function ListingEmbed({
 
   return (
     // Fixed to the viewport: no page scroll or rubber-banding fights the 3D gestures.
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-stone-100 select-none">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-surface-2 select-none">
       <div className="relative min-h-0 flex-1">
         {/* The 3D view stays mounted on the plan tab, so the camera is where the user left it. */}
         <section
           aria-label={t('viewer.label')}
-          className={`${view === '3d' ? '' : 'hidden'} h-full bg-gradient-to-b from-stone-100 to-stone-300`}
+          className={`${view === '3d' ? '' : 'hidden'} h-full bg-gradient-to-b from-scene-from to-scene-to`}
         >
           <RoomViewer3D
             model={model}
@@ -88,7 +88,7 @@ export function ListingEmbed({
           />
         </section>
         {view === 'plan' && (
-          <section aria-label={t('viewer.viewPlan')} className="h-full bg-white p-3 pt-16">
+          <section aria-label={t('viewer.viewPlan')} className="h-full bg-surface p-3 pt-16">
             <FloorPlan
               model={model}
               text={text}
@@ -100,7 +100,7 @@ export function ListingEmbed({
             />
           </section>
         )}
-        <div className="absolute top-3 left-3 inline-flex rounded-full bg-stone-200/90 p-1 shadow-sm">
+        <div className="absolute top-3 left-3 inline-flex rounded-full bg-surface-3/90 p-1 shadow-sm">
           {viewButton('3d', t('viewer.view3d'))}
           {viewButton('plan', t('viewer.viewPlan'))}
         </div>
@@ -108,7 +108,7 @@ export function ListingEmbed({
 
       <section
         aria-label={t('viewer.rooms')}
-        className="border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]"
+        className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
       >
         <ul className="flex gap-2 overflow-x-auto px-3 pt-3 pb-2">
           {metrics.rooms.map(({ id, areaM2 }) => {
@@ -122,13 +122,13 @@ export function ListingEmbed({
                   aria-pressed={selected}
                   onClick={() => toggleRoom(id)}
                   className={`rounded-xl px-3 py-1.5 text-left ${
-                    selected ? 'bg-amber-200' : 'bg-stone-100'
+                    selected ? 'bg-accent-soft' : 'bg-surface-2'
                   }`}
                 >
                   <span className="block text-sm font-medium whitespace-nowrap">
                     {text.roomName(room)}
                   </span>
-                  <span className="block text-xs text-stone-600">{text.area(areaM2)}</span>
+                  <span className="block text-xs text-fg-muted">{text.area(areaM2)}</span>
                 </button>
               </li>
             );
@@ -139,7 +139,7 @@ export function ListingEmbed({
             <span className="font-medium">{t('viewer.totalArea')}</span>{' '}
             {text.area(metrics.totalAreaM2)}
           </span>
-          <span className="text-stone-500">{t('viewer.approximateScanned')}</span>
+          <span className="text-fg-subtle">{t('viewer.approximateScanned')}</span>
         </p>
       </section>
 
