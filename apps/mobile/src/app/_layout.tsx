@@ -40,6 +40,7 @@ function RootStack() {
     <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="listing/[id]/index" options={{ title: '' }} />
+      <Stack.Screen name="listing/[id]/model" options={{ title: t('viewer.label') }} />
       <Stack.Screen
         name="listing/[id]/report"
         options={{ presentation: 'formSheet', title: t('report.title'), sheetGrabberVisible: true }}

@@ -23,7 +23,6 @@ import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -60,8 +59,8 @@ const counted = new Set<string>();
 
 /**
  * A listing's public page in the app: the same content as the web page (shared loader and
- * texts). The 3D view joins in step 7 through a WebView; until then the floor plan is shown and
- * the 3D model opens in the browser.
+ * texts). The floor plan is drawn here; the 3D view opens full screen (`./model`, the web's
+ * embed page in a WebView).
  */
 export default function ListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -296,9 +295,10 @@ export default function ListingScreen() {
             <Section title={t('listingPage.sections.model')}>
               <ScanFloorPlan model={model} />
               <Button
-                title={t('browse.openOnWeb')}
-                variant="secondary"
-                onPress={() => void Linking.openURL(webUrl)}
+                title={t('browse.view3d')}
+                onPress={() =>
+                  router.push({ pathname: '/listing/[id]/model', params: { id: listing.id } })
+                }
               />
             </Section>
           )}

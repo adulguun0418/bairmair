@@ -1,4 +1,5 @@
 export * from './agent';
+export * from './embed';
 export * from './listing-card';
 export * from './listing-page';
 export * from './listing-text';
