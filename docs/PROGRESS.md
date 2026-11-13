@@ -85,6 +85,9 @@ All seven build steps of the brief are done. The SMS gateway adapter (step 3) st
   - `apps/mobile`: the listing screen's 3D section shows the floor plan and "3D-ээр үзэх", which opens `/listing/[id]/model`: the embed page full screen in a WebView. Loading spinner until `ready`; messages for missing / no model / failed load (retry, open in browser); a WebView process ended by iOS reloads; navigation away from the embed opens in the browser.
   - `next.config.ts`: `allowedDevOrigins` for private LAN ranges, so the phone on Wi-Fi gets the dev server's HMR socket and chunks.
   - Verified: typecheck, lint, tests, web production build; headless Chrome against the dev project: embed with a real scan (mn and en), no-model and missing listings, header on every site page and not on the embed; Metro bundles the new screen. Not verified: the WebView on the iPhone.
+  - Fixes after the iPhone test (JS only):
+    - 3D screen: iOS 26 made a swipe right anywhere on the screen go back, which took the model's drags. It is now off on that screen (`fullScreenGestureEnabled: false`); the swipe from the left edge still goes back.
+    - Search toolbar: on iOS the header is translucent (search bar, Liquid Glass), so the fixed toolbar was drawn under it. It now starts below the header (`useHeaderHeight`). The list/map toggle took the whole row (growing segments in an unsized row) and pushed "Газрын зураг" off screen; only the sale/rent control stretches now, and labels keep to one line.
 - Tests: 389 unit (room-model 160, mobile 131, browse 41, i18n 27, send-sms 12, web 11, db 7) + 74 integration tests against the dev project (db 57, mobile 11, web 6).
 - Tests before 7: 384 unit + 74 integration.
 
