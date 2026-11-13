@@ -7,6 +7,7 @@ import {
   updatedText,
   type ListingPageData,
   type ListingRow,
+  type ListingSeller,
 } from '@bairmair/browse';
 import { districtById, LISTING_FRESHNESS } from '@bairmair/db';
 import {
@@ -21,6 +22,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
+import { ChevronRightIcon, VerifiedIcon } from '@/components/icons';
 import { ContactButtons } from '@/components/listing/ContactButtons';
 import { ListingGallery } from '@/components/listing/ListingGallery';
 import { FavoriteButton } from '@/components/listing/FavoriteButton';
@@ -146,38 +148,19 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
           )}
         </div>
 
-        <aside className="space-y-4 self-start rounded-2xl bg-surface p-5 shadow-sm">
-          {live && <ContactButtons listingId={listing.id} locale={locale} />}
-          <div className="flex items-start gap-3">
-            <FavoriteButton listingId={listing.id} locale={locale} className="shrink-0" />
-            <div className="flex-1">
-              <ShareActions post={post} url={url} locale={locale} />
+        <aside className="relative z-10 self-start rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <SellerSummary seller={seller} ownerId={listing.owner_id} locale={locale} t={t} />
+          {live && (
+            <div className="mt-5">
+              <ContactButtons listingId={listing.id} locale={locale} />
             </div>
-          </div>
-          <div className="border-t border-line pt-4">
-            <h2 className="text-sm text-fg-subtle">{t('listingPage.sections.seller')}</h2>
-            <p className="mt-1 font-medium">
-              {seller.agencyName ?? seller.displayName ?? t('listingPage.seller.unnamed')}
-            </p>
-            <p className="text-sm text-fg-muted">
-              {seller.isAgent
-                ? seller.verifiedAgent
-                  ? t('listingPage.seller.verifiedAgent')
-                  : t('listingPage.seller.agent')
-                : t('listingPage.seller.owner')}
-              {seller.isAgent && seller.displayName && ` · ${seller.displayName}`}
-            </p>
-            {seller.isAgent && (
-              <Link
-                href={localePath(locale, `/agents/${listing.owner_id}`)}
-                className="mt-2 inline-block text-sm font-medium hover:underline"
-              >
-                {t('listingPage.seller.profile')}
-              </Link>
-            )}
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <FavoriteButton listingId={listing.id} locale={locale} variant="labeled" />
+            <ShareActions post={post} url={url} locale={locale} />
           </div>
           {live && (
-            <div className="border-t border-line pt-4">
+            <div className="mt-5 border-t border-line pt-4 text-center">
               <ReportListing listingId={listing.id} ownerId={listing.owner_id} locale={locale} />
             </div>
           )}
@@ -320,4 +303,61 @@ function Badge({
 
 function listingUrl(locale: Locale, id: string): string {
   return `${publicEnv.siteUrl}${localePath(locale, `/listings/${id}`)}`;
+}
+
+/** Who listed the apartment: initials, name, owner or (verified) agent, link to the agent page. */
+function SellerSummary({
+  seller,
+  ownerId,
+  locale,
+  t,
+}: {
+  seller: ListingSeller;
+  ownerId: string;
+  locale: Locale;
+  t: Translator;
+}) {
+  const name = seller.agencyName ?? seller.displayName ?? t('listingPage.seller.unnamed');
+  const role = seller.isAgent
+    ? seller.verifiedAgent
+      ? t('listingPage.seller.verifiedAgent')
+      : t('listingPage.seller.agent')
+    : t('listingPage.seller.owner');
+  const initials = name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('');
+  const body = (
+    <>
+      <span
+        aria-hidden
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-3 text-sm font-semibold text-fg-2"
+      >
+        {initials}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs text-fg-subtle">{t('listingPage.sections.seller')}</span>
+        <span className="flex items-center gap-1 truncate font-semibold">
+          {name}
+          {seller.verifiedAgent && <VerifiedIcon className="size-4 shrink-0 text-success" />}
+        </span>
+        <span className="block truncate text-sm text-fg-muted">
+          {role}
+          {seller.isAgent && seller.displayName && ` · ${seller.displayName}`}
+        </span>
+      </span>
+    </>
+  );
+  if (!seller.isAgent) return <div className="flex items-center gap-3">{body}</div>;
+  return (
+    <Link
+      href={localePath(locale, `/agents/${ownerId}`)}
+      title={t('listingPage.seller.profile')}
+      className="-m-2 flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-surface-2"
+    >
+      {body}
+      <ChevronRightIcon className="size-4 shrink-0 text-fg-subtle" />
+    </Link>
+  );
 }
