@@ -1,12 +1,12 @@
 # Progress
 
 ## Current state (2026-11-13)
-**Step 5, part 5a done** (pull request `step-5a-auth-processing`): mobile sign-in and the server-side scan processing endpoint. Step 5 is split into three pull requests:
-- 5a: sign-in (phone OTP, Apple, Google in the browser), account screen, `POST /api/scans/{id}/process`. Also adds `expo-image-manipulator`, so **build 2** is due (see Next).
+**Step 5, part 5b done** (pull request `step-5b-listing-form`): create/edit listing drafts on the phone, GPS location, photos, upload queue with retry. Runs on **build 2**; no new native module, so no new build is needed. Step 5 is split into three pull requests:
+- 5a (merged): sign-in, account screen, `POST /api/scans/{id}/process`.
 - 5b: create/edit a listing (draft), location (GPS + district fields), photos resized on the phone, background upload with retry.
 - 5c: attach a scan, upload, process, confirm room labels, assign photos to rooms, publish.
 
-Step 4 is merged. The SMS gateway adapter (step 3) still waits on your gateway details.
+The SMS gateway adapter (step 3) still waits on your gateway details.
 
 ## Done
 - Step 1: monorepo + `@bairmair/room-model` (schema, geometry, areas, annotations, RoomPlan converter, 3 samples).
@@ -35,7 +35,14 @@ Step 4 is merged. The SMS gateway adapter (step 3) still waits on your gateway d
   - `@bairmair/db`: API contract (`processScanPath`, `ProcessScanResponse`) and API error keys.
   - `apps/mobile`: Supabase client (AsyncStorage, refresh only in the foreground), `AuthProvider`, `/account` (phone status, name, sign-out), `/sign-in` (phone; Apple and Google buttons only when the project enables them, read from `/auth/v1/settings`), `/verify` (6-digit code, 60 s resend). Apple/Google users add a phone through `updateUser` + `phone_change` OTP. Home screen links to the account.
   - Auth config pushed: Apple on (client id `mn.bairmair.app`, native only, no secret), redirect `bairmair://**`.
-- Tests: 251 unit (room-model 158, mobile 50, i18n 16, send-sms 12, web 11, db 4) + 43 integration tests against the dev project (db 37, web 6).
+- Step 5b:
+  - `apps/mobile/src/listings/`: local-first listings. Each listing is a folder `Documents/listings/<id>/` (`listing.json` + resized photos). Pure modules (unit-tested): `form.ts` (form ↔ `listings` row, validation mirroring the CHECK constraints, number parsing such as `250 000 000` and `65,5`, publish checklist), `model.ts` (edits and sync progress), `sync-plan.ts` (next operation), `sync-engine.ts` (one operation at a time, backoff 5 s → 5 min, refused changes wait for the next edit), `sync-errors.ts`. Native: `remote.ts` (Supabase), `files.ts`, `photos.ts`, `location.ts`; `listings.ts` wires them up.
+  - Screens: home is now "Миний зарууд" (local listings with sync status, server-only listings with "download to edit", links to account and the RoomPlan test, which moved to `/scan-test`); `/listings/[id]` editor (type, basics, price, property, location, photos, publish checklist, delete).
+  - Photos: system picker (multi-select, no library permission) or camera; resized to 2048 px long edge, JPEG 0.8, all metadata (GPS) dropped; uploaded with `File.upload` (background URL session) straight to Storage with `x-upsert`.
+  - Location: "use my current location" (precise only, inside Mongolia) → `listing_private`; district chips, khoroo, complex name, directions, unit number (private), exact-pin toggle.
+  - `@bairmair/db`: `CITIES`/`DISTRICTS` constants (remote test checks them against the tables), `LISTING_LIMITS`, `isInMongolia`. `@bairmair/i18n`: `formatMoney`, `formatMoneyCompact` (`250 сая ₮`), `listings` and `listingForm` catalogs.
+  - Integration test `apps/mobile/test-remote/listing-sync.test.ts`: the real engine + Supabase remote against the dev project (create, private row insert/update, uploads, reorder, removal, repeats, other user refused, download, delete with files).
+- Tests: 287 unit (room-model 158, mobile 103, i18n 19, send-sms 12, web 11, db 4) + 51 integration tests against the dev project (db 38, mobile 7, web 6).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -43,7 +50,7 @@ Step 4 is merged. The SMS gateway adapter (step 3) still waits on your gateway d
 - In `apps/mobile`: `pnpm eas <command>` (EAS CLI 27.7.2 via `pnpm dlx`), `pnpm doctor`
 - `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm format`
 - `pnpm --filter @bairmair/room-model samples` regenerates the sample JSON
-- `pnpm test:remote`: integration tests on the dev project (needs `packages/db/.env` and `apps/web/.env.local`; creates and deletes test users)
+- `pnpm test:remote`: integration tests on the dev project (needs `packages/db/.env` and `apps/web/.env.local`; mobile's reads `packages/db/.env`; creates and deletes test users)
 - Env files (gitignored, copy from each `.env.example`): `packages/db/.env`, `apps/web/.env.local`, `apps/mobile/.env` (`EXPO_PUBLIC_API_URL` = your PC's Wi-Fi IP, port 3000; restart Metro after changes)
 - `pnpm run doctor` in `apps/mobile` (plain `pnpm doctor` runs pnpm's own check)
 - Route types for the mobile app (`.expo/types/router.d.ts`) are regenerated only by starting Metro; start it once after adding a screen, before `pnpm typecheck`.
@@ -87,11 +94,18 @@ Step 4 is merged. The SMS gateway adapter (step 3) still waits on your gateway d
 - The floor-plan PNG for Open Graph is not made during processing; step 6 renders it in Next.js on request. `floor_plan_path` stays empty until then.
 - Mobile auth follows Supabase's Expo guide: implicit flow, `setSession` from the redirect fragment, `react-native-url-polyfill`. Apple sign-in passes no nonce (as in the guide).
 - Mobile config comes from `EXPO_PUBLIC_*` variables inlined by Metro. Development builds need no EAS env setup; release builds will (step 7 or before launch).
+- Listings are local-first: every edit is saved on the phone at once and synced after 1.5 s. The listing id is a client UUID, so photo paths exist before the row does. A draft reaches the server once it has a valid title. Last write wins between phones (no conflict detection in the MVP).
+- Sync runs while the app is open (start, after edits, back in the foreground, sign-in, backoff timer). Every operation is idempotent (duplicate insert = success, uploads upsert), so an interrupted one is repeated. A temporary error retries with backoff; a refusal (constraint, RLS) waits until the seller edits.
+- `listing_private` is written as update-then-insert: a PostgREST upsert would also update `listing_id`, which has no update grant.
+- Deleting a listing removes its photos and raw scan files from Storage first, then the row. `scan-models` files stay (server-written; clean up server-side later).
+- Mobile `tsconfig.json` has `"types": []`; `test-remote/` has its own tsconfig with Node types.
 
 ## Notes for later steps
 - Wall height: RoomPlan measures walls behind tall furniture lower (2.39 m vs 2.82 m in the same room). Option: raise walls of a room that are almost as tall as its tallest wall to that height. Not done yet; needs your call.
 - 5c review screen: show the `incomplete-room` warning (now also in `metrics.warnings`) and offer a rescan. Raw exports are small (42–91 KB per room), far under the 50 MB `scan-raw` limit.
-- 5b/5c: record the GPS position during a scan (expo-location is in build 1). Uploads: `File.createUploadTask` (expo-file-system) supports background sessions. supabase-js sends a Blob's own `type` and ignores `contentType`. Deleting a listing leaves its storage objects; add cleanup.
+- 5c: record the GPS position during a scan. The scan upload can reuse `remote.ts` (`File.upload` + Storage REST). supabase-js sends a Blob's own `type` and ignores `contentType`.
+- 5c: editing a published listing sends updates directly; the form only checks draft rules, so clearing e.g. the price fails at the database (`listings_complete_when_live`) and shows "not accepted". Make validation status-aware when publishing lands.
+- The location permission prompt text changed in `app.json` (it now also mentions the listing pin); it shows up with the next build.
 - 5c: the app calls the process endpoint after both raw files are uploaded, and again for any scan still `uploaded` on the next launch (409 means "upload not finished").
 - Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
 - Before an App Store build: real app icon and splash (the Expo placeholders are still in `apps/mobile/assets`).
@@ -103,12 +117,12 @@ Step 4 is merged. The SMS gateway adapter (step 3) still waits on your gateway d
 - Scanner copy (`scanSupport`, `scan`, `scanResult` in `mn.ts`) and the iOS permission prompts (`apps/mobile/app.json`).
 - Sample name "Бодит скан: Г хэлбэрийн өрөө" and the updated `samples.intro`.
 - Sign-in and account copy (`auth`, `account` in `mn.ts`).
+- Listing form copy (`listings`, `listingForm` in `mn.ts`), e.g. "Цутгамал" for monolithic, "Байршлын цэг" for the map pin, "Тоот" for the apartment number.
 
 ## Next
-- You: review and merge the 5a pull request, and test sign-in on the iPhone (instructions in the PR).
-- You: start EAS development build 2 (adds `expo-image-manipulator` and Expo patch updates). 5a runs on build 1; 5b needs build 2.
-- You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). It answers the last format question (are shared walls duplicated or merged?) and checks the merged-floor handling with several rooms. No code waits on it.
-- Then 5b: listing form, location, photos and upload queue.
+- You: test 5b on the iPhone (build 2, instructions in the PR), then review and merge the pull request.
+- You, when convenient: one scan of two neighbouring rooms in a single session (tap "Дараагийн өрөө" between them). It answers the last format question (are shared walls duplicated or merged?). No code waits on it.
+- Then 5c: attach a scan to a listing, upload and process it, confirm room labels, assign photos to rooms, publish.
 
 ## Open decisions
 - SMS gateway: which one, its API doc (endpoint, auth, sender ID), and whether it needs IP allowlisting (Edge Functions have no fixed IP). Only `send-sms/gateways.ts` changes.

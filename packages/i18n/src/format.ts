@@ -31,6 +31,39 @@ export function formatArea(squareMeters: number, locale: Locale): string {
   return `${formatDecimal(squareMeters, 1)}${NBSP}${unit}`;
 }
 
+export type CurrencyCode = 'MNT' | 'USD';
+
+/** A full price: `250,000,000 ₮` or `$1,200.5`. MNT has no minor unit in practice. */
+export function formatMoney(amount: number, currency: CurrencyCode): string {
+  if (currency === 'USD') return `$${formatDecimal(amount, 2)}`;
+  return `${formatDecimal(amount, 0)}${NBSP}₮`;
+}
+
+const COMPACT_UNITS: Record<Locale, readonly [string, string, string]> = {
+  // тэрбум = billion, сая = million, мянга = thousand; written as words, as in local listings.
+  mn: [`${NBSP}тэрбум`, `${NBSP}сая`, `${NBSP}мянга`],
+  en: ['B', 'M', 'K'],
+};
+
+/**
+ * A short price, as in local listings: `250 сая ₮`, `1.8 сая ₮` (English: `250M ₮`). Dollar
+ * amounts (rents) are small, so they stay whole: `$1,200`.
+ */
+export function formatMoneyCompact(amount: number, currency: CurrencyCode, locale: Locale): string {
+  if (currency === 'USD') return `$${formatDecimal(amount, 0)}`;
+  const [billion, million, thousand] = COMPACT_UNITS[locale];
+  const abs = Math.abs(amount);
+  const [value, unit] =
+    abs >= 1e9
+      ? [amount / 1e9, billion]
+      : abs >= 1e6
+        ? [amount / 1e6, million]
+        : abs >= 1e3
+          ? [amount / 1e3, thousand]
+          : [amount, ''];
+  return `${formatDecimal(value, 1)}${unit}${NBSP}₮`;
+}
+
 const FILE_SIZE_UNITS: Record<Locale, readonly [string, string, string]> = {
   mn: ['Б', 'КБ', 'МБ'],
   en: ['B', 'KB', 'MB'],

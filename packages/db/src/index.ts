@@ -17,4 +17,6 @@ export type TypedSupabaseClient = SupabaseClient<Database>;
 
 export * from './api';
 export * from './errors';
+export * from './listing-rules';
+export * from './reference';
 export * from './storage';

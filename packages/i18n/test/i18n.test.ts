@@ -7,6 +7,8 @@ import {
   formatArea,
   formatDecimal,
   formatFileSize,
+  formatMoney,
+  formatMoneyCompact,
   isLocale,
   localePath,
   mn,
@@ -123,6 +125,34 @@ describe('formatFileSize', () => {
     expect(formatFileSize(2_449_000, 'mn')).toBe('2.4 МБ');
     expect(formatFileSize(12_000_000, 'en')).toBe('12 MB');
     expect(formatFileSize(999, 'en')).toBe('999 B');
+  });
+});
+
+// The formatters put a no-break space between number and unit.
+const nb = (text: string) => text.replaceAll(' ', ' ');
+
+describe('formatMoney', () => {
+  it('writes tögrög after the number and dollars before it', () => {
+    expect(formatMoney(250_000_000, 'MNT')).toBe(nb('250,000,000 ₮'));
+    expect(formatMoney(1_800_000.4, 'MNT')).toBe(nb('1,800,000 ₮'));
+    expect(formatMoney(1200, 'USD')).toBe('$1,200');
+    expect(formatMoney(1200.5, 'USD')).toBe('$1,200.5');
+  });
+});
+
+describe('formatMoneyCompact', () => {
+  it('uses the local words in Mongolian', () => {
+    expect(formatMoneyCompact(250_000_000, 'MNT', 'mn')).toBe(nb('250 сая ₮'));
+    expect(formatMoneyCompact(1_800_000, 'MNT', 'mn')).toBe(nb('1.8 сая ₮'));
+    expect(formatMoneyCompact(1_250_000_000, 'MNT', 'mn')).toBe(nb('1.3 тэрбум ₮'));
+    expect(formatMoneyCompact(850_000, 'MNT', 'mn')).toBe(nb('850 мянга ₮'));
+    expect(formatMoneyCompact(900, 'MNT', 'mn')).toBe(nb('900 ₮'));
+  });
+
+  it('uses letters in English and keeps dollars whole', () => {
+    expect(formatMoneyCompact(250_000_000, 'MNT', 'en')).toBe(nb('250M ₮'));
+    expect(formatMoneyCompact(1200, 'USD', 'en')).toBe('$1,200');
+    expect(formatMoneyCompact(1200.6, 'USD', 'mn')).toBe('$1,201');
   });
 });
 
