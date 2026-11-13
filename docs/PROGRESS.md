@@ -108,7 +108,7 @@ The SMS gateway adapter (step 3) still waits on your gateway details.
 - The location permission prompt text changed in `app.json` (it now also mentions the listing pin); it shows up with the next build.
 - 5c: the app calls the process endpoint after both raw files are uploaded, and again for any scan still `uploaded` on the next launch (409 means "upload not finished").
 - Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
-- Before an App Store build: real app icon and splash (the Expo placeholders are still in `apps/mobile/assets`).
+- Before an App Store build: real app icon and splash. The current icon (mobile icon, Android adaptive foreground, splash, web favicon/icon/apple-icon) is a placeholder character image that cannot ship (third-party copyright; App Review rejects it). Regenerate all sizes from one 1024 px source when the real logo exists.
 - Before production: separate project, remove the test OTP number, turn off the email provider (kept on in dev for the tests).
 
 ## To review
