@@ -151,9 +151,15 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Home: hero with the headline, a search box (buy/rent, keyword, district, rooms; a GET form to `/search`) and a scanned apartment turning in 3D beside it, with its floor plan and price floating over it. The model is the most complete of the 4 newest live 3D listings (most rooms, then area; at least 2 rooms), else the `two-room` sample. Then "how it works" (scan → plan → 3D), newest 3D listings, newest listings, district tiles, and a navy band for sellers ("Зар нэмэх").
   - `RoomViewer3D` `mode="showcase"`: turns by itself (~1 turn/min) only while on screen, with the tab visible and without reduced motion; pauses while dragged and 4 s after; no zoom or pan (the wheel and vertical swipes scroll the page), no reset button or hint.
   - Listing cards (everywhere): rounded panel, lift on hover, facts with icons, navy "3D" badge. Scanned listings show a small floor-plan inset over the photo, and the labelled plan over the whole photo on hover (not on touch screens). Plans come from `GET /api/plan/listings/[id]` (SVG; `?lang=en`, `?thumb=1` without labels; CDN-cacheable for an hour; CSP `default-src 'none'`).
-  - Not yet in the new colours: map pins and markers (amber/stone), redone in phase 2.
   - Verified: typecheck, lint, tests, production build; headless Chrome on the dev server: home in light and dark, mn and en, desktop and 390 px (no horizontal scroll), card hover, a listing page in the new palette.
-- Tests: 460 unit (room-model 189, browse 104, mobile 87, i18n 29, web 26, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
+- Web redesign, phase 2 of 4: search:
+  - Sticky filter bar under the header: all/sale/rent, text search, list/map. Wide screens: a pill per filter with its own panel; districts, rooms, 3D and sort apply at once, price and area from their panel, whose button shows the live count ("5 зар харах", a `total_count`-only RPC call 300 ms after typing stops). Phones: "Шүүлтүүр (n)" opens a bottom sheet (draft until "N зар харах") beside a 3D toggle and the sort. While new results load, the list dims (`useTransition`).
+  - List view on wide screens (≥ 1024 px): results in two columns beside a sticky map (MapLibre is not loaded on phones for the list). Hovering a card lights its pin in sky blue (a separate source drawn above clusters). After the visitor moves the map, "Энэ хэсэгт хайх" limits the list to the visible area.
+  - New filter `bounds` in `@bairmair/browse` (`bbox=west,south,east,north` in the URL, 5 decimals; RPC `p_west…p_north`): shareable, outlined (dashed) on the map, removable as a pill. It counts in `hasFilters`, not in `activeFilterCount`. The map itself still loads pins for its own viewport.
+  - Maps in brand colours: navy 3D pins and clusters, white pins, sky blue highlight; navy markers and a sky blue approximate circle on listing pages and the pin picker. (The app's map pins are still amber; separate change.)
+  - Empty results: icon, text, "Бүгдийг цэвэрлэх". Removed `SearchForm` and `SortSelect`.
+  - Verified: typecheck, lint, tests (bbox parsing, pill labels), production build; headless Chrome against a production build: list + map at 1440 px, card hover → pin, price panel with live count, map area URL (outline + pill), full map in dark/English, phone list and filter sheet at 390 px (no sideways scroll).
+- Tests: 467 unit (room-model 189, browse 107, mobile 87, web 30, i18n 29, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -280,7 +286,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 
 ## Next
-- Web redesign, next phases (one PR each): 2. search: list beside the map, filter pills, live results, map pins in the new colours; 3. listing page: full-width viewer with Зураг / 3D / Төлөвлөлт tabs, sticky contact card, bottom bar on phones, fact grid, price vs district median bar; 4. motion and images: card-to-listing view transitions, photo thumbnails, blurred placeholders.
+- Web redesign, next phases (one PR each): 3. listing page: full-width viewer with Зураг / 3D / Төлөвлөлт tabs, sticky contact card, bottom bar on phones, fact grid, price vs district median bar; 4. motion and images: card-to-listing view transitions, photo thumbnails, blurred placeholders.
 - You, on the Android preview build: check that the OTA update with the map pin arrives (Бүртгэл's version line shows "шинэчлэл <time>" after two restarts), then pin a listing on the map (see the map pin entry above).
 - You: fill in `apps/web/src/content/site-info.ts` (company name, registration number, address, support e-mail and phone; the pages show the [bracket] placeholders until then), and have the terms and privacy drafts checked (they describe what the code does today; update them when Sentry, analytics or payments arrive).
 - Store review: the app needs links to the privacy policy and terms (Бүртгэл and sign-in), and App Store Connect needs the privacy policy URL (`/privacy`) and a support URL (`/support`); Google Play needs the account-deletion URL (`/delete-account`).

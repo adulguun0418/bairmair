@@ -7,6 +7,7 @@ import {
   pageArgs,
   pageCount,
   parseAmount,
+  parseBounds,
   parseSearchParams,
   searchArgs,
   searchQuery,
@@ -31,6 +32,7 @@ describe('parseSearchParams', () => {
         q: '  Зайсан ',
         sort: 'price_asc',
         page: '3',
+        bbox: '106.8,47.9,106.9,47.95',
         view: 'map',
       }),
     ).toEqual({
@@ -46,6 +48,7 @@ describe('parseSearchParams', () => {
       has3d: true,
       q: 'Зайсан',
       sort: 'price_asc',
+      bounds: { west: 106.8, south: 47.9, east: 106.9, north: 47.95 },
       page: 3,
       view: 'map',
     });
@@ -198,5 +201,35 @@ describe('activeFilterCount', () => {
         has3d: true,
       }),
     ).toBe(5);
+  });
+});
+
+describe('map area (bbox)', () => {
+  const area = { west: 106.85, south: 47.88, east: 106.95, north: 47.94 };
+
+  it('round-trips through the URL, rounded to 5 decimals', () => {
+    const query = searchQuery(DEFAULT_FILTERS, {
+      bounds: { west: 106.850001, south: 47.88, east: 106.95, north: 47.940004 },
+    });
+    expect(query).toBe('?bbox=106.85%2C47.88%2C106.95%2C47.94');
+    expect(parseSearchParams({ bbox: '106.85,47.88,106.95,47.94' }).bounds).toEqual(area);
+  });
+
+  it('drops malformed or empty areas', () => {
+    for (const bbox of ['', '1,2,3', 'a,b,c,d', '106.9,47.9,106.8,47.95', '0,95,1,96']) {
+      expect(parseBounds(bbox)).toBeNull();
+    }
+  });
+
+  it('narrows the RPC and counts as a filter, but not as a filter group', () => {
+    const filters = { ...DEFAULT_FILTERS, bounds: area };
+    expect(searchArgs(filters)).toMatchObject({
+      p_west: 106.85,
+      p_south: 47.88,
+      p_east: 106.95,
+      p_north: 47.94,
+    });
+    expect(hasFilters(filters)).toBe(true);
+    expect(activeFilterCount(filters)).toBe(0);
   });
 });

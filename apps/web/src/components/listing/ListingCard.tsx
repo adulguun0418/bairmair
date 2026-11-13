@@ -101,7 +101,7 @@ export function ListingCard({
     : null;
 
   return (
-    <div className="group/card relative flex w-full">
+    <div className="group/card relative flex w-full" data-listing-id={card.id}>
       <Link
         href={href}
         className="flex w-full flex-col rounded-3xl bg-surface p-2 ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:ring-line-2"
@@ -192,18 +192,24 @@ function Badge3d({ label }: { label: string }) {
   );
 }
 
-/** Cards in a responsive grid. */
+/** Cards in a responsive grid: full width, or beside the search map (`split`). */
 export function ListingGrid({
   cards,
   locale,
   supabaseUrl,
+  layout = 'wide',
 }: {
   cards: readonly ListingCardData[];
   locale: Locale;
   supabaseUrl: string;
+  layout?: 'wide' | 'split';
 }) {
+  const columns =
+    layout === 'split'
+      ? 'sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3'
+      : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
   return (
-    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <ul className={`grid gap-5 ${columns}`}>
       {cards.map((card) => (
         <li key={card.id} className="flex">
           <ListingCard card={card} locale={locale} supabaseUrl={supabaseUrl} />
