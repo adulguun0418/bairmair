@@ -39,6 +39,12 @@ export interface RoomViewer3DProps {
    *   and vertical swipes scroll the page; no zoom, pan, reset button or hint.
    */
   mode?: 'full' | 'showcase';
+  /**
+   * On touch screens, vertical swipes over the view scroll the page (horizontal drags still
+   * turn it, pinch still zooms). For a view inside a scrolling page; leave it off when the view
+   * fills the screen (the app's 3D screen), where every drag should turn the model.
+   */
+  pageScroll?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -69,6 +75,7 @@ export function RoomViewer3D({
   showObjects = true,
   showLabels = true,
   mode = 'full',
+  pageScroll = false,
   className,
   style,
 }: RoomViewer3DProps) {
@@ -90,7 +97,7 @@ export function RoomViewer3D({
         position: 'relative',
         width: '100%',
         height: '100%',
-        touchAction: showcase ? 'pan-y' : 'none',
+        touchAction: showcase || pageScroll ? 'pan-y' : 'none',
         ...style,
       }}
     >
