@@ -379,3 +379,11 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 ## Open decisions
 - Google sign-in credentials (Google Cloud OAuth web client), whenever you want Google on.
 - Web hosting for launch: Vercel Hobby is for non-commercial use; Pro (or another host) and a custom domain before real business.
+
+## Post-MVP
+- Agencies (your call, 2026-11-15). Today `agent_profiles.agency_name` is free text per person: two agents typing the same name get two separate agent pages with their own listings, nothing links them, and anyone can type a real agency's name. Plan:
+  - `agencies` (name, logo, bio, verified) + `agency_members` (agency, profile, owner | member, invite status); the agent profile points at the agency instead of free text.
+  - Joining by invitation: the agency owner invites by phone number, the agent accepts (otherwise anyone could join any agency).
+  - `/agencies/[id]` (web + app): the agency, its agents and all their live listings (an agency filter on `search_listings`). Listings stay owned by the person who posted them; an agent who leaves takes theirs along.
+  - Verification moves to the agency.
+- From the brief: in-app chat, payments (QPay), boosts, agent subscription plans, mortgage calculator, AR "view in your room", pose-pinned photos, saved searches with push alerts.
