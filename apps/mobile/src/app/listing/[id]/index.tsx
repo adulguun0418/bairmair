@@ -769,6 +769,9 @@ function SpaceSection({ model, onOpen3d }: { model: RoomModelV1; onOpen3d: () =>
         <Text style={[styles.tiny, { color: colors.textSubtle }]}>
           {t('listingSheet.spaceNote')}
         </Text>
+        {(model.dividers?.length ?? 0) > 0 && (
+          <Text style={[styles.tiny, { color: colors.textSubtle }]}>{t('viewer.dividerNote')}</Text>
+        )}
       </View>
       <View style={styles.planCard}>
         <BlueprintGrid color={PAPER_GRID} />

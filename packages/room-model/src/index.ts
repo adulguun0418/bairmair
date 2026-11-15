@@ -14,6 +14,7 @@ export * from './floorplan/render';
 // Areas and user annotations
 export * from './metrics';
 export * from './annotations';
+export * from './dividers';
 
 // RoomPlan export -> RoomModel
 export * from './roomplan/capture';

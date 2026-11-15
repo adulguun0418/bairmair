@@ -29,7 +29,7 @@ import type { Mat4, Transform, Vec2, Vec3 } from '../schema/primitives';
 import { parseRoomPlanCapture, type CaptureSurface, type RoomPlanCapture } from './capture';
 
 /** Bump when the conversion output changes for the same input. Stored with every model. */
-export const CONVERTER_VERSION = '0.4.0';
+export const CONVERTER_VERSION = '0.5.0';
 
 export type ConversionWarningCode =
   | 'no-floors'
@@ -238,6 +238,22 @@ function splitFloor(floor: readonly Vec2[], walls: readonly PlacedWall[]): Floor
   }
   if (parts.length === 1) return { kind: 'whole' };
   return { kind: 'split', parts: parts.sort((a, b) => polygonArea(b) - polygonArea(a)) };
+}
+
+/** Sections rounded to the millimeter, each label/story/point once, in export order. */
+function uniqueSections(
+  sections: readonly { label: RoomLabel; story: number; point: Vec2 }[],
+): { label: RoomLabel; story: number; point: Vec2 }[] {
+  const seen = new Set<string>();
+  const unique: { label: RoomLabel; story: number; point: Vec2 }[] = [];
+  for (const { label, story, point } of sections) {
+    const rounded: Vec2 = [roundLength(point[0]), roundLength(point[1])];
+    const key = `${label}|${story}|${Math.round(rounded[0] * 100)}|${Math.round(rounded[1] * 100)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push({ label, story, point: rounded });
+  }
+  return unique;
 }
 
 /**
@@ -571,6 +587,9 @@ export function convertCapture(capture: RoomPlanCapture): ConversionResult {
     openings,
     objects,
     hotspots: [],
+    // RoomPlan's labelled points, so a room a seller splits later can be labelled from them.
+    // Exports list each one twice (top level and inside its room): keep it once.
+    ...(sections.length > 0 ? { sections: uniqueSections(sections) } : {}),
   });
   if (!result.success) {
     throw new RoomPlanConversionError(

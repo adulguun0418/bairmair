@@ -1,4 +1,4 @@
-import type { RoomLabelOverride } from '@bairmair/room-model';
+import type { RoomDivider, RoomLabelOverride } from '@bairmair/room-model';
 import type { ListingStatus } from '@bairmair/browse';
 import type { LocalListing, LocalScan, PhotoRoom } from '../src/listings/model';
 import { ListingStore, type ListingPersistence } from '../src/listings/store';
@@ -33,7 +33,10 @@ export class FakeRemote implements ListingRemote {
   status = new Map<string, ListingStatus>();
   photos = new Map<string, { sortOrder: number; room?: PhotoRoom | null }>();
   objects = new Set<string>();
-  scans = new Map<string, { scan: LocalScan; labels: Record<string, RoomLabelOverride> }>();
+  scans = new Map<
+    string,
+    { scan: LocalScan; labels: Record<string, RoomLabelOverride>; dividers: RoomDivider[] }
+  >();
   /** Errors thrown by the next calls, in order. */
   failures: Error[] = [];
   /** Answers of the next processScan calls; `ready` (12.5 m²) when empty. */
@@ -85,12 +88,19 @@ export class FakeRemote implements ListingRemote {
   }
   async createScan(_listingId: string, scan: LocalScan) {
     await this.call('createScan');
-    this.scans.set(scan.id, { scan, labels: {} });
+    this.scans.set(scan.id, { scan, labels: {}, dividers: [] });
   }
-  async saveRoomLabels(scanId: string, labels: Record<string, RoomLabelOverride>) {
+  async saveRoomLabels(
+    scanId: string,
+    labels: Record<string, RoomLabelOverride>,
+    dividers: RoomDivider[],
+  ) {
     await this.call('saveRoomLabels');
     const row = this.scans.get(scanId);
-    if (row) row.labels = labels;
+    if (row) {
+      row.labels = labels;
+      row.dividers = dividers;
+    }
   }
   async assignPhotoRoom(photoId: string, room: PhotoRoom | null) {
     await this.call('assignPhotoRoom');

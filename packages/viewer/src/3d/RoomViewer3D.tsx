@@ -118,6 +118,11 @@ export function RoomViewer3D({
               <meshStandardMaterial color={COLORS.threshold} roughness={0.95} />
             </mesh>
           )}
+          {scene.dividers && (
+            <mesh geometry={scene.dividers}>
+              <meshBasicMaterial color={COLORS.divider} />
+            </mesh>
+          )}
           {showObjects && <Objects objects={model.objects} />}
           <RoomMarkers
             model={model}

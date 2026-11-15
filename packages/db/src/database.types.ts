@@ -530,6 +530,7 @@ export type Database = {
           model_path: string | null;
           processing_error: string | null;
           raw_json_path: string;
+          room_dividers: Json;
           room_labels: Json;
           scan_accuracy_m: number | null;
           scan_lat: number | null;
@@ -553,6 +554,7 @@ export type Database = {
           model_path?: string | null;
           processing_error?: string | null;
           raw_json_path: string;
+          room_dividers?: Json;
           room_labels?: Json;
           scan_accuracy_m?: number | null;
           scan_lat?: number | null;
@@ -576,6 +578,7 @@ export type Database = {
           model_path?: string | null;
           processing_error?: string | null;
           raw_json_path?: string;
+          room_dividers?: Json;
           room_labels?: Json;
           scan_accuracy_m?: number | null;
           scan_lat?: number | null;

@@ -104,6 +104,52 @@ const points = (polygon: readonly Vec2[]): string =>
 const place = (position: Vec2, yaw: number): string =>
   `translate(${unit(position[0])} ${unit(position[1])}) rotate(${degrees(-yaw)})`;
 
+/** The plan area in meters: model x to the right, model z down. */
+export interface FloorPlanViewBox {
+  minX: number;
+  minZ: number;
+  width: number;
+  height: number;
+}
+
+function viewBoxOf(
+  rooms: readonly Room[],
+  walls: readonly RoomModelV1['walls'][number][],
+  padding: number,
+): FloorPlanViewBox {
+  const bounds = boundsOf([
+    ...rooms.flatMap((room) => room.floor.polygon),
+    ...walls.flatMap((wall) => wallEndpoints(wall)),
+  ]) ?? { min: [-1, -1], max: [1, 1] };
+  return {
+    minX: bounds.min[0] - padding,
+    minZ: bounds.min[1] - padding,
+    width: bounds.max[0] - bounds.min[0] + 2 * padding,
+    height: bounds.max[1] - bounds.min[1] + 2 * padding,
+  };
+}
+
+/**
+ * The view box `renderFloorPlanSvg` uses for these options, in meters, so a touch on the drawn
+ * plan can be mapped back to model coordinates (the SVG scales it to fit, centered).
+ */
+export function floorPlanViewBox(
+  model: RoomModelV1,
+  options: Pick<FloorPlanOptions, 'story' | 'paddingM' | 'wallThicknessM'> = {},
+): FloorPlanViewBox {
+  const thickness = options.wallThicknessM ?? 0.1;
+  const lowestStory = model.rooms.reduce((lowest, room) => Math.min(lowest, room.story), Infinity);
+  const story = options.story ?? (Number.isFinite(lowestStory) ? lowestStory : 0);
+  const rooms = model.rooms.filter((room) => room.story === story);
+  const roomsById = new Map(model.rooms.map((room) => [room.id, room]));
+  const walls = model.walls.filter((wall) =>
+    wall.roomId === null
+      ? story === lowestStory || rooms.length === 0
+      : roomsById.get(wall.roomId)?.story === story,
+  );
+  return viewBoxOf(rooms, walls, (options.paddingM ?? 0.4) + thickness);
+}
+
 /**
  * Draws a model as a 2D floor plan and returns it as an SVG string.
  *
@@ -139,14 +185,7 @@ export function renderFloorPlanSvg(model: RoomModelV1, options: FloorPlanOptions
     roomId === null ? undefined : roomsById.get(roomId)?.floor.polygon;
 
   // --- View box -------------------------------------------------------------------------------
-  const bounds = boundsOf([
-    ...rooms.flatMap((room) => room.floor.polygon),
-    ...walls.flatMap((wall) => wallEndpoints(wall)),
-  ]) ?? { min: [-1, -1], max: [1, 1] };
-  const minX = bounds.min[0] - padding;
-  const minZ = bounds.min[1] - padding;
-  const width = bounds.max[0] - bounds.min[0] + 2 * padding;
-  const height = bounds.max[1] - bounds.min[1] + 2 * padding;
+  const { minX, minZ, width, height } = viewBoxOf(rooms, walls, padding);
 
   const out: string[] = [];
   const sizeAttributes = options.size
@@ -255,6 +294,39 @@ export function renderFloorPlanSvg(model: RoomModelV1, options: FloorPlanOptions
       out.push(
         `<rect class="fp-object" data-category="${object.category}" transform="${place([x, z], object.transform.yaw)}"` +
           ` x="${unit(-w / 2)}" y="${unit(-d / 2)}" width="${unit(w)}" height="${unit(d)}" rx="3"/>`,
+      );
+    }
+    out.push('</g>');
+  }
+
+  // --- Seller dividers -------------------------------------------------------------------------
+  // Lines the seller drew between rooms the walls do not separate. Dashed and thinner than a
+  // wall, so they never pass for a scanned one.
+  const dividers = (model.dividers ?? []).filter((line) =>
+    rooms.some(
+      (room) =>
+        pointInPolygon(
+          [(line.a[0] + line.b[0]) / 2, (line.a[1] + line.b[1]) / 2],
+          room.floor.polygon,
+        ) ||
+        // The middle of a cut lies on the shared edge; probe a hair to one side.
+        pointInPolygon(
+          [
+            (line.a[0] + line.b[0]) / 2 + (line.b[1] - line.a[1]) * 0.01,
+            (line.a[1] + line.b[1]) / 2 - (line.b[0] - line.a[0]) * 0.01,
+          ],
+          room.floor.polygon,
+        ),
+    ),
+  );
+  if (dividers.length > 0) {
+    out.push(
+      `<g class="fp-dividers" stroke="${theme.wall}" stroke-width="${unit(thickness * 0.4)}"` +
+        ` stroke-dasharray="${unit(0.12)} ${unit(0.08)}" fill="none" pointer-events="none">`,
+    );
+    for (const line of dividers) {
+      out.push(
+        `<line x1="${unit(line.a[0])}" y1="${unit(line.a[1])}" x2="${unit(line.b[0])}" y2="${unit(line.b[1])}"/>`,
       );
     }
     out.push('</g>');

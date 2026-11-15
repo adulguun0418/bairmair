@@ -1,5 +1,9 @@
 import { isInMongolia, LISTING_LIMITS } from '@bairmair/db';
-import type { RoomLabelOverride } from '@bairmair/room-model';
+import {
+  ROOM_DIVIDER_LIMITS,
+  type RoomDivider,
+  type RoomLabelOverride,
+} from '@bairmair/room-model';
 import { EMPTY_FORM, PRIVATE_FIELDS, type ListingForm, type ListingStatus } from '@bairmair/browse';
 
 // A listing as saved on the phone, and the pure changes made to it by the editor (user edits)
@@ -66,6 +70,9 @@ export interface LocalScan {
   totalAreaM2: number | null;
   /** The seller's room label corrections (`room_scans.room_labels`), keyed by room id. */
   roomLabels: Record<string, RoomLabelOverride>;
+  /** The seller's lines splitting rooms (`room_scans.room_dividers`), in drawing order. */
+  roomDividers: RoomDivider[];
+  /** Bumped by every change to the labels or dividers; both are sent together. */
   labelsRev: number;
   labelsSyncedRev: number;
 }
@@ -148,7 +155,7 @@ export function normalizeListing(saved: LocalListing): LocalListing {
     serverStatus: raw.serverStatus ?? raw.status,
     statusRev: raw.statusRev ?? 0,
     statusSyncedRev: raw.statusSyncedRev ?? 0,
-    scan: raw.scan ?? null,
+    scan: raw.scan ? { ...raw.scan, roomDividers: raw.scan.roomDividers ?? [] } : null,
     removedScanIds: raw.removedScanIds ?? [],
     photos: raw.photos.map((photo) => ({
       ...photo,
@@ -325,6 +332,7 @@ export function attachScan(listing: LocalListing, scan: NewScan, now: string): L
       processing: 'pending',
       totalAreaM2: null,
       roomLabels: {},
+      roomDividers: [],
       labelsRev: 0,
       labelsSyncedRev: 0,
     },
@@ -364,6 +372,59 @@ export function setRoomLabel(
       roomLabels: { ...scan.roomLabels, [roomId]: next },
       labelsRev: scan.labelsRev + 1,
     },
+  });
+}
+
+/** Adds a seller line splitting a room (already checked against the model by the caller). */
+export function addRoomDivider(
+  listing: LocalListing,
+  divider: RoomDivider,
+  now: string,
+): LocalListing {
+  const scan = listing.scan;
+  if (!scan || scan.roomDividers.some((existing) => existing.id === divider.id)) return listing;
+  if (scan.roomDividers.length >= ROOM_DIVIDER_LIMITS.count) return listing;
+  return edited(listing, now, {
+    scan: {
+      ...scan,
+      roomDividers: [...scan.roomDividers, divider],
+      labelsRev: scan.labelsRev + 1,
+    },
+  });
+}
+
+/**
+ * Removes seller lines. The rooms they made go with them: their labels are dropped and photos
+ * in them lose their room (the larger part kept the original room's id, so those stay).
+ */
+export function removeRoomDividers(
+  listing: LocalListing,
+  ids: readonly string[],
+  now: string,
+): LocalListing {
+  const scan = listing.scan;
+  if (!scan) return listing;
+  const removed = new Set(ids.filter((id) => scan.roomDividers.some((d) => d.id === id)));
+  if (removed.size === 0) return listing;
+  // `<room>~<divider>`, possibly split again (`<room>~<divider>~<later divider>`).
+  const madeByRemoved = (roomId: string) =>
+    roomId
+      .split('~')
+      .slice(1)
+      .some((part) => removed.has(part));
+  const roomLabels = Object.fromEntries(
+    Object.entries(scan.roomLabels).filter(([roomId]) => !madeByRemoved(roomId)),
+  );
+  return edited(listing, now, {
+    scan: {
+      ...scan,
+      roomDividers: scan.roomDividers.filter((divider) => !removed.has(divider.id)),
+      roomLabels,
+      labelsRev: scan.labelsRev + 1,
+    },
+    photos: listing.photos.map((photo) =>
+      photo.roomId !== null && madeByRemoved(photo.roomId) ? { ...photo, roomId: null } : photo,
+    ),
   });
 }
 

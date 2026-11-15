@@ -141,6 +141,9 @@ export function ListingEmbed({
           </span>
           <span className="text-fg-subtle">{t('viewer.approximateScanned')}</span>
         </p>
+        {(model.dividers?.length ?? 0) > 0 && (
+          <p className="px-4 pb-3 text-xs text-fg-subtle">{t('viewer.dividerNote')}</p>
+        )}
       </section>
 
       <PhotoDialog {...dialog} closeLabel={t('viewer.closePhoto')} />

@@ -11,6 +11,7 @@ import {
 } from '@bairmair/db';
 import {
   applyAnnotations,
+  parseRoomDividers,
   parseRoomLabelOverrides,
   safeParseRoomModel,
   type RoomModelV1,
@@ -71,7 +72,8 @@ export type PhotoRow = Pick<
   'id' | 'width' | 'height' | 'sort_order' | 'scan_id' | 'room_id'
 >;
 
-export type ScanRow = Pick<Tables<'room_scans'>, 'id' | 'room_labels'>;
+export type ScanRow = Pick<Tables<'room_scans'>, 'id' | 'room_labels'> &
+  Partial<Pick<Tables<'room_scans'>, 'room_dividers'>>;
 
 export interface SellerRow {
   display_name: string | null;
@@ -147,6 +149,7 @@ export function buildListingPage(input: ListingPageInput): ListingPageData {
     const parsed = safeParseRoomModel(input.modelJson);
     if (parsed.success) {
       model = applyAnnotations(parsed.data, {
+        dividers: parseRoomDividers(scan.room_dividers),
         roomLabels: parseRoomLabelOverrides(scan.room_labels),
         photos: photos.map(({ id, roomId }) => ({ id, roomId })),
       });
@@ -222,7 +225,7 @@ export async function loadListingPage(
     // RLS shows only the current ready scan of a live listing.
     client
       .from('room_scans')
-      .select('id, room_labels')
+      .select('id, room_labels, room_dividers')
       .eq('listing_id', id)
       .eq('is_current', true)
       .eq('status', 'ready')

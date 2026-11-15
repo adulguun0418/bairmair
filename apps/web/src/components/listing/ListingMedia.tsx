@@ -180,6 +180,9 @@ function Scene({
             {t('viewer.totalArea')}: {text.area(metrics.totalAreaM2)}
           </span>
           <span className="block text-xs text-fg-subtle">{t('viewer.approximateScanned')}</span>
+          {(model?.dividers?.length ?? 0) > 0 && (
+            <span className="block text-xs text-fg-subtle">{t('viewer.dividerNote')}</span>
+          )}
         </span>
       </div>
       <PhotoDialog {...dialog} closeLabel={t('viewer.closePhoto')} />

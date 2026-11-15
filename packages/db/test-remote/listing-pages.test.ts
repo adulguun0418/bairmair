@@ -113,6 +113,56 @@ describe('scan locations', () => {
   });
 });
 
+// Migration 20261118100000: seller dividers.
+describe('room dividers', () => {
+  const dividers = [{ id: 'abcd1234', a: [1.5, -0.25], b: [1.5, 2.75] }];
+
+  it('are written by the owner and read by anyone who can see the scan', async () => {
+    const write = await alice.client
+      .from('room_scans')
+      .update({ room_dividers: dividers })
+      .eq('id', scanId)
+      .select('id');
+    expect(write.error).toBeNull();
+    expect(write.data).toHaveLength(1);
+
+    const read = await anon.from('room_scans').select('room_dividers').eq('id', scanId);
+    expect(read.error).toBeNull();
+    expect(read.data).toEqual([{ room_dividers: dividers }]);
+  });
+
+  it('cannot be changed by someone else', async () => {
+    const write = await bob.client
+      .from('room_scans')
+      .update({ room_dividers: [] })
+      .eq('id', scanId)
+      .select('id');
+    expect(write.error).toBeNull();
+    expect(write.data).toEqual([]);
+    const read = await anon.from('room_scans').select('room_dividers').eq('id', scanId);
+    expect(read.data).toEqual([{ room_dividers: dividers }]);
+  });
+
+  it('must be a short array', async () => {
+    const notArray = await alice.client
+      .from('room_scans')
+      .update({ room_dividers: { id: 'abcd1234' } })
+      .eq('id', scanId);
+    expect(notArray.error?.code).toBe('23514');
+    const tooMany = await alice.client
+      .from('room_scans')
+      .update({
+        room_dividers: Array.from({ length: 21 }, (_, i) => ({
+          id: `d${1000 + i}`,
+          a: [0, 0],
+          b: [1, 1],
+        })),
+      })
+      .eq('id', scanId);
+    expect(tooMany.error?.code).toBe('23514');
+  });
+});
+
 describe('district_price_stats', () => {
   beforeAll(async () => {
     await publishRent(1500);
