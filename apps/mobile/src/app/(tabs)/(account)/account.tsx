@@ -197,13 +197,15 @@ export default function AccountScreen() {
 
       <AgentSection userId={user.id} />
 
+      <AppSettings />
+      {/* Account actions last, sign-out right above deletion. */}
       <Button
         title={t('account.signOut')}
-        variant="danger"
+        variant="outline"
         onPress={confirmSignOut}
         disabled={deleting}
+        style={styles.signOut}
       />
-      <AppSettings />
       <Pressable
         accessibilityRole="button"
         onPress={confirmDelete}
@@ -305,6 +307,7 @@ const styles = StyleSheet.create({
   line: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   languages: { flexDirection: 'row', gap: 12, marginTop: 8 },
   setting: { gap: 2 },
+  signOut: { marginTop: 8 },
   grow: { flex: 1 },
   version: { textAlign: 'center' },
   deleteRow: {
