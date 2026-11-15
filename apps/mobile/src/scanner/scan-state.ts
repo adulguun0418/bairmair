@@ -10,12 +10,23 @@
  * - "Finish" stops the capture, processes the room, then exports it. `OK` arrives before the
  *   export is written, so `OK` is not a completion signal; `onExported` is.
  * - After an error nothing has been processed, so there is nothing to export: the seller
- *   starts again.
+ *   starts again. This includes RoomPlan ending the capture itself (scene too large, device
+ *   too hot, tracking lost): expo-roomplan drops the captured data when `didEndWith` carries an
+ *   error, so a partial scan cannot be kept without patching its Swift.
  *
  * Pure: no React Native imports, so it is unit-tested without a device.
  */
 
-export type ScanErrorKind = 'not-supported' | 'camera' | 'unknown' | 'save';
+export type ScanErrorKind =
+  | 'not-supported'
+  | 'camera'
+  | 'too-large'
+  | 'too-hot'
+  | 'tracking'
+  /** Another RoomPlan capture error, or one whose message names no case. */
+  | 'stopped'
+  | 'unknown'
+  | 'save';
 
 export interface ScanError {
   kind: ScanErrorKind;
@@ -39,11 +50,23 @@ export type ScanEvent =
 
 export const initialScanState: ScanState = { phase: 'intro', error: null };
 
-/** Maps expo-roomplan's native error messages to something the app can explain. */
+/**
+ * Maps expo-roomplan's native error messages to something the app can explain.
+ *
+ * RoomPlan's own errors reach JS as `error.localizedDescription`. Its exact wording is not
+ * documented (developers quote `RoomCaptureSession.CaptureError.exceedSceneSizeLimit`, "Room size
+ * exceeded", "sizeLimit exceeded"), so the case names and common phrasings are matched loosely.
+ * A bridged Swift error may only say "CaptureError error N" (undocumented numbering): `stopped`.
+ * Unmatched messages stay `unknown`. Both are still shown as a detail.
+ */
 export function classifyScanError(message: string | undefined): ScanErrorKind {
   if (message === undefined) return 'unknown';
   if (/not supported/i.test(message)) return 'not-supported';
   if (/camera permission/i.test(message)) return 'camera';
+  if (/scene ?size|size ?limit|size exceeded|too (large|big)/i.test(message)) return 'too-large';
+  if (/too ?hot|thermal|overheat/i.test(message)) return 'too-hot';
+  if (/tracking/i.test(message)) return 'tracking';
+  if (/CaptureError/.test(message)) return 'stopped';
   return 'unknown';
 }
 

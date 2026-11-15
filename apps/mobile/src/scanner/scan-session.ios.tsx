@@ -93,6 +93,14 @@ export function ScanSession({ onSaved, onCancel }: ScanSessionProps) {
         return t('scan.errorNotSupported');
       case 'camera':
         return t('scan.errorCamera');
+      case 'too-large':
+        return t('scan.errorTooLarge');
+      case 'too-hot':
+        return t('scan.errorTooHot');
+      case 'tracking':
+        return t('scan.errorTracking');
+      case 'stopped':
+        return t('scan.errorStopped');
       case 'save':
         return t('scan.errorSave');
       default:
