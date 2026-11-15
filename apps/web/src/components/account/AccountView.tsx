@@ -263,6 +263,27 @@ function AgentForm({ userId, locale }: { userId: string; locale: Locale }) {
     setNotice({ text: t('account.agent.saved'), error: false });
   };
 
+  /** Deleting the agent profile makes the account an owner again (database trigger). */
+  const leave = async () => {
+    if (!window.confirm(`${t('account.agent.leaveTitle')}\n\n${t('account.agent.leaveBody')}`))
+      return;
+    setBusy(true);
+    setNotice(null);
+    const { error } = await browserClient()
+      .from('agent_profiles')
+      .delete()
+      .eq('profile_id', userId);
+    setBusy(false);
+    if (error) {
+      setNotice({ text: t('account.agent.leaveFailed'), error: true });
+      return;
+    }
+    setSaved(null);
+    setAgencyName('');
+    setBio('');
+    setNotice({ text: t('account.agent.left'), error: false });
+  };
+
   return (
     <form
       className={card}
@@ -309,13 +330,28 @@ function AgentForm({ userId, locale }: { userId: string; locale: Locale }) {
           className={input}
         />
       </label>
-      <button
-        type="submit"
-        disabled={busy || name === '' || !changed}
-        className={saved ? secondary : primary}
-      >
-        {saved ? t('account.agent.save') : t('account.agent.become')}
-      </button>
+      {saved && name === '' && (
+        <p className="text-sm text-fg-muted">{t('account.agent.nameRequired')}</p>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="submit"
+          disabled={busy || name === '' || !changed}
+          className={saved ? secondary : primary}
+        >
+          {saved ? t('account.agent.save') : t('account.agent.become')}
+        </button>
+        {saved && (
+          <button
+            type="button"
+            onClick={() => void leave()}
+            disabled={busy}
+            className="text-sm text-danger underline disabled:opacity-50"
+          >
+            {t('account.agent.leave')}
+          </button>
+        )}
+      </div>
       {notice && (
         <p className={`text-sm ${notice.error ? 'text-danger' : 'text-success'}`}>{notice.text}</p>
       )}

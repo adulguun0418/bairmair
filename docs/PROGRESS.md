@@ -200,7 +200,11 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - View transitions (React 19.3 `<ViewTransition>`, no Next flag needed): the listing page's skeleton slips away and the listing slides up; the site header stays put (`view-transition-name: site-header`); clicks pass through; reduced motion turns them off. A card-to-listing photo morph was built and dropped: the listing streams in after the navigation (only the shell is prefetched), so the shared pair never forms, and browser back starts no transition.
   - Heart "pop" when saving (only on the visitor's tap).
   - Verified: tests, typecheck, lint, production builds with and without `VERCEL`; headless Chrome against a `VERCEL=1` build: optimized `srcset`, a resized WebP served, the navigation transition recorded (`startViewTransition` with the entering content and the anchored header), phone search in dark mode.
-- Tests: 502 unit (room-model 217, browse 108, mobile 90, web 33, i18n 29, send-sms 18, db 7) + 84 integration tests against the dev project (db 61, mobile 12, web 11).
+- Leaving the agent role (your report: an empty agency name could not be saved, and there was no way back). Web and app; app part is JS only (OTA update):
+  - Migration 14 (`20261119100000_leave_agent.sql`): an agent may delete their own `agent_profiles` row (grant + "delete own" policy). The existing role trigger sets `profiles.role` back to `owner`, so the agent page disappears (the web's cached copy within a minute) and listings stay as owner listings. Verification goes with the row; registering again starts unverified.
+  - Бүртгэл (app) and `/account` (web): "Агентын бүртгэлээс гарах" under the agent form, with a confirmation (page closes, verification removed, listings stay). An emptied agency name now says why Save is disabled and points to that button.
+  - Verified: typecheck, lint, unit tests; integration test on the dev project (another user's delete removes nothing; the agent's own delete makes them an owner). Not verified: the buttons in a browser or on a phone.
+- Tests: 502 unit (room-model 217, browse 108, mobile 90, web 33, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -315,7 +319,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - OTP SMS text: "Bairmair код: 123456. Хэнд ч бүү хэлээрэй." (`supabase/functions/send-sms/handler.ts`).
 - Scanner copy (`scanSupport`, `scan`, `scanResult` in `mn.ts`) and the iOS permission prompts (`apps/mobile/app.json`).
 - Sample name "Бодит скан: Г хэлбэрийн өрөө" and the updated `samples.intro`.
-- Sign-in and account copy (`auth`, `account` in `mn.ts`).
+- Sign-in and account copy (`auth`, `account` in `mn.ts`), incl. `account.agent.leave*` "Агентын бүртгэлээс гарах" and `nameRequired`.
 - Listing form copy (`listings`, `listingForm` in `mn.ts`), e.g. "Цутгамал" for monolithic, "Байршлын цэг" for the map pin, "Тоот" for the apartment number.
 - 5c copy (`listingScan`, `roomReview`, `photoRooms`, `listingStatus` in `mn.ts`), e.g. "Зарыг нуух" for archive.
 - The 150 m / 100 m thresholds for "scanned on-site".
@@ -329,6 +333,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Divider copy (`roomDivide`, `viewer.dividerNote` in `mn.ts`) and rules: lines straightened within 8°, parts at least 0.5 m², at most 20 lines.
 
 ## Next
+- You, leaving the agent role (after merge: Vercel deploys the web; `pnpm update:preview -m "Leave agent role"` in `apps/mobile` for the app): Бүртгэл / `/account` → "Агентын бүртгэлээс гарах" → confirm → the form returns to "Агентаар бүртгүүлэх", your listings show you as an owner, `/agents/<your id>` is gone. Clearing the agency name shows the hint instead of a silently disabled button.
 - You, website scan review (after Vercel deploys `main`): https://bairmair-bairmair.vercel.app/my-listings → your friend's listing → "3D скан": "Өрөө хуваах", drag across the balcony mouth and between kitchen and living room, set the balcony type to "Тагт", put a photo in a room; the public listing page then shows the rooms and dashed lines, and the app shows them after it refreshes (open "Миний зарууд").
 - You, seller room dividers (after the OTA update, app 0.1.8): Миний зарууд → your friend's listing → "3D скан" → rooms → "Өрөө хуваах". Draw a line across the balcony mouth and one between the kitchen and the living room: each split shows at once with areas (the kitchen side labelled "Гал тогоо" by itself); a line drawn outside a room or along a wall shows a reason instead. Undo and "Бүгдийг арилгах" work. Then label the balcony part "Тагт", assign photos, and open the listing on the website: dashed lines on the plan, dashes on the 3D floor, the note under the total.
 - You, app 0.1.7 (converter 0.4.0, OTA on both preview builds): close and reopen the app twice; Бүртгэл shows 0.1.7. Then Миний зарууд → your friend's listing → "3D скан" shows three rooms; assign its photo to a room again. A new whole-apartment scan should split the same way on the phone and on the website.

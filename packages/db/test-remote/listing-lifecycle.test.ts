@@ -669,6 +669,32 @@ describe('agents', () => {
       .eq('profile_id', bob.id);
     expect(verify.error?.code).toBe('42501');
   });
+
+  it('only the agent can leave; leaving makes them an owner again', async () => {
+    // RLS hides other users' rows from a delete: no error, nothing removed.
+    const other = await alice.client
+      .from('agent_profiles')
+      .delete()
+      .eq('profile_id', bob.id)
+      .select('profile_id');
+    expect(other.error).toBeNull();
+    expect(other.data).toEqual([]);
+    expect((await anon.from('profiles').select('role').eq('id', bob.id).single()).data?.role).toBe(
+      'agent',
+    );
+
+    const own = await bob.client
+      .from('agent_profiles')
+      .delete()
+      .eq('profile_id', bob.id)
+      .select('profile_id');
+    expect(own.error).toBeNull();
+    expect(own.data).toEqual([{ profile_id: bob.id }]);
+    const profile = await anon.from('profiles').select('role').eq('id', bob.id).single();
+    expect(profile.data?.role).toBe('owner');
+    const agent = await anon.from('agent_profiles').select('profile_id').eq('profile_id', bob.id);
+    expect(agent.data).toEqual([]);
+  });
 });
 
 describe('accounts without a verified phone (Apple / Google sign-in)', () => {
