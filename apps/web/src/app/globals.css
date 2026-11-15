@@ -208,3 +208,10 @@ body {
     animation: none;
   }
 }
+
+/* Pages with a bar fixed to the bottom on phones (listing pages) keep their end clear of it. */
+@media (width < 64rem) {
+  body:has([data-bottom-bar]) {
+    padding-bottom: 5.5rem;
+  }
+}

@@ -9,8 +9,21 @@ import type { ListingPhoto } from '@bairmair/browse';
 const MOSAIC = 5;
 
 /**
- * The listing's photos: a mosaic (cover large, four small) that opens a full-size viewer with
- * previous / next and arrow keys.
+ * Where each tile sits in the 4×2 grid (wide screens), by how many photos are shown: the cover
+ * always takes the left half; the others share the right half.
+ */
+const COVER = 'sm:col-span-2 sm:row-span-2';
+const TILES: Record<number, string[]> = {
+  1: ['sm:col-span-4 sm:row-span-2'],
+  2: [COVER, COVER],
+  3: [COVER, 'sm:col-span-2', 'sm:col-span-2'],
+  4: [COVER, 'sm:col-span-2', '', ''],
+  5: [COVER, '', '', '', ''],
+};
+
+/**
+ * The listing's photos: a mosaic filling its container (cover large, up to four small; the
+ * cover alone on phones) that opens a full-size viewer with previous / next and arrow keys.
  */
 export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; locale: Locale }) {
   const t = useMemo(() => createTranslator(locale), [locale]);
@@ -18,7 +31,7 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
 
   if (photos.length === 0) {
     return (
-      <p className="rounded-2xl bg-surface-2 p-8 text-center text-fg-subtle">
+      <p className="flex h-full items-center justify-center bg-surface-2 p-8 text-center text-fg-subtle">
         {t('listingPage.noPhotos')}
       </p>
     );
@@ -26,27 +39,22 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
 
   const shown = photos.slice(0, MOSAIC);
   const hidden = photos.length - shown.length;
+  const tiles = TILES[shown.length] ?? TILES[MOSAIC]!;
   const label = (index: number) =>
     t('listingPage.photo', { index: index + 1, total: photos.length });
 
   return (
-    <>
-      <div
-        className={`grid gap-2 overflow-hidden rounded-2xl ${
-          shown.length === 1 ? '' : 'sm:grid-cols-4 sm:grid-rows-2'
-        }`}
-      >
+    <div className="relative h-full">
+      <div className="grid h-full grid-cols-1 gap-2 sm:grid-cols-4 sm:grid-rows-2">
         {shown.map((photo, index) => (
           <button
             key={photo.id}
             type="button"
             onClick={() => setOpen(index)}
             aria-label={label(index)}
-            className={`relative block overflow-hidden bg-surface-3 ${
-              index === 0
-                ? 'aspect-[4/3] sm:col-span-2 sm:row-span-2 sm:aspect-auto sm:min-h-[22rem]'
-                : 'hidden aspect-[4/3] sm:block'
-            }`}
+            className={`group relative block overflow-hidden bg-surface-3 ${
+              index === 0 ? '' : 'hidden sm:block'
+            } ${tiles[index] ?? ''}`}
           >
             <Image
               src={photo.src}
@@ -55,7 +63,7 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
               unoptimized
               sizes={index === 0 ? '(min-width: 640px) 50vw, 100vw' : '25vw'}
               priority={index === 0}
-              className="object-cover transition hover:opacity-90"
+              className="object-cover transition duration-500 group-hover:scale-[1.03]"
             />
             {index === shown.length - 1 && hidden > 0 && (
               <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-lg font-medium text-white">
@@ -68,7 +76,7 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
       <button
         type="button"
         onClick={() => setOpen(0)}
-        className="mt-2 text-sm text-fg-muted hover:underline"
+        className="absolute bottom-3 right-3 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-[#0e1733] shadow-lg backdrop-blur transition hover:bg-white"
       >
         {t('listingPage.photoCount', { count: photos.length })}
       </button>
@@ -83,7 +91,7 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
         }}
         onChange={setOpen}
       />
-    </>
+    </div>
   );
 }
 
