@@ -1,5 +1,5 @@
 import { inwardNormal, layoutHotspots, visualCenter } from '../geometry/layout';
-import { boundsOf, polygonArea } from '../geometry/polygon';
+import { boundsOf, pointInPolygon, polygonArea } from '../geometry/polygon';
 import { directionFromYaw, wallEndpoints } from '../geometry/wall';
 import type { Aperture, Room, RoomModelV1 } from '../schema/model';
 import type { Vec2 } from '../schema/primitives';
@@ -70,6 +70,12 @@ export interface FloorPlanOptions {
 const UNITS_PER_M = 100;
 /** Two doors closer than this, and parallel, are the two sides of one physical door. */
 const DOOR_PAIR_DISTANCE_M = 0.5;
+/** How far past the drawn wall band to look for floor on either side of a wall, in meters. */
+const INNER_WALL_PROBE_M = 0.05;
+/** Walls are checked for floor on both sides at about this spacing, in meters. */
+const INNER_WALL_STEP_M = 0.05;
+/** Shorter stretches with floor on both sides are not drawn (a corner, a door frame). */
+const MIN_INNER_WALL_RUN_M = 0.1;
 
 const unit = (meters: number): string => {
   const value = Math.round(meters * UNITS_PER_M * 10) / 10;
@@ -190,6 +196,52 @@ export function renderFloorPlanSvg(model: RoomModelV1, options: FloorPlanOptions
     );
   }
   out.push('</g>');
+
+  // --- Walls with floor on both sides ---------------------------------------------------------
+  // A wall between two rooms of one scan (or a partition standing inside a room) has floor on
+  // both sides, which covers both halves of its band. Draw those stretches again over the
+  // floors, centered on the scanned surface, as thick as an outer wall looks. A wall can be
+  // outside along part of its length and between rooms along the rest, so it is walked in steps.
+  const onFloor = (point: Vec2) => rooms.some((room) => pointInPolygon(point, room.floor.polygon));
+  const innerRuns: [Vec2, Vec2][] = [];
+  for (const wall of walls) {
+    const [a, b] = wallEndpoints(wall);
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (length === 0) continue;
+    const at = (s: number): Vec2 => [
+      a[0] + ((b[0] - a[0]) * s) / length,
+      a[1] + ((b[1] - a[1]) * s) / length,
+    ];
+    const side = thickness + INNER_WALL_PROBE_M;
+    const nx = (-(b[1] - a[1]) / length) * side;
+    const nz = ((b[0] - a[0]) / length) * side;
+    const steps = Math.max(1, Math.ceil(length / INNER_WALL_STEP_M));
+    let start: number | null = null;
+    for (let i = 0; i <= steps + 1; i++) {
+      const s = ((i + 0.5) * length) / (steps + 1);
+      const [x, z] = at(s);
+      // Sample i stands for the stretch [i, i + 1] * step; one extra sample closes the last run.
+      const covered = i <= steps && onFloor([x + nx, z + nz]) && onFloor([x - nx, z - nz]);
+      if (covered && start === null) start = i;
+      if (!covered && start !== null) {
+        const from = (start * length) / (steps + 1);
+        const to = (i * length) / (steps + 1);
+        if (to - from >= MIN_INNER_WALL_RUN_M) innerRuns.push([at(from), at(to)]);
+        start = null;
+      }
+    }
+  }
+  if (innerRuns.length > 0) {
+    out.push(
+      `<g class="fp-walls-inner" stroke="${theme.wall}" stroke-width="${unit(thickness)}" stroke-linecap="square" fill="none" pointer-events="none">`,
+    );
+    for (const [a, b] of innerRuns) {
+      out.push(
+        `<line x1="${unit(a[0])}" y1="${unit(a[1])}" x2="${unit(b[0])}" y2="${unit(b[1])}"/>`,
+      );
+    }
+    out.push('</g>');
+  }
 
   // --- Furniture ------------------------------------------------------------------------------
   if (objects.length > 0) {

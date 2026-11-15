@@ -254,3 +254,53 @@ describe('real scan apartment-kitchen-living (thick wall between the rooms)', ()
     expect(parseRoomModel(JSON.parse(JSON.stringify(model)))).toEqual(model);
   });
 });
+
+// A whole 58 m² apartment in one session: entrance hall, open kitchen, dining and living area,
+// a bedroom, a bathroom, and a glazed balcony open to the living room. RoomPlan missed 0.66 m
+// of the bathroom's outer wall at a corner (a niche); converter 0.3.x kept the whole floor as
+// one room because of it. The floor's outline now closes the bathroom.
+describe('real scan apartment-whole-open-plan (an outer wall gap at the bathroom)', () => {
+  const raw = loadFixture('apartment-whole-open-plan');
+  const { model, warnings } = convertRoomPlan(raw);
+  const floorId = 'CC3ABA2E-0F40-4EC3-9AF6-B5D3B981C0F5';
+  const [living, bedroom, bathroom] = model.rooms;
+
+  it('becomes three rooms, labelled from RoomPlan, without warnings', () => {
+    expect(model.rooms).toHaveLength(3);
+    for (const room of model.rooms) expect(room.id.startsWith(`${floorId}-`)).toBe(true);
+    expect(model.rooms.map((room) => room.label)).toEqual(['livingRoom', 'bedroom', 'bathroom']);
+    expect(warnings).toEqual([]);
+    expect(incompleteRoomIds(model)).toEqual([]);
+  });
+
+  it('has the expected areas, adding up to the whole floor', () => {
+    const metrics = computeMetrics(model);
+    expect(metrics.rooms.map((room) => room.areaM2)).toEqual([38.6, 15.09, 5.16]);
+    expect(metrics.totalAreaM2).toBe(58.85);
+  });
+
+  it('puts the furniture in the right rooms', () => {
+    const categoriesIn = (roomId: string) =>
+      model.objects
+        .filter((object) => object.roomId === roomId)
+        .map((object) => object.category)
+        .sort();
+    expect(categoriesIn(bathroom!.id)).toEqual(
+      expect.arrayContaining(['bathtub', 'sink', 'toilet']),
+    );
+    expect(categoriesIn(bedroom!.id)).toEqual(expect.arrayContaining(['bed']));
+    expect(categoriesIn(living!.id)).toEqual(
+      expect.arrayContaining(['oven', 'refrigerator', 'sofa', 'sofa', 'stove']),
+    );
+    for (const object of model.objects) {
+      const room = model.rooms.find((candidate) => candidate.id === object.roomId)!;
+      const [x, , z] = object.transform.position;
+      expect(pointInPolygon([x, z], room.floor.polygon), object.id).toBe(true);
+    }
+  });
+
+  it('is deterministic and a valid RoomModel v1', () => {
+    expect(convertRoomPlan(raw).model).toEqual(model);
+    expect(parseRoomModel(JSON.parse(JSON.stringify(model)))).toEqual(model);
+  });
+});

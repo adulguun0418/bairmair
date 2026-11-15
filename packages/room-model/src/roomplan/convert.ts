@@ -29,7 +29,7 @@ import type { Mat4, Transform, Vec2, Vec3 } from '../schema/primitives';
 import { parseRoomPlanCapture, type CaptureSurface, type RoomPlanCapture } from './capture';
 
 /** Bump when the conversion output changes for the same input. Stored with every model. */
-export const CONVERTER_VERSION = '0.3.1';
+export const CONVERTER_VERSION = '0.4.0';
 
 export type ConversionWarningCode =
   | 'no-floors'
@@ -201,15 +201,20 @@ type FloorSplit =
  * Divides one floor into the rooms its walls close off.
  *
  * A single RoomPlan session (the whole apartment walked through in one scan) exports one floor
- * for every room it passed through; its walls still separate the rooms. The floor is split
- * only when the closed-off areas cover it, so a scan with missing walls stays one room.
+ * for every room it passed through; its walls still separate the rooms.
+ *
+ * The floor's own outline takes part as a boundary too. It is the apartment's outer edge, so
+ * an outer wall RoomPlan missed (a short jog, a corner behind a cabinet) cannot leave a room
+ * open: only the inner walls decide which rooms there are. A missing inner wall merges two
+ * rooms into one; the rest still split.
  */
 function splitFloor(floor: readonly Vec2[], walls: readonly PlacedWall[]): FloorSplit {
   const nearFloor = (point: Vec2) =>
     pointInPolygon(point, floor) || distanceToPolygonEdge(point, floor) <= FLOOR_SPLIT_SNAP_M;
-  const segments = walls
-    .map((wall) => wallEndpoints(wall))
-    .filter(([a, b]) => nearFloor(a) && nearFloor(b));
+  const segments = [
+    ...walls.map((wall) => wallEndpoints(wall)).filter(([a, b]) => nearFloor(a) && nearFloor(b)),
+    ...polygonEdges(floor),
+  ];
   // Everything the walls close off on this floor, rooms or not.
   const closed = enclosedFaces(segments).filter(
     (face) => pointInPolygon(polygonCentroid(face), floor) && face.every(nearFloor),
@@ -224,6 +229,8 @@ function splitFloor(floor: readonly Vec2[], walls: readonly PlacedWall[]): Floor
     return area >= MIN_SPLIT_ROOM_AREA_M2 && (2 * area) / perimeter >= MIN_SPLIT_ROOM_WIDTH_M;
   });
   if (parts.length === 0) return { kind: 'whole' };
+  // With the outline taking part, the areas cover the floor; a shortfall means odd geometry
+  // (a self-crossing outline), and then one room is the safe answer.
   const floorArea = polygonArea(floor);
   const coverage = closed.reduce((sum, face) => sum + polygonArea(face), 0) / floorArea;
   if (Math.abs(coverage - 1) > SPLIT_COVERAGE_TOLERANCE) {

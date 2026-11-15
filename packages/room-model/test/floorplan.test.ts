@@ -162,4 +162,64 @@ describe('renderFloorPlanSvg', () => {
     expectWellFormed(svg);
     expect(svg).not.toMatch(/NaN|Infinity/);
   });
+
+  describe('walls with floor on both sides', () => {
+    const innerLines = (svg: string) =>
+      /<g class="fp-walls-inner"[^>]*>(.*?)<\/g>/.exec(svg)?.[1]?.match(/<line [^>]*\/>/g) ?? [];
+
+    it('draws none in a single room whose walls are all outside walls', () => {
+      expect(renderFloorPlanSvg(minimalModel())).not.toContain('fp-walls-inner');
+    });
+
+    it('draws the wall between two rooms over their floors, only where both sides are floor', () => {
+      // A second 4 x 3 m room east of the first. The north wall runs along both rooms (outside
+      // all the way); the east-west divider at x = 2 runs 1 m past the rooms into the open.
+      const base = minimalModel();
+      const model: RoomModelV1 = {
+        ...base,
+        rooms: [
+          ...base.rooms,
+          {
+            id: 'room-2',
+            label: 'livingRoom',
+            story: 0,
+            floor: {
+              y: 0,
+              polygon: [
+                [2, -1.5],
+                [6, -1.5],
+                [6, 1.5],
+                [2, 1.5],
+              ],
+            },
+          },
+        ],
+        walls: [
+          {
+            id: 'wall-n',
+            roomId: 'room-1',
+            transform: { position: [2, 1.3, -1.5], yaw: 0 },
+            dimensions: { width: 8, height: 2.6, depth: 0 },
+          },
+          {
+            id: 'wall-divider',
+            roomId: 'room-1',
+            transform: { position: [2, 1.3, 0.5], yaw: Math.PI / 2 },
+            dimensions: { width: 4, height: 2.6, depth: 0 },
+          },
+        ],
+      };
+      const lines = innerLines(renderFloorPlanSvg(model));
+      expect(lines).toHaveLength(1);
+      const [x1, y1, x2, y2] = ['x1', 'y1', 'x2', 'y2'].map((name) =>
+        Number(new RegExp(`${name}="([-\\d.]+)"`).exec(lines[0]!)![1]),
+      );
+      // Along x = 2 m, from about z = -1.5 to 1.5 m (in centimeters), not out to z = 2.5.
+      expect(x1).toBeCloseTo(200, 0);
+      expect(x2).toBeCloseTo(200, 0);
+      expect(Math.min(y1!, y2!)).toBeLessThan(-140);
+      expect(Math.max(y1!, y2!)).toBeGreaterThan(140);
+      expect(Math.max(y1!, y2!)).toBeLessThan(160);
+    });
+  });
 });

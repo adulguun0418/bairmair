@@ -1,6 +1,6 @@
 # Progress
 
-## Current state (2026-11-14)
+## Current state (2026-11-15)
 **All seven build steps are merged and running without your PC:** the web is live at https://bairmair-bairmair.vercel.app (Vercel Hobby, dev Supabase project), and the iOS and Android **preview builds** (standalone, ad hoc, pointing at Vercel) are installed and work. Everything still runs on the dev Supabase project.
 
 **OTA updates reach both phones:** the iOS preview build (from `51a9c31`) and the Android one (from `0cf3f86`) have runtime `0.1.0`; app version `0.1.1` and then `0.1.2` arrived on both as updates (see "Over-the-air updates").
@@ -128,6 +128,9 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - New fixture `apartment-living-corridor` (your scan): living room 17.53 m² + corridor 3.27 m² = 20.80 m², no warnings. Web sample `/samples/scan-living-corridor`.
   - Verified: unit tests (face finding, synthetic one-session splits incl. a short divider, a passage, a missing wall; the real scan); the sample page on the dev server (17.5 + 3.3 m², total 20.8 m²). Not verified: on the iPhone.
   - Fix (converter 0.3.1), from your second scan (`apartment-kitchen-living`): a partition scanned from both sides (0.39 m apart) leaves the floor under the wall closed off but in no room, so the rooms covered only 94.7% and the floor stayed one room (`rooms-not-split`). Areas too small or narrow to be rooms (wall interiors, columns, passage reveals) now count toward covering the floor. Result: living room 17.35 m² + kitchen 5.73 m² (labels from RoomPlan), total 23.08 m² between the walls instead of 24.37 m² for the whole floor.
+  - Fix (converter 0.4.0), from your friend's 58 m² apartment (listing `7f1ffcf9…`, fixture `apartment-whole-open-plan`): RoomPlan missed 0.66 m of the bathroom's **outer** wall at a corner niche, so the bathroom was open, the closed areas covered 91% and the whole apartment stayed one room. The floor's own outline now takes part in the split as a boundary (`splitFloor`): a missed outer wall no longer matters, only a missing inner wall merges two rooms. Result: living room (hall, open kitchen, dining, balcony) 38.60 + bedroom 15.09 + bathroom 5.16 = 58.85 m², labels from RoomPlan, no warnings. Corners within 1 cm of a straight line are dropped from split outlines (floor edge and wall a few mm apart); the earlier fixtures convert exactly as before.
+  - Floor plans: a wall with floor on both sides (between split rooms, or a partition inside a room) was hidden under the floor fill. Those stretches are now drawn over the floors (`fp-walls-inner`), so split rooms show their walls on the web, in the app and in OG images.
+  - That listing's scan was re-processed on the dev project with the new converter (the server's `processScan`). Its room ids changed, so the one photo assigned to the old single room is unassigned until the seller picks its room again.
 - Web polish: header, footer, dark mode, legal pages:
   - Header (`components/header/`): sticky with blur, main sections as pills with the current one highlighted (`nav-items.ts`, tested), language as a globe + "MN/EN" menu, light/dark button, "Зар нэмэх" (through sign-in for visitors), ♡ and an account menu (phone, my listings, saved, account, sign out). Below `md` everything moves into a full-screen menu (portaled to `body`: the header's `backdrop-filter` would otherwise trap a fixed panel inside it). "3D жишээ" moved to the footer.
   - Footer: logo + tagline, columns Хайх / bairmair / Эрх зүй, copyright, language links, system/light/dark switch.
@@ -183,7 +186,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - View transitions (React 19.3 `<ViewTransition>`, no Next flag needed): the listing page's skeleton slips away and the listing slides up; the site header stays put (`view-transition-name: site-header`); clicks pass through; reduced motion turns them off. A card-to-listing photo morph was built and dropped: the listing streams in after the navigation (only the shell is prefetched), so the shared pair never forms, and browser back starts no transition.
   - Heart "pop" when saving (only on the visitor's tap).
   - Verified: tests, typecheck, lint, production builds with and without `VERCEL`; headless Chrome against a `VERCEL=1` build: optimized `srcset`, a resized WebP served, the navigation transition recorded (`startViewTransition` with the entering content and the anchored header), phone search in dark mode.
-- Tests: 470 unit (room-model 189, browse 107, mobile 87, web 33, i18n 29, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
+- Tests: 477 unit (room-model 196, browse 107, mobile 87, web 33, i18n 29, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -311,6 +314,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 
 ## Next
+- You, after merging (Vercel converts new uploads with 0.4.0 after the deploy): ship the converter to the phones, so the review screens split rooms the same way: `pnpm update:preview -m "Converter 0.4.0: rooms split despite missed outer walls"` in `apps/mobile` (clean, up-to-date `main`). Then on the iPhone: Миний зарууд → your friend's listing → "3D скан" shows three rooms; assign the photo to its room again ("assign photos"). Already-processed scans on the server keep their old model until re-processed: tell me which listings should be re-processed.
 - You, app redesign phase 1 (app version 0.1.3) on both preview builds: after merging, `pnpm update:preview -m "App redesign, phase 1"` in `apps/mobile` (clean, up-to-date `main`); close and reopen the app twice. Check: Onest everywhere (tabs, headers, Cyrillic); Хайх: switch, list/map button, quick chips (3D, rooms) change results; a 3D card: tap the plan tile → card turns to the labelled plan, tap again → photo; a listing: photos under the header, parallax and pull-stretch, Зураг/Төлөвлөлт/3D switch, price gauge, Орон зай bars, bottom bar reveal → call/SMS; dark mode; map pins navy/white.
 - App redesign, next phases (one PR each): 2. the seller side: Миний зарууд as project cards (photo, status, sync, 3D), the editor as grouped steps with progress, a scan intro on blueprint paper, account screen; 3. motion: shared photo transition from card to listing, heart pop, sheet/skeleton loading.
 - You, on the Android preview build: check that the OTA update with the map pin arrives (Бүртгэл's version line shows "шинэчлэл <time>" after two restarts), then pin a listing on the map (see the map pin entry above).

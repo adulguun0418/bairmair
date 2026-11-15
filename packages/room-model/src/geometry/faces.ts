@@ -13,6 +13,8 @@ export interface EnclosedFacesOptions {
 
 const DEFAULT_SNAP_M = 0.05;
 const DEFAULT_EXTEND_M = 0.15;
+/** A corner closer than this to the line between its neighbours is not a corner, in meters. */
+const STRAIGHT_TOLERANCE_M = 0.01;
 /** Below this, two directions count as parallel (sine of the angle between them). */
 const PARALLEL_SIN = 1e-3;
 
@@ -24,17 +26,38 @@ const lerp = (a: Vec2, b: Vec2, t: number): Vec2 => [
   a[1] + (b[1] - a[1]) * t,
 ];
 
-/** Drops corners that lie on a straight line between their neighbours. */
-function withoutStraightCorners(polygon: readonly Vec2[]): Vec2[] {
-  const kept = polygon.filter((point, i) => {
-    const previous = polygon[(i - 1 + polygon.length) % polygon.length]!;
-    const next = polygon[(i + 1) % polygon.length]!;
-    const a = sub(point, previous);
-    const b = sub(next, point);
-    const lengths = Math.hypot(...a) * Math.hypot(...b);
-    return lengths === 0 || Math.abs(cross(a, b)) / lengths > PARALLEL_SIN || dot(a, b) < 0;
-  });
-  return kept.length >= 3 ? kept : [...polygon];
+/**
+ * Drops corners that lie on a straight line between their neighbours, or within `tolerance`
+ * of it (where a face runs along a wall and then along the floor's edge a few millimeters
+ * beside it). One corner at a time, so the outline never drifts by more than the tolerance.
+ */
+function withoutStraightCorners(polygon: readonly Vec2[], tolerance: number): Vec2[] {
+  const kept = [...polygon];
+  let dropped = true;
+  while (dropped && kept.length > 3) {
+    dropped = false;
+    for (let i = 0; i < kept.length; i++) {
+      const previous = kept[(i - 1 + kept.length) % kept.length]!;
+      const point = kept[i]!;
+      const next = kept[(i + 1) % kept.length]!;
+      const a = sub(point, previous);
+      const b = sub(next, point);
+      const chord = sub(next, previous);
+      const chordLength = Math.hypot(...chord);
+      const lengths = Math.hypot(...a) * Math.hypot(...b);
+      const straight =
+        lengths > 0 &&
+        dot(a, b) > 0 &&
+        (Math.abs(cross(a, b)) / lengths <= PARALLEL_SIN ||
+          Math.abs(cross(a, chord)) / chordLength <= tolerance);
+      if (straight) {
+        kept.splice(i, 1);
+        dropped = true;
+        break;
+      }
+    }
+  }
+  return kept;
 }
 
 /**
@@ -176,7 +199,7 @@ export function enclosedFaces(
       }
       const polygon = cycle.map((corner) => corners[corner]!);
       if (polygon.length >= 3 && signedArea(polygon) > 0) {
-        faces.push(withoutStraightCorners(polygon));
+        faces.push(withoutStraightCorners(polygon, STRAIGHT_TOLERANCE_M));
       }
     }
   }
