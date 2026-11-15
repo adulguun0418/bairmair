@@ -69,6 +69,23 @@ describe('classifyScanError', () => {
     expect(classifyScanError('Camera permission was not granted.')).toBe('camera');
     expect(classifyScanError('Camera permission is denied or restricted.')).toBe('camera');
     expect(classifyScanError('Export failed: something')).toBe('unknown');
+  });
+
+  it("recognizes RoomPlan's own capture errors", () => {
+    expect(classifyScanError('RoomCaptureSession.CaptureError.exceedSceneSizeLimit')).toBe(
+      'too-large',
+    );
+    expect(classifyScanError('Room size exceeded')).toBe('too-large');
+    expect(classifyScanError('RoomPlan sizeLimit exceeded')).toBe('too-large');
+    expect(classifyScanError('RoomCaptureSession.CaptureError.deviceTooHot')).toBe('too-hot');
+    expect(classifyScanError('RoomCaptureSession.CaptureError.worldTrackingFailure')).toBe(
+      'tracking',
+    );
+    expect(
+      classifyScanError(
+        'The operation couldn’t be completed. (RoomPlan.RoomCaptureSession.CaptureError error 3.)',
+      ),
+    ).toBe('stopped');
     expect(classifyScanError(undefined)).toBe('unknown');
   });
 });

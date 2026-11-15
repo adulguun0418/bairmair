@@ -172,6 +172,14 @@ export const en: Messages = {
     errorNotSupported: 'This device cannot make 3D scans.',
     errorCamera: 'The app has no camera access. Allow it in Settings.',
     errorUnknown: 'Something went wrong while scanning. Please try again.',
+    errorTooLarge:
+      'The scanned area grew larger than the iPhone can handle, so the scan stopped. It was not saved. Start again and walk through each room once, without stopping, aiming to finish within 5 minutes. You can skip spaces that are not needed, such as storage rooms.',
+    errorTooHot:
+      'The phone got too hot, so the scan stopped. It was not saved. Let the phone cool down for a few minutes, then try again.',
+    errorTracking:
+      'The phone lost track of its surroundings, so the scan stopped. It was not saved. Turn the lights on, keep the camera uncovered and move slowly, then try again.',
+    errorStopped:
+      'The iPhone stopped the scan. It was not saved. This usually happens when the area is too large, the phone is too hot, or it lost track of its surroundings. Turn the lights on, walk through each room once and aim to finish within 5 minutes, then try again.',
     errorSave: 'The scan could not be saved.',
     openSettings: 'Open Settings',
     close: 'Close',

@@ -204,7 +204,8 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Migration 14 (`20261119100000_leave_agent.sql`): an agent may delete their own `agent_profiles` row (grant + "delete own" policy). The existing role trigger sets `profiles.role` back to `owner`, so the agent page disappears (the web's cached copy within a minute) and listings stay as owner listings. Verification goes with the row; registering again starts unverified.
   - Бүртгэл (app) and `/account` (web): "Агентын бүртгэлээс гарах" under the agent form, with a confirmation (page closes, verification removed, listings stay). An emptied agency name now says why Save is disabled and points to that button.
   - Verified: typecheck, lint, unit tests; integration test on the dev project (another user's delete removes nothing; the agent's own delete makes them an owner). Not verified: the buttons in a browser or on a phone.
-- Tests: 502 unit (room-model 217, browse 108, mobile 90, web 33, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
+- Scan size limit (your question; JS only, OTA update). Apple's guidance: one RoomPlan session works best up to ~9 × 9 m (30 × 30 ft) and under ~5 minutes; past its limits RoomPlan ends the capture with `exceedSceneSizeLimit`. expo-roomplan 1.3.2 then drops everything captured (`didEndWith` with an error only reports it), so the app cannot keep a partial scan. The scanner now names the cause instead of "unknown error": area too large, phone too hot, tracking lost, or "the iPhone stopped the scan" for an unnamed `CaptureError` (`classifyScanError`, matched loosely: Apple does not document the message text). Each says the scan was not saved and how to retry. Not verified: the real message text on a phone (the detail line shows it).
+- Tests: 503 unit (room-model 217, browse 108, mobile 91, web 33, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -302,6 +303,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - The raw scan files move from `Documents/scans/` into the listing folder; scans the converter cannot read stay in the RoomPlan test list for sharing.
 
 ## Notes for later steps
+- Large apartments (> ~9 m on a side): to keep a scan when RoomPlan stops it, or to scan in parts merged with `StructureBuilder` (Apple's advice for big spaces), expo-roomplan's Swift needs a patch (`pnpm patch`: build the room from `didEndWith`'s data despite the error; wait for the room before "add room" runs again). Custom native code + a new build + a `runtimeVersion` bump; needs your call. Untested whether RoomBuilder accepts the data after `exceedSceneSizeLimit`.
 - Wall height: RoomPlan measures walls behind tall furniture lower (2.39 m vs 2.82 m in the same room). Option: raise walls of a room that are almost as tall as its tallest wall to that height. Not done yet; needs your call.
 - supabase-js sends a Blob's own `type` and ignores `contentType`.
 - The location permission prompt text changed in `app.json` (it now also mentions the listing pin); it shows up with the next build, together with the new icon.
