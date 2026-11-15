@@ -12,7 +12,7 @@ import { useSceneState } from '@/components/viewer/use-scene-state';
 import { useViewerText } from '@/components/viewer/use-viewer-text';
 import { ListingGallery } from './ListingGallery';
 
-// three.js is large and needs WebGL: loaded in the browser, only once the 3D tab opens.
+// three.js is large and needs WebGL: loaded in the browser, after the page itself.
 const RoomViewer3D = dynamic(
   () => import('@bairmair/viewer/3d').then((module) => module.RoomViewer3D),
   {
@@ -28,9 +28,10 @@ const RoomViewer3D = dynamic(
 type Tab = 'photos' | '3d' | 'plan';
 
 /**
- * The listing's media in one full-width frame with tabs: photos, the 3D model and the floor
- * plan. 3D and plan share the selected room, and the strip of rooms under them (with areas)
- * selects rooms too. Photos placed in a room open from the 3D markers.
+ * The listing's media in one full-width frame with tabs: the 3D model, the floor plan and the
+ * photos. A scanned listing opens on its 3D model (the platform's point); without a scan only
+ * the photos show. 3D and plan share the selected room, and the strip of rooms under them
+ * (with areas) selects rooms too. Photos placed in a room open from the 3D markers.
  */
 export function ListingMedia({
   locale,
@@ -43,15 +44,22 @@ export function ListingMedia({
   model: RoomModelV1 | null;
 }) {
   const { t } = useViewerText(locale);
-  const [tab, setTab] = useState<Tab>(photos.length > 0 || !model ? 'photos' : '3d');
+  const [tab, setTab] = useState<Tab>(model ? '3d' : 'photos');
   const tabs: { value: Tab; label: string; icon: ReactNode }[] = [
-    { value: 'photos', label: t('listingPage.sections.photos'), icon: <CameraIcon /> },
     ...(model
       ? [
           { value: '3d' as const, label: t('viewer.view3d'), icon: <CubeIcon /> },
           { value: 'plan' as const, label: t('viewer.viewPlan'), icon: <PlanIcon /> },
         ]
       : []),
+    {
+      value: 'photos',
+      label:
+        photos.length > 0
+          ? `${t('listingPage.sections.photos')} · ${photos.length}`
+          : t('listingPage.sections.photos'),
+      icon: <CameraIcon />,
+    },
   ];
 
   return (
@@ -71,12 +79,6 @@ export function ListingMedia({
             >
               {icon}
               {label}
-              {value === '3d' && tab !== '3d' && (
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-75 motion-reduce:animate-none" />
-                  <span className="relative inline-flex size-2 rounded-full bg-brand" />
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -130,6 +132,7 @@ function Scene({
               selectedRoomId={selectedRoomId}
               onSelectRoom={toggleRoom}
               onSelectPhoto={showPhoto}
+              pageScroll
             />
           </div>
         ) : (
