@@ -276,6 +276,15 @@ export const en: Messages = {
       verified: 'Verified agent',
       pending: 'Verification pending.',
       failed: 'Could not save. Try again.',
+      nameRequired:
+        'The agency name cannot be empty. To stop being an agent, use the button below.',
+      leave: 'Stop being an agent',
+      leaveTitle: 'Stop being an agent?',
+      leaveBody:
+        'Your agent page closes and any verification is removed. Your listings stay. You can register again at any time.',
+      leaveConfirm: 'Stop',
+      left: 'You are no longer an agent.',
+      leaveFailed: 'Could not remove your agent registration. Try again.',
     },
   },
   listings: {

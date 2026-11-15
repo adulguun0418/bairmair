@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
@@ -80,6 +80,32 @@ export function AgentSection({ userId }: { userId: string }) {
     setMessage({ text: t('account.agent.saved'), error: false });
   };
 
+  /** Deleting the agent profile makes the account an owner again (database trigger). */
+  const leave = async () => {
+    setBusy(true);
+    setMessage(null);
+    const { error } = await supabase.from('agent_profiles').delete().eq('profile_id', userId);
+    setBusy(false);
+    if (error) {
+      setMessage({ text: t('account.agent.leaveFailed'), error: true });
+      return;
+    }
+    setSaved(null);
+    setAgencyName('');
+    setBio('');
+    setMessage({ text: t('account.agent.left'), error: false });
+  };
+
+  const confirmLeave = () =>
+    Alert.alert(t('account.agent.leaveTitle'), t('account.agent.leaveBody'), [
+      { text: t('account.cancel'), style: 'cancel' },
+      {
+        text: t('account.agent.leaveConfirm'),
+        style: 'destructive',
+        onPress: () => void leave(),
+      },
+    ]);
+
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }]}>
       <Text style={[styles.heading, { color: colors.text }]}>{t('account.agent.title')}</Text>
@@ -112,12 +138,27 @@ export function AgentSection({ userId }: { userId: string }) {
         multiline
         style={styles.multiline}
       />
+      {saved && name === '' && (
+        <Text style={[styles.small, { color: colors.textMuted }]}>
+          {t('account.agent.nameRequired')}
+        </Text>
+      )}
       <Button
         title={saved ? t('account.agent.save') : t('account.agent.become')}
         variant={saved ? 'secondary' : 'primary'}
         disabled={busy || name === '' || !changed}
         onPress={() => void save()}
       />
+      {saved && (
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={confirmLeave}
+          style={({ pressed }) => [styles.leave, (pressed || busy) && { opacity: 0.5 }]}
+        >
+          <Text style={[styles.small, { color: colors.danger }]}>{t('account.agent.leave')}</Text>
+        </Pressable>
+      )}
       {message && (
         <Text style={[styles.body, { color: message.error ? colors.danger : colors.success }]}>
           {message.text}
@@ -133,4 +174,5 @@ const styles = StyleSheet.create({
   body: { fontSize: 16, lineHeight: 22 },
   small: { fontSize: 14, lineHeight: 20 },
   multiline: { minHeight: 96, textAlignVertical: 'top' },
+  leave: { alignSelf: 'center', paddingVertical: 6 },
 });
