@@ -84,13 +84,15 @@ export function ListingMedia({
         </div>
       )}
 
-      {tab === 'photos' || !model ? (
-        <div className="h-[min(50vh,24rem)] sm:h-[min(62vh,34rem)] sm:min-h-72 overflow-hidden rounded-3xl">
-          <ListingGallery photos={photos} locale={locale} />
-        </div>
-      ) : (
-        <Scene locale={locale} model={model} photos={photos} view={tab} />
-      )}
+      <div>
+        {tab === 'photos' || !model ? (
+          <div className="h-[min(50vh,24rem)] overflow-hidden rounded-3xl sm:h-[min(62vh,34rem)] sm:min-h-72">
+            <ListingGallery photos={photos} locale={locale} />
+          </div>
+        ) : (
+          <Scene locale={locale} model={model} photos={photos} view={tab} />
+        )}
+      </div>
     </section>
   );
 }

@@ -50,7 +50,7 @@ export function PhotoDialog({
             alt={caption}
             width={1200}
             height={800}
-            unoptimized
+            sizes="(min-width: 960px) 56rem, 92vw"
             className="h-auto max-h-[75dvh] w-full object-contain"
           />
           <figcaption className="flex items-center justify-between gap-4 p-4">

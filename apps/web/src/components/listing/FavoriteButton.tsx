@@ -28,6 +28,8 @@ export function FavoriteButton({
   const saved = useFavorites().ids.has(listingId);
   const router = useRouter();
   const [failed, setFailed] = useState(false);
+  // Counts saves made here, so the heart pops on each one (not when a saved state loads).
+  const [pops, setPops] = useState(0);
 
   const onClick = () => {
     if (!session) {
@@ -35,15 +37,18 @@ export function FavoriteButton({
       return;
     }
     setFailed(false);
+    if (!saved) setPops((count) => count + 1);
     toggleFavorite(listingId).catch(() => setFailed(true));
   };
 
   const label = saved ? t('favorites.remove') : t('favorites.save');
   const heart = (
-    <HeartIcon
-      className={variant === 'icon' ? 'size-[18px]' : 'size-4'}
-      fill={saved ? 'currentColor' : 'none'}
-    />
+    <span key={pops} className={`inline-flex ${saved && pops > 0 ? 'animate-pop' : ''}`}>
+      <HeartIcon
+        className={variant === 'icon' ? 'size-[18px]' : 'size-4'}
+        fill={saved ? 'currentColor' : 'none'}
+      />
+    </span>
   );
 
   if (variant === 'labeled') {

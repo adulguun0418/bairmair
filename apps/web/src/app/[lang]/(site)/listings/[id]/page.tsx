@@ -24,7 +24,7 @@ import {
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Suspense, type ReactNode } from 'react';
+import { Suspense, ViewTransition, type ReactNode } from 'react';
 import {
   AreaIcon,
   BuildingIcon,
@@ -92,15 +92,27 @@ export async function generateMetadata({
 export default function ListingPage(props: PageProps<'/[lang]/listings/[id]'>) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
+      {/*
+        The skeleton slips away and the listing slides up (globals.css). A card-to-page morph
+        was tried and dropped: the listing streams in after the navigation (only the shell is
+        prefetched), so a shared-element pair never forms, and browser back starts no
+        transition.
+      */}
       <Suspense
         fallback={
-          <div className="space-y-4">
-            <div className="h-10 w-2/3 animate-pulse rounded-xl bg-surface-3" />
-            <div className="h-[min(62vh,34rem)] animate-pulse rounded-3xl bg-surface-3" />
-          </div>
+          <ViewTransition exit="slide-down" default="none">
+            <div className="space-y-4" aria-hidden>
+              <div className="h-4 w-40 rounded-full bg-shimmer" />
+              <div className="h-10 w-2/3 rounded-xl bg-shimmer" />
+              <div className="h-11 w-72 rounded-full bg-shimmer" />
+              <div className="h-[min(50vh,24rem)] rounded-3xl bg-shimmer sm:h-[min(62vh,34rem)]" />
+            </div>
+          </ViewTransition>
         }
       >
-        <ListingContent params={props.params} />
+        <ViewTransition enter="slide-up" default="none">
+          <ListingContent params={props.params} />
+        </ViewTransition>
       </Suspense>
     </div>
   );

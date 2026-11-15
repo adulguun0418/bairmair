@@ -24,7 +24,11 @@ export function SiteHeader({
   language: LanguageProps;
 }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-page/85 backdrop-blur-md">
+    // Named so view transitions leave it in place (globals.css: site-header).
+    <header
+      className="sticky top-0 z-40 border-b border-line bg-page/85 backdrop-blur-md"
+      style={{ viewTransitionName: 'site-header' }}
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4">
         <Link href={localePath(locale, '/')} className="shrink-0">
           <Logo alt={t('app.name')} className="h-8 w-auto" preload />
