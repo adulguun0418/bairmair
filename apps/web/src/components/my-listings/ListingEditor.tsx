@@ -27,6 +27,7 @@ import {
   type MyPhoto,
 } from '@/lib/my-listings';
 import { PhotoSection } from './PhotoSection';
+import { ScanSection } from './ScanSection';
 import { StatusSection } from './StatusSection';
 
 type Pin = { lat: number; lng: number };
@@ -430,10 +431,12 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
       </Section>
 
       <Section title={t('listingForm.sections.scan')}>
-        <p className="text-sm text-fg-muted">
-          {row?.has_3d ? `${t('listingForm.scanDone')} ` : ''}
-          {t('listingForm.scanInApp')}
-        </p>
+        <ScanSection
+          listingId={row?.id ?? null}
+          photos={photos}
+          onPhotosChange={setPhotos}
+          locale={locale}
+        />
       </Section>
 
       {row && (

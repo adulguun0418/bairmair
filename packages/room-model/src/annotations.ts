@@ -82,3 +82,21 @@ export function applyAnnotations(converted: RoomModelV1, annotations: Annotation
 
   return { ...model, rooms, hotspots };
 }
+
+/**
+ * One label change for a room: the label, and/or a name (kept as typed; an empty name or
+ * `null` removes it). Returns the same object when nothing changes.
+ */
+export function withRoomLabel(
+  labels: Readonly<Record<string, RoomLabelOverride>>,
+  roomId: string,
+  change: RoomLabelOverride,
+): Record<string, RoomLabelOverride> {
+  const current = labels[roomId] ?? {};
+  const next: RoomLabelOverride = { ...current, ...change };
+  if (next.name === null || next.name === '') delete next.name;
+  if (next.label === current.label && next.name === current.name) {
+    return labels as Record<string, RoomLabelOverride>;
+  }
+  return { ...labels, [roomId]: next };
+}

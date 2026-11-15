@@ -1,8 +1,10 @@
 import { isInMongolia, LISTING_LIMITS } from '@bairmair/db';
 import {
+  isMadeByDivider,
   ROOM_DIVIDER_LIMITS,
   type RoomDivider,
   type RoomLabelOverride,
+  withRoomLabel,
 } from '@bairmair/room-model';
 import { EMPTY_FORM, PRIVATE_FIELDS, type ListingForm, type ListingStatus } from '@bairmair/browse';
 
@@ -362,14 +364,12 @@ export function setRoomLabel(
 ): LocalListing {
   const scan = listing.scan;
   if (!scan) return listing;
-  const current = scan.roomLabels[roomId] ?? {};
-  const next: RoomLabelOverride = { ...current, ...change };
-  if (next.name === null || next.name === '') delete next.name;
-  if (next.label === current.label && next.name === current.name) return listing;
+  const roomLabels = withRoomLabel(scan.roomLabels, roomId, change);
+  if (roomLabels === scan.roomLabels) return listing;
   return edited(listing, now, {
     scan: {
       ...scan,
-      roomLabels: { ...scan.roomLabels, [roomId]: next },
+      roomLabels,
       labelsRev: scan.labelsRev + 1,
     },
   });
@@ -406,12 +406,7 @@ export function removeRoomDividers(
   if (!scan) return listing;
   const removed = new Set(ids.filter((id) => scan.roomDividers.some((d) => d.id === id)));
   if (removed.size === 0) return listing;
-  // `<room>~<divider>`, possibly split again (`<room>~<divider>~<later divider>`).
-  const madeByRemoved = (roomId: string) =>
-    roomId
-      .split('~')
-      .slice(1)
-      .some((part) => removed.has(part));
+  const madeByRemoved = (roomId: string) => isMadeByDivider(roomId, removed);
   const roomLabels = Object.fromEntries(
     Object.entries(scan.roomLabels).filter(([roomId]) => !madeByRemoved(roomId)),
   );

@@ -388,6 +388,8 @@ export const en: Messages = {
       'If two rooms show as one (an open kitchen and living room, say), draw a line between them to divide them.',
     intro:
       'Draw a line with your finger from wall to wall where the two rooms meet. The total area does not change.',
+    introWeb:
+      'Drag a line from wall to wall where the two rooms meet. The total area does not change.',
     applied: 'Room divided. Check the new room’s type under “Rooms”.',
     outsideRooms: 'Draw the line inside a room.',
     noCut: 'The line has to cross the room from one wall to the other.',
