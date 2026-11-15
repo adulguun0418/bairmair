@@ -58,6 +58,8 @@ Also seen:
 
 The converter (0.3.0) therefore splits a floor along its walls: the areas the walls close off become rooms (17.53 + 3.27 m² here) when together they cover the floor to within 5%; otherwise the floor stays one room with a `rooms-not-split` warning. Split rooms get ids from the floor id and their walls, so they are stable across re-conversions.
 
+**Outer walls go missing; the floor outline does not (2026-11-15).** Fixture `apartment-whole-open-plan.json` (a whole 58.85 m² apartment: hall, open kitchen/dining/living, bedroom, bathroom, glazed balcony) has 21 walls, but RoomPlan missed 0.66 m of the bathroom's outer wall at a corner niche. The floor polygon still runs round the niche. With walls alone the bathroom was open, the closed areas covered 91% of the floor, and 0.3.x kept the whole apartment as one room. Since 0.4.0 the floor's outline is a boundary too: missed outer walls no longer matter, and only missing inner walls merge rooms (living 38.60 + bedroom 15.09 + bathroom 5.16 m², RoomPlan's labels). The `rooms-not-split` warning now only guards against odd outlines.
+
 ## Gaps and how I plan to handle them
 
 | # | Gap | Plan |

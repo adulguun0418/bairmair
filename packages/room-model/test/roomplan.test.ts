@@ -658,11 +658,24 @@ describe('convertRoomPlan: one session through several rooms', () => {
     expect(warnings).toEqual([]);
   });
 
-  it('keeps one room, with a warning, when a missing wall leaves part of the floor open', () => {
+  it('still splits when an outer wall is missing: the floor outline closes the room', () => {
     const { model, warnings } = convertRoomPlan(oneSession({ west: false }));
-    expect(model.rooms.map((room) => room.id)).toEqual(['s-floor']);
-    expect(computeMetrics(model).totalAreaM2).toBe(18);
-    expect(warnings.map((warning) => warning.code)).toEqual(['rooms-not-split']);
-    expect(warnings[0]!.elementId).toBe('s-floor');
+    expect(model.rooms.map((room) => room.label)).toEqual(['livingRoom', 'bedroom']);
+    expect(computeMetrics(model).rooms.map((room) => room.areaM2)).toEqual([12, 6]);
+    // The living room has two walls of its own and the divider, so it is not "incomplete".
+    expect(warnings).toEqual([]);
+  });
+
+  it('still splits when part of an outer wall is missing at a corner', () => {
+    // The north wall stops 0.7 m short of the east corner (missed behind a cabinet).
+    const input = oneSession();
+    const room = input.rooms[0]!;
+    room.walls = [
+      ...room.walls.filter((wall) => wall.identifier !== 's-wall-n'),
+      surface(p, 's-wall-n', 'wall', [-0.35, 1.3, -1.5], 0, [5.3, 2.6, 0]),
+    ];
+    const { model, warnings } = convertRoomPlan(input);
+    expect(warnings).toEqual([]);
+    expect(computeMetrics(model).rooms.map((candidate) => candidate.areaM2)).toEqual([12, 6]);
   });
 });
