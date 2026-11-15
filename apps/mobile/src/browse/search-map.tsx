@@ -52,9 +52,6 @@ function toViewport([west, south, east, north]: LngLatBounds): Viewport {
   return { west, south, east, north };
 }
 
-/** The iOS tab bar's height above the home indicator (classic and iOS 26 floating bars). */
-const IOS_TAB_BAR_HEIGHT = 49;
-
 /**
  * Listings on a map, like the web's: price pins (3D listings navy), clustered when zoomed out,
  * loaded for the visible area with the search filters. Tapping a pin, or a cluster of listings
@@ -192,8 +189,9 @@ export function SearchMap({ filters }: { filters: SearchFilters }) {
   };
 
   // On iOS the tab bar floats over the screen, so whatever sits at the bottom of the map moves
-  // up above it. Android lays the screen out above its tab bar.
-  const tabBarInset = Platform.OS === 'ios' ? insets.bottom + IOS_TAB_BAR_HEIGHT : 0;
+  // up above it. Inside a tab, iOS's bottom safe-area inset already includes the tab bar.
+  // Android lays the screen out above its tab bar.
+  const tabBarInset = Platform.OS === 'ios' ? insets.bottom : 0;
   const ornament = Platform.OS === 'ios' ? tabBarInset + 6 : undefined;
 
   const center: LngLat = lastCamera?.center ?? [ULAANBAATAR_CENTER.lng, ULAANBAATAR_CENTER.lat];
