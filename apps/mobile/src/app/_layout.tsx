@@ -7,12 +7,13 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { AuthProvider } from '@/auth/auth-provider';
 import { startFavorites } from '@/browse/favorites';
 import { I18nProvider, useI18n } from '@/i18n/i18n';
 import { startListingSync } from '@/listings/listings';
+import { loadThemePreference } from '@/ui/appearance';
 import { FONT_FAMILIES, useColors, type Colors } from '@/ui/theme';
 
 // Kept up until the fonts are loaded (a moment: they ship inside the app or the update).
@@ -59,7 +60,12 @@ export default function RootLayout() {
     Onest_700Bold,
     Onest_800ExtraBold,
   });
-  const ready = fontsLoaded || fontError !== null;
+  // The saved light/dark choice is applied before the first screen, so it never flashes.
+  const [themeLoaded, setThemeLoaded] = useState(false);
+  useEffect(() => {
+    void loadThemePreference().finally(() => setThemeLoaded(true));
+  }, []);
+  const ready = (fontsLoaded || fontError !== null) && themeLoaded;
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
   }, [ready]);

@@ -11,6 +11,7 @@ import { useAuth } from '@/auth/auth-provider';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
+import { setThemePreference, THEME_PREFERENCES, useThemePreference } from '@/ui/appearance';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
@@ -218,13 +219,29 @@ export default function AccountScreen() {
   );
 }
 
-/** The app language and the RoomPlan test screen, signed in or not. */
+/** The app language, light/dark mode and the RoomPlan test screen, signed in or not. */
 function AppSettings() {
   const { t, locale, setLocale } = useI18n();
   const colors = useColors();
   const router = useRouter();
+  const theme = useThemePreference();
   return (
     <>
+      <View style={styles.setting}>
+        <Text style={[styles.small, { color: colors.textMuted }]}>{t('theme.label')}</Text>
+        <View style={styles.languages} accessibilityRole="radiogroup">
+          {THEME_PREFERENCES.map((option) => (
+            <Button
+              key={option}
+              title={t(`theme.${option}`)}
+              size="small"
+              variant={option === theme ? 'primary' : 'secondary'}
+              onPress={() => setThemePreference(option)}
+              style={styles.grow}
+            />
+          ))}
+        </View>
+      </View>
       <View style={styles.languages}>
         {LOCALES.map((option) => (
           <Button
@@ -287,6 +304,7 @@ const styles = StyleSheet.create({
   small: { fontSize: 14, lineHeight: 20 },
   line: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   languages: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  setting: { gap: 2 },
   grow: { flex: 1 },
   version: { textAlign: 'center' },
   deleteRow: {
