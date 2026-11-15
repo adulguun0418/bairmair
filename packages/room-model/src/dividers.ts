@@ -324,3 +324,15 @@ export function applyRoomDividers(
     results,
   };
 }
+
+/**
+ * Whether a room was made by one of these dividers: `<room>~<divider>`, possibly split again
+ * (`<room>~<divider>~<later divider>`). Such rooms go away with the divider, and so do their
+ * labels and photo assignments.
+ */
+export function isMadeByDivider(roomId: string, dividerIds: ReadonlySet<string>): boolean {
+  return roomId
+    .split('~')
+    .slice(1)
+    .some((part) => dividerIds.has(part));
+}

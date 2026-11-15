@@ -6,9 +6,19 @@ import {
   CONTENT_TYPES,
   listingPhotoPath,
   publicObjectUrl,
+  scanModelPaths,
   scanRawPaths,
+  type Json,
   type Tables,
 } from '@bairmair/db';
+import {
+  parseRoomDividers,
+  parseRoomLabelOverrides,
+  parseRoomModel,
+  type RoomDivider,
+  type RoomLabelOverride,
+  type RoomModelV1,
+} from '@bairmair/room-model';
 import { publicEnv } from './public-env';
 import { browserClient } from './supabase-browser';
 
@@ -25,6 +35,8 @@ export interface MyPhoto {
   id: string;
   sortOrder: number;
   url: string;
+  /** The scan room the seller put it in (a room id only means something in its own scan). */
+  room: { scanId: string; roomId: string } | null;
 }
 
 export interface MyListing {
@@ -67,7 +79,7 @@ export async function loadMyListing(id: string, ownerId: string): Promise<MyList
       .maybeSingle(),
     client
       .from('listing_photos')
-      .select('id, sort_order')
+      .select('id, sort_order, scan_id, room_id')
       .eq('listing_id', id)
       .order('sort_order', { ascending: true }),
   ]);
@@ -83,6 +95,8 @@ export async function loadMyListing(id: string, ownerId: string): Promise<MyList
       id: photo.id,
       sortOrder: photo.sort_order,
       url: photoUrl(id, photo.id),
+      room:
+        photo.scan_id && photo.room_id ? { scanId: photo.scan_id, roomId: photo.room_id } : null,
     })),
   };
 }
@@ -167,7 +181,7 @@ export async function addPhoto(
     await client.storage.from(BUCKETS.listingPhotos).remove([path]);
     fail(row.error);
   }
-  return { id, sortOrder, url: photoUrl(listingId, id) };
+  return { id, sortOrder, url: photoUrl(listingId, id), room: null };
 }
 
 export async function removePhoto(listingId: string, photoId: string): Promise<void> {
@@ -241,4 +255,78 @@ export async function deleteMyListing(id: string): Promise<void> {
     fail((await client.storage.from(BUCKETS.scanRaw).remove(rawPaths)).error);
   }
   fail((await client.from('listings').delete().eq('id', id)).error);
+}
+
+// --- The listing's 3D scan ------------------------------------------------------------------
+// Scans are made in the app; on the website the seller reviews the processed one: room types
+// and names, dividers, and the photos' rooms. The same columns the app's sync writes.
+
+export interface MyScan {
+  id: string;
+  status: Tables<'room_scans'>['status'];
+  roomLabels: Record<string, RoomLabelOverride>;
+  dividers: RoomDivider[];
+}
+
+/** The listing's current scan (the newest one if none is current yet), or null. */
+export async function loadMyScan(listingId: string): Promise<MyScan | null> {
+  const { data, error } = await browserClient()
+    .from('room_scans')
+    .select('id, status, is_current, room_labels, room_dividers, created_at')
+    .eq('listing_id', listingId)
+    .order('is_current', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  fail(error);
+  if (!data) return null;
+  return {
+    id: data.id,
+    status: data.status,
+    roomLabels: parseRoomLabelOverrides(data.room_labels),
+    dividers: parseRoomDividers(data.room_dividers),
+  };
+}
+
+/** The model the server converted (public file), without labels or dividers. */
+export async function loadScanModel(listingId: string, scanId: string): Promise<RoomModelV1> {
+  const url = publicObjectUrl(
+    publicEnv.supabaseUrl,
+    BUCKETS.scanModels,
+    scanModelPaths(listingId, scanId).model,
+  );
+  // The file is rewritten in place when a scan is processed again.
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`model ${response.status}`);
+  return parseRoomModel(await response.json());
+}
+
+/** Writes the room labels and dividers together, as the app does. */
+export async function saveScanAnnotations(
+  scanId: string,
+  labels: Record<string, RoomLabelOverride>,
+  dividers: readonly RoomDivider[],
+): Promise<void> {
+  const { data, error } = await browserClient()
+    .from('room_scans')
+    .update({ room_labels: labels as Json, room_dividers: dividers as unknown as Json })
+    .eq('id', scanId)
+    .select('id');
+  fail(error);
+  if ((data?.length ?? 0) === 0) throw new Error('scan missing');
+}
+
+/** Puts a photo in a room of a scan, or takes it out of every room (null). */
+export async function savePhotoRoom(
+  photoId: string,
+  room: { scanId: string; roomId: string } | null,
+): Promise<void> {
+  fail(
+    (
+      await browserClient()
+        .from('listing_photos')
+        .update({ scan_id: room?.scanId ?? null, room_id: room?.roomId ?? null })
+        .eq('id', photoId)
+    ).error,
+  );
 }

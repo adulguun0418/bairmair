@@ -8,6 +8,7 @@ import {
   convertRoomPlan,
   dividerFromPlan,
   incompleteRoomIds,
+  isMadeByDivider,
   parseRoomDividers,
   parseRoomModel,
   planToSource,
@@ -18,6 +19,7 @@ import {
   type RoomDivider,
   type RoomModelV1,
   type Vec2,
+  withRoomLabel,
 } from '../src/index';
 import { minimalModel } from './helpers';
 
@@ -261,5 +263,30 @@ describe('real scan apartment-whole-open-plan with seller dividers', () => {
   it('flags no room as incomplete and stays a valid model', () => {
     expect(incompleteRoomIds(model)).toEqual([]);
     expect(parseRoomModel(JSON.parse(JSON.stringify(model)))).toEqual(model);
+  });
+});
+
+describe('isMadeByDivider', () => {
+  it('knows the rooms a divider made, also when split again', () => {
+    const removed = new Set(['aaaa']);
+    expect(isMadeByDivider('floor-1~aaaa', removed)).toBe(true);
+    expect(isMadeByDivider('floor-1~aaaa~bbbb', removed)).toBe(true);
+    expect(isMadeByDivider('floor-1~bbbb', removed)).toBe(false);
+    expect(isMadeByDivider('floor-1', removed)).toBe(false);
+    // The room's own id never counts, even if it happens to equal a divider id.
+    expect(isMadeByDivider('aaaa', removed)).toBe(false);
+  });
+});
+
+describe('withRoomLabel', () => {
+  it('sets a label or name, removes an empty name, and keeps the object when nothing changes', () => {
+    const labels = withRoomLabel({}, 'r1', { label: 'kitchen' });
+    expect(labels).toEqual({ r1: { label: 'kitchen' } });
+    const named = withRoomLabel(labels, 'r1', { name: 'Гал тогоо ' });
+    expect(named).toEqual({ r1: { label: 'kitchen', name: 'Гал тогоо ' } });
+    expect(withRoomLabel(named, 'r1', { name: '' })).toEqual({ r1: { label: 'kitchen' } });
+    expect(withRoomLabel(labels, 'r1', { label: 'kitchen' })).toBe(labels);
+    const empty = {};
+    expect(withRoomLabel(empty, 'r2', { name: '' })).toBe(empty);
   });
 });
