@@ -1,3 +1,4 @@
+import { applyRoomDividers, type RoomDivider } from './dividers';
 import { ROOM_LABELS, type Hotspot, type RoomLabel, type RoomModelV1 } from './schema/model';
 
 /** A user's correction to one room. Stored in `room_scans.room_labels`, keyed by room id. */
@@ -34,6 +35,8 @@ export interface PhotoAssignment {
 }
 
 export interface Annotations {
+  /** Seller lines splitting rooms (`room_scans.room_dividers`), applied before labels. */
+  dividers?: readonly RoomDivider[];
   roomLabels?: Readonly<Record<string, RoomLabelOverride>>;
   photos?: readonly PhotoAssignment[];
 }
@@ -45,11 +48,14 @@ export interface Annotations {
  * at any time. Labels and photo assignments are not in the raw scan; they live in the database
  * and are applied here each time the model is served.
  *
- * Returns a new model. Photos assigned to a room that is not in the model are skipped.
+ * Dividers go first: they split rooms, and labels and photos then refer to the result (a
+ * split room keeps its id on its larger part). Returns a new model. Photos assigned to a room that is not in the model are skipped.
  * Omitting `photos` keeps the model's existing hotspots; omitting `roomLabels` keeps its labels.
  */
-export function applyAnnotations(model: RoomModelV1, annotations: Annotations): RoomModelV1 {
-  const { roomLabels, photos } = annotations;
+export function applyAnnotations(converted: RoomModelV1, annotations: Annotations): RoomModelV1 {
+  const { roomLabels, photos, dividers } = annotations;
+  const model =
+    dividers && dividers.length > 0 ? applyRoomDividers(converted, dividers).model : converted;
 
   const rooms = model.rooms.map((room) => {
     const override = roomLabels?.[room.id];

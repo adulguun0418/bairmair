@@ -1,8 +1,8 @@
 import { lengthAlongOutline } from './geometry/faces';
 import { polygonArea } from './geometry/polygon';
-import { wallEndpoints } from './geometry/wall';
+import { wallEndpoints, yawFromDirection } from './geometry/wall';
 import type { RoomModelV1, Wall } from './schema/model';
-import type { Vec2 } from './schema/primitives';
+import type { Vec2, Vec3 } from './schema/primitives';
 
 /** A room with fewer walls along its outline was not scanned all the way round. */
 export const MIN_ROOM_WALLS = 3;
@@ -35,10 +35,21 @@ export function outlineWallCount(
   return walls.filter((wall) => wallAlongOutline(wall, outline) > 0).length;
 }
 
-/** Rooms with fewer than `MIN_ROOM_WALLS` walls: the scan probably missed part of them. */
+/**
+ * Rooms with fewer than `MIN_ROOM_WALLS` walls: the scan probably missed part of them. A
+ * seller's divider counts as a wall here: it closes the room on that side.
+ */
 export function incompleteRoomIds(model: RoomModelV1): string[] {
+  const dividers = (model.dividers ?? []).map(({ a, b }) => ({
+    transform: {
+      position: [(a[0] + b[0]) / 2, 0, (a[1] + b[1]) / 2] as Vec3,
+      yaw: yawFromDirection(b[0] - a[0], b[1] - a[1]),
+    },
+    dimensions: { width: Math.hypot(b[0] - a[0], b[1] - a[1]), height: 0, depth: 0 },
+  }));
+  const boundaries = [...model.walls, ...dividers];
   return model.rooms
-    .filter((room) => outlineWallCount(model.walls, room.floor.polygon) < MIN_ROOM_WALLS)
+    .filter((room) => outlineWallCount(boundaries, room.floor.polygon) < MIN_ROOM_WALLS)
     .map((room) => room.id);
 }
 

@@ -127,6 +127,7 @@ export const en: Messages = {
     rooms: 'Rooms',
     totalArea: 'Total area',
     approximateScanned: 'Approximate, from the scan',
+    dividerNote: 'Dashed lines: borders the seller drew, not scanned walls.',
     noModel: 'This listing has no 3D model.',
   },
   samples: {
@@ -378,6 +379,26 @@ export const en: Messages = {
     namePlaceholder: 'e.g. Kids’ room',
     incomplete: 'Walls are missing from this scan. The area may be too small.',
     next: 'Continue: photos',
+    done: 'Done',
+  },
+  roomDivide: {
+    title: 'Divide a room',
+    open: 'Divide a room',
+    openHint:
+      'If two rooms show as one (an open kitchen and living room, say), draw a line between them to divide them.',
+    intro:
+      'Draw a line with your finger from wall to wall where the two rooms meet. The total area does not change.',
+    applied: 'Room divided. Check the new room’s type under “Rooms”.',
+    outsideRooms: 'Draw the line inside a room.',
+    noCut: 'The line has to cross the room from one wall to the other.',
+    tooSmall: 'One of the parts would be too small.',
+    limit: 'You can draw at most {{count}} lines.',
+    lines: 'Lines drawn: {{count}}',
+    undo: 'Undo last',
+    clear: 'Remove all',
+    clearTitle: 'Remove all lines?',
+    clearBody: 'The divided rooms, their names and the photos’ rooms in them are removed.',
+    cancel: 'Cancel',
     done: 'Done',
   },
   photoRooms: {

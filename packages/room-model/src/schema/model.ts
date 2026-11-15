@@ -19,6 +19,8 @@ export const LIMITS = {
   objects: 5000,
   hotspots: 500,
   polygonPoints: 500,
+  sections: 200,
+  dividers: 20,
   /** Maximum size of a serialized model file. */
   jsonBytes: 2_000_000,
 } as const;
@@ -126,6 +128,31 @@ export const HotspotSchema = z.object({
 });
 export type Hotspot = z.infer<typeof HotspotSchema>;
 
+/**
+ * RoomPlan's guess of what an area is used for: a labelled point, with no outline. Kept so that
+ * rooms split later (by a seller's divider) can still be labelled from the scan.
+ */
+export const SectionSchema = z.object({
+  label: RoomLabelSchema,
+  story: z.number().int().min(-10).max(100),
+  point: Vec2Schema,
+});
+export type Section = z.infer<typeof SectionSchema>;
+
+/** Seller divider ids: short lowercase letters and digits, unique within a scan. */
+export const DIVIDER_ID_PATTERN = /^[a-z0-9]{4,16}$/;
+
+/**
+ * A seller's line splitting a room, as applied: from wall to wall across the room, in model
+ * coordinates. Not a scanned wall, so it is drawn differently (dashed).
+ */
+export const DividerLineSchema = z.object({
+  id: z.string().regex(DIVIDER_ID_PATTERN),
+  a: Vec2Schema,
+  b: Vec2Schema,
+});
+export type DividerLine = z.infer<typeof DividerLineSchema>;
+
 export const SourceSchema = z.object({
   /** `roomplan`: converted from an Apple RoomPlan export. `manual`: authored by hand. */
   kind: z.enum(['roomplan', 'manual']),
@@ -148,6 +175,10 @@ export const RoomModelV1Schema = z
     openings: z.array(ApertureSchema).max(LIMITS.apertures),
     objects: z.array(RoomObjectSchema).max(LIMITS.objects),
     hotspots: z.array(HotspotSchema).max(LIMITS.hotspots),
+    /** RoomPlan's labelled points (converter 0.5.0 and later). */
+    sections: z.array(SectionSchema).max(LIMITS.sections).optional(),
+    /** Seller dividers applied to this model (never in a converted file; see `applyAnnotations`). */
+    dividers: z.array(DividerLineSchema).max(LIMITS.dividers).optional(),
   })
   .superRefine((model, ctx) => {
     const issue = (message: string, path: (string | number)[]) =>

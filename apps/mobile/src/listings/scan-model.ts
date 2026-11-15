@@ -7,7 +7,7 @@ import {
   type ModelMetrics,
   type RoomModelV1,
 } from '@bairmair/room-model';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { env } from '@/lib/env';
 import { analyzeExport } from '@/scanner/analyze';
 import { readListingText } from './files';
@@ -95,7 +95,10 @@ export function retryScanModel(scanId: string): void {
   }
 }
 
-/** The listing's scan model with the seller's room labels applied; null without a scan. */
+/**
+ * The listing's scan model with the seller's dividers and room labels applied (areas and the
+ * incomplete-room check follow the divided rooms); null without a scan.
+ */
 export function useScanModel(listing: LocalListing): ScanModelState | null {
   const scan = listing.scan;
   const state = useSyncExternalStore(subscribe, () => (scan ? peek(listing.id, scan) : null));
@@ -106,6 +109,11 @@ export function useScanModel(listing: LocalListing): ScanModelState | null {
     if (needsFetch && scanId) void fetchModel(listingId, scanId);
   }, [needsFetch, listingId, scanId]);
 
-  if (!scan || state?.status !== 'ready') return state;
-  return { ...state, model: applyAnnotations(state.model, { roomLabels: scan.roomLabels }) };
+  const dividers = scan?.roomDividers;
+  const roomLabels = scan?.roomLabels;
+  return useMemo(() => {
+    if (!dividers || !roomLabels || state?.status !== 'ready') return state;
+    const model = applyAnnotations(state.model, { dividers, roomLabels });
+    return dividers.length === 0 ? { ...state, model } : ready(model);
+  }, [state, dividers, roomLabels]);
 }

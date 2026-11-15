@@ -3,6 +3,7 @@ import {
   boundsOf,
   directionFromYaw,
   inwardNormal,
+  pointInPolygon,
   wallEndpoints,
   wallSegments,
   type Aperture,
@@ -30,6 +31,9 @@ export const WALL_THICKNESS_M = 0.1;
 const FLOOR_SLAB_M = 0.06;
 /** Two wall ends closer than this meet at a corner. */
 const CORNER_SNAP_M = 0.08;
+/** Seller divider dash and gap lengths on the floor. */
+const DIVIDER_DASH_M = 0.15;
+const DIVIDER_GAP_M = 0.1;
 /** A door whose bottom is this close to the floor gets a threshold. */
 const THRESHOLD_SNAP_M = 0.05;
 
@@ -43,6 +47,8 @@ export const COLORS = {
   floorSelected: '#f6cf7e',
   threshold: '#d9ccb4',
   glass: '#bcdff1',
+  /** Seller dividers: dashes on the floor, so they never pass for a scanned wall. */
+  divider: '#3a3f44',
 } as const;
 
 export interface WindowPane {
@@ -77,6 +83,8 @@ export interface SceneData {
   floors: FloorMesh[];
   /** Door and opening thresholds, merged into one geometry. */
   thresholds: BufferGeometry | null;
+  /** Seller dividers as dashes lying on the floor, merged into one geometry. */
+  dividers: BufferGeometry | null;
   bounds: { min: Vec2; max: Vec2; floorY: number; top: number };
   dispose(): void;
 }
@@ -265,6 +273,29 @@ export function buildScene(model: RoomModelV1): SceneData {
 
   const thresholds = thresholdPieces.length > 0 ? merge(thresholdPieces) : null;
 
+  // Seller dividers: a dashed line lying on the floor of the rooms it separates.
+  const dashes: BufferGeometry[] = [];
+  for (const line of model.dividers ?? []) {
+    const [dx, dz] = [line.b[0] - line.a[0], line.b[1] - line.a[1]];
+    const length = Math.hypot(dx, dz);
+    if (length === 0) continue;
+    const middle: Vec2 = [(line.a[0] + line.b[0]) / 2, (line.a[1] + line.b[1]) / 2];
+    const side: Vec2 = [middle[0] - (dz / length) * 0.05, middle[1] + (dx / length) * 0.05];
+    const y =
+      model.rooms.find((room) => pointInPolygon(side, room.floor.polygon))?.floor.y ??
+      model.rooms.reduce((lowest, room) => Math.min(lowest, room.floor.y), 0);
+    const yaw = Math.atan2(-dz, dx);
+    for (let start = 0; start < length; start += DIVIDER_DASH_M + DIVIDER_GAP_M) {
+      const dash = Math.min(DIVIDER_DASH_M, length - start);
+      const t = (start + dash / 2) / length;
+      const piece = new BoxGeometry(dash, 0.006, 0.035);
+      piece.rotateY(yaw);
+      piece.translate(line.a[0] + dx * t, y + 0.004, line.a[1] + dz * t);
+      dashes.push(piece);
+    }
+  }
+  const dividers = dashes.length > 0 ? merge(dashes) : null;
+
   const plan = boundsOf([
     ...model.rooms.flatMap((room) => room.floor.polygon),
     ...model.walls.flatMap((wall) => wallEndpoints(wall)),
@@ -279,6 +310,7 @@ export function buildScene(model: RoomModelV1): SceneData {
     walls,
     floors,
     thresholds,
+    dividers,
     bounds: { min: plan.min, max: plan.max, floorY, top },
     dispose() {
       for (const wall of walls) {
@@ -288,6 +320,7 @@ export function buildScene(model: RoomModelV1): SceneData {
       }
       for (const floor of floors) floor.geometry.dispose();
       thresholds?.dispose();
+      dividers?.dispose();
     },
   };
 }

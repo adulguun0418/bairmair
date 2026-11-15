@@ -1,4 +1,4 @@
-import type { RoomLabelOverride } from '@bairmair/room-model';
+import type { RoomDivider, RoomLabelOverride } from '@bairmair/room-model';
 import type { ListingFields, ListingStatus } from '@bairmair/browse';
 import {
   dropPhoto,
@@ -55,8 +55,15 @@ export interface ListingRemote {
   setStatus(listingId: string, status: ListingStatus): Promise<void>;
   /** Inserts the `room_scans` row. An existing row counts as success. */
   createScan(listingId: string, scan: LocalScan): Promise<void>;
-  /** Writes `room_scans.room_labels`. Throws `scanMissing` if the row is gone. */
-  saveRoomLabels(scanId: string, labels: Record<string, RoomLabelOverride>): Promise<void>;
+  /**
+   * Writes `room_scans.room_labels` and `room_dividers` together. Throws `scanMissing` if the
+   * row is gone.
+   */
+  saveRoomLabels(
+    scanId: string,
+    labels: Record<string, RoomLabelOverride>,
+    dividers: RoomDivider[],
+  ): Promise<void>;
   /** Sets (or clears) a photo's scan and room. */
   assignPhotoRoom(photoId: string, room: PhotoRoom | null): Promise<void>;
   /** Uploads (or overwrites) the raw RoomPlan JSON or USDZ in `scan-raw`. */
@@ -338,7 +345,7 @@ export class SyncEngine {
         return;
       case 'saveRoomLabels':
         try {
-          await this.remote.saveRoomLabels(op.scanId, op.labels);
+          await this.remote.saveRoomLabels(op.scanId, op.labels, op.dividers);
         } catch (error) {
           if (error instanceof SyncError && error.key === 'scanMissing') {
             this.store.update(id, (current) => resetScanRow(current, op.scanId));

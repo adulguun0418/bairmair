@@ -1,4 +1,4 @@
-import type { RoomLabelOverride } from '@bairmair/room-model';
+import type { RoomDivider, RoomLabelOverride } from '@bairmair/room-model';
 import {
   formToFields,
   missingForPublish,
@@ -35,6 +35,7 @@ export type SyncOp =
       scanId: string;
       rev: number;
       labels: Record<string, RoomLabelOverride>;
+      dividers: RoomDivider[];
     }
   | { kind: 'assignPhotoRoom'; photoId: string; room: PhotoRoom | null }
   | { kind: 'uploadScanFile'; scanId: string; file: 'json' | 'usdz'; name: string }
@@ -189,7 +190,13 @@ export function planSync(listing: LocalListing): SyncPlan {
 
   if (scan && scan.labelsRev > scan.labelsSyncedRev) {
     return {
-      op: { kind: 'saveRoomLabels', scanId: scan.id, rev: scan.labelsRev, labels: scan.roomLabels },
+      op: {
+        kind: 'saveRoomLabels',
+        scanId: scan.id,
+        rev: scan.labelsRev,
+        labels: scan.roomLabels,
+        dividers: scan.roomDividers,
+      },
       block: null,
     };
   }

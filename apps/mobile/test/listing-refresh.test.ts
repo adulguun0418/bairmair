@@ -46,6 +46,7 @@ function scan(id = SCAN): LocalScan {
     processing: 'ready',
     totalAreaM2: 54.2,
     roomLabels: { r1: { label: 'bedroom' } },
+    roomDividers: [],
     labelsRev: 0,
     labelsSyncedRev: 0,
   };

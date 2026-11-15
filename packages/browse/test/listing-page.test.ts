@@ -79,6 +79,24 @@ describe('buildListingPage', () => {
     expect(model?.rooms.find((room) => room.id === 'bedroom')?.name).toBe('Хүүхдийн өрөө');
   });
 
+  it("applies the seller's dividers before labels and photo rooms", () => {
+    // The sample's frame is the identity, so divider points are plan points. The living room
+    // (x -3.925..0.275) is split at x = -1; its larger part keeps the id "living".
+    const { model, photos } = buildListingPage(
+      input({
+        scan: {
+          id: SCAN_ID,
+          room_labels: { 'living~nook': { label: 'diningRoom' } },
+          room_dividers: [{ id: 'nook', a: [-1, -3], b: [-1, 0] }],
+        },
+      }),
+    );
+    expect(model?.rooms.map((room) => room.id)).toContain('living~nook');
+    expect(model?.rooms.find((room) => room.id === 'living~nook')?.label).toBe('diningRoom');
+    expect(model?.dividers).toHaveLength(1);
+    expect(photos[0]!.roomId).toBe('living');
+  });
+
   it('shows no model when the file is missing or invalid, and then no photo rooms', () => {
     for (const modelJson of [null, { schemaVersion: 1, rooms: 'no' }]) {
       const page = buildListingPage(input({ modelJson }));

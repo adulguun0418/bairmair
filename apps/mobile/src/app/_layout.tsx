@@ -121,6 +121,10 @@ function RootStack() {
         options={{ title: t('listingForm.pin'), fullScreenGestureEnabled: false }}
       />
       <Stack.Screen name="listings/[id]/rooms" options={{ title: t('roomReview.title') }} />
+      <Stack.Screen
+        name="listings/[id]/divide"
+        options={{ title: t('roomDivide.title'), fullScreenGestureEnabled: false }}
+      />
       <Stack.Screen name="listings/[id]/photo-rooms" options={{ title: t('photoRooms.title') }} />
       <Stack.Screen name="scan-test" options={{ title: t('scanTest.title') }} />
       <Stack.Screen

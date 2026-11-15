@@ -67,6 +67,20 @@ function RoomReview({ listing, inFlow }: { listing: LocalListing; inFlow: boolea
       {state?.status === 'ready' && (
         <>
           <ScanFloorPlan model={state.model} />
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.small, { color: colors.textMuted }]}>
+              {t('roomDivide.openHint')}
+            </Text>
+            <Button
+              title={t('roomDivide.open')}
+              icon="divide"
+              variant="secondary"
+              size="small"
+              onPress={() =>
+                router.push({ pathname: '/listings/[id]/divide', params: { id: listing.id } })
+              }
+            />
+          </View>
           {state.model.rooms.map((room, index) => {
             const area = state.metrics.rooms.find((entry) => entry.id === room.id)?.areaM2 ?? 0;
             const incomplete = state.incompleteRoomIds.includes(room.id);

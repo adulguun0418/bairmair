@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addPhotos,
+  addRoomDivider,
   assignPhotoRoom,
   attachScan,
   betterFix,
@@ -10,6 +11,7 @@ import {
   markPrivateSynced,
   newListing,
   normalizeListing,
+  removeRoomDividers,
   removeScan,
   revertStatus,
   setLocation,
@@ -112,6 +114,58 @@ describe('model: scans', () => {
     expect(setRoomLabel(listing, 'r1', { label: 'bedroom' }, NOW)).toBe(listing);
   });
 
+  it('adds dividers once, counts them as label changes, and keeps to the limit', () => {
+    let listing = attachScan(synced(), newScan(SCAN_A), NOW);
+    expect(listing.scan!.roomDividers).toEqual([]);
+    const divider = {
+      id: 'abcd1234',
+      a: [0, 0] as [number, number],
+      b: [0, 3] as [number, number],
+    };
+    listing = addRoomDivider(listing, divider, NOW);
+    expect(listing.scan!.roomDividers).toEqual([divider]);
+    expect(listing.scan!.labelsRev).toBe(1);
+    expect(addRoomDivider(listing, divider, NOW)).toBe(listing);
+
+    let full = listing;
+    for (let i = 0; i < 25; i++) {
+      full = addRoomDivider(full, { ...divider, id: `d${1000 + i}` }, NOW);
+    }
+    expect(full.scan!.roomDividers).toHaveLength(20);
+  });
+
+  it('removes the rooms a divider made with it: their labels and photo rooms', () => {
+    let listing = attachScan(synced(), newScan(SCAN_A), NOW);
+    const line = (id: string) => ({
+      id,
+      a: [0, 0] as [number, number],
+      b: [0, 3] as [number, number],
+    });
+    listing = addRoomDivider(listing, line('aaaa'), NOW);
+    listing = addRoomDivider(listing, line('bbbb'), NOW);
+    listing = setRoomLabel(listing, 'r1', { label: 'livingRoom' }, NOW);
+    listing = setRoomLabel(listing, 'r1~aaaa', { label: 'kitchen' }, NOW);
+    listing = setRoomLabel(listing, 'r1~aaaa~bbbb', { label: 'diningRoom' }, NOW);
+    listing = assignPhotoRoom(listing, PHOTO, 'r1~aaaa~bbbb', NOW);
+
+    const undone = removeRoomDividers(listing, ['bbbb'], NOW);
+    expect(undone.scan!.roomDividers.map((d) => d.id)).toEqual(['aaaa']);
+    expect(Object.keys(undone.scan!.roomLabels).sort()).toEqual(['r1', 'r1~aaaa']);
+    expect(undone.photos[0]!.roomId).toBeNull();
+    expect(undone.scan!.labelsRev).toBe(listing.scan!.labelsRev + 1);
+
+    const cleared = removeRoomDividers(undone, ['aaaa'], NOW);
+    expect(Object.keys(cleared.scan!.roomLabels)).toEqual(['r1']);
+    expect(removeRoomDividers(cleared, ['aaaa'], NOW)).toBe(cleared);
+  });
+
+  it('reads scans saved before dividers existed', () => {
+    const listing = attachScan(synced(), newScan(SCAN_A), NOW);
+    const { roomDividers: _dropped, ...oldScan } = listing.scan!;
+    const old = { ...listing, scan: oldScan } as unknown as LocalListing;
+    expect(normalizeListing(old).scan!.roomDividers).toEqual([]);
+  });
+
   it('puts photos in rooms only when there is a scan', () => {
     expect(assignPhotoRoom(synced(), PHOTO, 'r1', NOW).photos[0]!.roomId).toBeNull();
   });
@@ -147,6 +201,7 @@ describe('planSync: scans', () => {
       scanId: SCAN_A,
       rev: 1,
       labels: { r1: { label: 'kitchen' } },
+      dividers: [],
     });
     listing = { ...listing, scan: { ...listing.scan!, labelsSyncedRev: 1 } };
     expect(planSync(listing).op).toEqual({
@@ -321,6 +376,7 @@ describe('SyncEngine: scans and publishing', () => {
         status: 'uploaded',
         metrics: null,
         room_labels: {},
+        room_dividers: [],
         created_at: NOW,
         device_model: null,
         ios_version: null,
@@ -388,6 +444,7 @@ describe('server data', () => {
         status: 'ready',
         metrics: { totalAreaM2: 64.2 },
         room_labels: { r1: { label: 'bedroom' } },
+        room_dividers: [],
         created_at: NOW,
         device_model: 'iPhone16,2',
         ios_version: '26.1',

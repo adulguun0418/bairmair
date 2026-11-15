@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "source": {
     "kind": "roomplan",
-    "converterVersion": "0.4.0",
+    "converterVersion": "0.5.0",
     "formatVersion": 2
   },
   "frame": {
@@ -435,5 +435,22 @@
       "category": "storage"
     }
   ],
-  "hotspots": []
+  "hotspots": [],
+  "sections": [
+    {
+      "label": "livingRoom",
+      "story": 0,
+      "point": [0.785, -0.738]
+    },
+    {
+      "label": "diningRoom",
+      "story": 0,
+      "point": [1.019, 1.727]
+    },
+    {
+      "label": "other",
+      "story": 0,
+      "point": [-1.745, 1.289]
+    }
+  ]
 }

@@ -31,6 +31,7 @@ import {
   removePhoto,
   setLocation,
   setRoomLabel,
+  addRoomDivider,
   setStatus,
   updateForm,
   type LocalListing,
@@ -42,6 +43,13 @@ import { ListingStore, type ListingPersistence } from '../src/listings/store';
 import { SyncEngine, type ListingFiles } from '../src/listings/sync-engine';
 import { SyncError } from '../src/listings/sync-errors';
 import { isSynced } from '../src/listings/sync-plan';
+
+/** A seller line (raw scan coordinates); the server keeps it as sent. */
+const DIVIDER = {
+  id: 'remote01',
+  a: [0.5, -1] as [number, number],
+  b: [0.5, 1] as [number, number],
+};
 
 // The sync engine with the real Supabase remote: the payloads it sends must pass RLS, the
 // column grants and the table constraints. The native upload is replaced by fetch.
@@ -290,11 +298,12 @@ describe('listing sync against the dev project', () => {
     await expect(update).rejects.toMatchObject({ kind: 'permanent', key: 'rejected' });
   });
 
-  it('sends a scan with room labels and photo rooms; the server makes it current', async () => {
+  it('sends a scan with room labels, dividers and photo rooms; the server makes it current', async () => {
     edit((listing) => attachScan(listing, scanFiles(firstScan), NOW));
     edit((listing) =>
       setRoomLabel(listing, fixtureRoomId, { label: 'livingRoom', name: 'Том өрөө ' }, NOW),
     );
+    edit((listing) => addRoomDivider(listing, DIVIDER, NOW));
     edit((listing) => assignPhotoRoom(listing, second.id, fixtureRoomId, NOW));
 
     await engine.run();
@@ -305,13 +314,16 @@ describe('listing sync against the dev project', () => {
 
     const scan = await admin
       .from('room_scans')
-      .select('status, is_current, room_labels, scan_lat, scan_lng, scan_accuracy_m, device_model')
+      .select(
+        'status, is_current, room_labels, room_dividers, scan_lat, scan_lng, scan_accuracy_m, device_model',
+      )
       .eq('id', firstScan)
       .single();
     expect(scan.data).toEqual({
       status: 'ready',
       is_current: true,
       room_labels: { [fixtureRoomId]: { label: 'livingRoom', name: 'Том өрөө ' } },
+      room_dividers: [DIVIDER],
       scan_lat: ZAISAN.lat,
       scan_lng: ZAISAN.lng,
       scan_accuracy_m: 8,
