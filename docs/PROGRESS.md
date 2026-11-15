@@ -167,7 +167,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Maps in the website's colours: white and navy (3D) pins, navy clusters and markers, sky-blue approximate circle (`scripts/pin-images.mjs` regenerated).
   - New copy: `listingSheet` in `mn.ts`/`en.ts`, `listingCard.showPlan/showPhoto`.
   - Verified: typecheck, lint, tests, `expo export` for iOS and Android (fonts and symbol font bundled). Not verified: on a phone (you).
-- Tests: 467 unit (room-model 189, browse 107, mobile 87, web 30, i18n 29, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
+- Web redesign, phase 3 of 4: listing page:
+  - Header: breadcrumb (sale/rent › district, links to search), badges (navy "3D загвартай", scanned on-site), large title, location line and "updated X days ago".
+  - `ListingMedia`: one full-width frame with tabs Зураг / 3D / Төлөвлөлт (3D and plan only with a scan; the 3D tab pulses until opened; three.js loads only when it opens). 3D and plan share the selected room; a strip of rooms with areas and the total ("сканаар хэмжсэн, ойролцоо") sits under them. The photo mosaic fills the frame for 1–5 photos with an "N зураг" button. `ListingScene` stays for the samples pages.
+  - Body: key facts as tiles (rooms, area, floor, year, material), a price comparison card (this listing's ₮/m² vs the district median as two bars, "Дүүргийн дунджаас 9% хямд/үнэтэй/ойролцоо"; within 3% counts as close; `lib/price-compare.ts`, tested), description, details in two columns, location with the map.
+  - Contact card sticks beside the content on wide screens (price, full amount, negotiable, ₮/m², seller, reveal, save, share, report); on phones it comes right after the photos, and a bar fixed to the bottom keeps the price and "Залгах" at hand (`body:has([data-bottom-bar])` pads the page end). `ContactButtons` instances share the revealed number (module store + sessionStorage), so the card and the bar change together; `variant="bar"` drops the copy button.
+  - The comparison shows only with a district median (≥ 3 fresh listings); none of the dev districts has that yet. Checked by lowering the threshold locally for one screenshot (not committed).
+  - Verified: typecheck, lint, tests, production build; headless Chrome on a production build: desktop light, 3D tab dark, phone with the bottom bar (no sideways scroll), the comparison card.
+- Tests: 470 unit (room-model 189, browse 107, mobile 87, web 33, i18n 29, send-sms 18, db 7) + 80 integration tests against the dev project (db 58, mobile 12, web 10).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -297,7 +304,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 ## Next
 - You, app redesign phase 1 (app version 0.1.3) on both preview builds: after merging, `pnpm update:preview -m "App redesign, phase 1"` in `apps/mobile` (clean, up-to-date `main`); close and reopen the app twice. Check: Onest everywhere (tabs, headers, Cyrillic); Хайх: switch, list/map button, quick chips (3D, rooms) change results; a 3D card: tap the plan tile → card turns to the labelled plan, tap again → photo; a listing: photos under the header, parallax and pull-stretch, Зураг/Төлөвлөлт/3D switch, price gauge, Орон зай bars, bottom bar reveal → call/SMS; dark mode; map pins navy/white.
 - App redesign, next phases (one PR each): 2. the seller side: Миний зарууд as project cards (photo, status, sync, 3D), the editor as grouped steps with progress, a scan intro on blueprint paper, account screen; 3. motion: shared photo transition from card to listing, heart pop, sheet/skeleton loading.
-- Web redesign, next phases (one PR each): 3. listing page: full-width viewer with Зураг / 3D / Төлөвлөлт tabs, sticky contact card, bottom bar on phones, fact grid, price vs district median bar; 4. motion and images: card-to-listing view transitions, photo thumbnails, blurred placeholders.
+- Web redesign, last phase: 4. motion and images: card-to-listing view transitions, photo thumbnails, blurred placeholders.
 - You, on the Android preview build: check that the OTA update with the map pin arrives (Бүртгэл's version line shows "шинэчлэл <time>" after two restarts), then pin a listing on the map (see the map pin entry above).
 - You: fill in `apps/web/src/content/site-info.ts` (company name, registration number, address, support e-mail and phone; the pages show the [bracket] placeholders until then), and have the terms and privacy drafts checked (they describe what the code does today; update them when Sentry, analytics or payments arrive).
 - Store review: the app needs links to the privacy policy and terms (Бүртгэл and sign-in), and App Store Connect needs the privacy policy URL (`/privacy`) and a support URL (`/support`); Google Play needs the account-deletion URL (`/delete-account`).

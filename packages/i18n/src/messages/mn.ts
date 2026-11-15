@@ -632,6 +632,15 @@ export const mn = {
       yes: 'Тийм',
       no: 'Үгүй',
     },
+    keyFacts: 'Гол үзүүлэлт',
+    compareTitle: 'Үнийн харьцуулалт',
+    compareThis: 'Энэ байр',
+    compareDistrict: '{{district}} дүүргийн дундаж',
+    compareBelow: 'Дүүргийн дунджаас {{percent}}% хямд',
+    compareAbove: 'Дүүргийн дунджаас {{percent}}% үнэтэй',
+    compareSame: 'Дүүргийн дундажтай ойролцоо',
+    compareBasis:
+      '1 м² үнийг гэрчилгээний талбайгаар тооцов. Дундаж нь {{count}} идэвхтэй зарын медиан.',
     district: '{{district}} дүүрэг',
     khoroo: '{{khoroo}}-р хороо',
     approximateLocation:

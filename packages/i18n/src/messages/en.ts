@@ -632,6 +632,15 @@ export const en: Messages = {
       yes: 'Yes',
       no: 'No',
     },
+    keyFacts: 'Key facts',
+    compareTitle: 'Price comparison',
+    compareThis: 'This apartment',
+    compareDistrict: '{{district}} district median',
+    compareBelow: '{{percent}}% below the district median',
+    compareAbove: '{{percent}}% above the district median',
+    compareSame: 'Close to the district median',
+    compareBasis:
+      'Price per m² uses the certificate area. The median is over {{count}} active listings.',
     district: '{{district}} district',
     khoroo: 'Khoroo {{khoroo}}',
     approximateLocation:
