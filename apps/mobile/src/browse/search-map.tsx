@@ -25,7 +25,8 @@ import {
 } from '@maplibre/maplibre-react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
@@ -51,8 +52,11 @@ function toViewport([west, south, east, north]: LngLatBounds): Viewport {
   return { west, south, east, north };
 }
 
+/** The iOS tab bar's height above the home indicator (classic and iOS 26 floating bars). */
+const IOS_TAB_BAR_HEIGHT = 49;
+
 /**
- * Listings on a map, like the web's: price pins (3D listings amber), clustered when zoomed out,
+ * Listings on a map, like the web's: price pins (3D listings navy), clustered when zoomed out,
  * loaded for the visible area with the search filters. Tapping a pin, or a cluster of listings
  * at one spot, shows their cards. Pins show the price or the price per m².
  */
@@ -61,6 +65,7 @@ export function SearchMap({ filters }: { filters: SearchFilters }) {
   const colors = useColors();
   const router = useRouter();
   const style = useMapStyle(locale);
+  const insets = useSafeAreaInsets();
 
   const mapRef = useRef<MapRef>(null);
   const cameraRef = useRef<CameraRef>(null);
@@ -186,6 +191,11 @@ export function SearchMap({ filters }: { filters: SearchFilters }) {
     );
   };
 
+  // On iOS the tab bar floats over the screen, so whatever sits at the bottom of the map moves
+  // up above it. Android lays the screen out above its tab bar.
+  const tabBarInset = Platform.OS === 'ios' ? insets.bottom + IOS_TAB_BAR_HEIGHT : 0;
+  const ornament = Platform.OS === 'ios' ? tabBarInset + 6 : undefined;
+
   const center: LngLat = lastCamera?.center ?? [ULAANBAATAR_CENTER.lng, ULAANBAATAR_CENTER.lat];
 
   return (
@@ -197,6 +207,8 @@ export function SearchMap({ filters }: { filters: SearchFilters }) {
         touchRotate={false}
         touchPitch={false}
         compass={false}
+        attributionPosition={ornament === undefined ? undefined : { bottom: ornament, right: 8 }}
+        logoPosition={ornament === undefined ? undefined : { bottom: ornament, left: 8 }}
         accessibilityLabel={t('map.label')}
         onDidFinishLoadingMap={() => setMapReady(true)}
         onRegionDidChange={(event) => {
@@ -302,7 +314,9 @@ export function SearchMap({ filters }: { filters: SearchFilters }) {
       </View>
 
       {selection && (
-        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+        <View
+          style={[styles.sheet, { backgroundColor: colors.background, bottom: 10 + tabBarInset }]}
+        >
           <View style={styles.sheetHeader}>
             <Text style={[styles.small, { color: colors.textMuted }]}>
               {selection.length > 1 ? t('map.listingsHere', { count: selection.length }) : ''}
@@ -384,7 +398,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 10,
     right: 10,
-    bottom: 10,
     borderRadius: 16,
     padding: 10,
     gap: 6,
