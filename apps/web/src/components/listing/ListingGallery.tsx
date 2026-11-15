@@ -2,6 +2,7 @@
 
 import { createTranslator, type Locale } from '@bairmair/i18n';
 import Image from 'next/image';
+import { Photo } from '@/components/Photo';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import type { ListingPhoto } from '@bairmair/browse';
 
@@ -56,14 +57,16 @@ export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; loc
               index === 0 ? '' : 'hidden sm:block'
             } ${tiles[index] ?? ''}`}
           >
-            <Image
+            <Photo
               src={photo.src}
               alt=""
-              fill
-              unoptimized
-              sizes={index === 0 ? '(min-width: 640px) 50vw, 100vw' : '25vw'}
+              sizes={
+                index === 0 || shown.length <= 2
+                  ? '(min-width: 1280px) 640px, (min-width: 640px) 50vw, 100vw'
+                  : '(min-width: 1280px) 320px, 25vw'
+              }
               priority={index === 0}
-              className="object-cover transition duration-500 group-hover:scale-[1.03]"
+              className="group-hover:scale-[1.03]"
             />
             {index === shown.length - 1 && hidden > 0 && (
               <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-lg font-medium text-white">
@@ -148,7 +151,7 @@ function PhotoViewer({
             alt={label}
             width={photo.width ?? 2048}
             height={photo.height ?? 1536}
-            unoptimized
+            sizes="96vw"
             className="max-h-[82vh] w-auto rounded-lg object-contain"
           />
           <figcaption className="flex w-full items-center justify-between gap-3 text-white">

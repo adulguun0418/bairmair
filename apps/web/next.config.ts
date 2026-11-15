@@ -1,8 +1,24 @@
 import type { NextConfig } from 'next';
 
+/** Listing photos in Supabase Storage (public bucket), the only remote images we optimize. */
+const photoPattern = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? [new URL(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/**`)]
+  : [];
+
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
+  images: {
+    // Vercel resizes on its own image service (5,000 transformations a month on Hobby). Local
+    // builds serve the originals: the repo does not build `sharp` (see PROGRESS).
+    unoptimized: !process.env.VERCEL,
+    remotePatterns: photoPattern,
+    // Few widths, so one photo costs few transformations: cards (~400 px, 2x), the listing
+    // mosaic and the full-screen viewer.
+    deviceSizes: [640, 828, 1200, 1920],
+    imageSizes: [256, 384],
+    // A photo's file never changes (a new photo gets a new id), so keep each size for 30 days.
+    minimumCacheTTL: 2_592_000,
+  },
   // `pnpm dev:web` is opened from the iPhone on the same Wi-Fi (the app's WebView embed, scan
   // processing). Next.js blocks its dev resources (HMR socket, chunks) for hosts other than
   // localhost unless listed. Development only; private LAN ranges.
