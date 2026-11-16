@@ -29,6 +29,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip Next.js internals, API routes, and files with an extension (images, favicon, ...).
-  matcher: ['/((?!_next/|api/|.*\\..*).*)'],
+  // Skip Next.js internals, API routes, the analytics proxy (`ANALYTICS_PATH`, rewritten to
+  // PostHog in next.config.ts), and files with an extension (images, favicon, ...).
+  matcher: ['/((?!_next/|api/|bmr/|.*\\..*).*)'],
 };

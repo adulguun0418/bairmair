@@ -14,7 +14,6 @@ import {
 import { districtById, LISTING_FRESHNESS } from '@bairmair/db';
 import {
   formatArea,
-  formatListingPost,
   formatListingPrice,
   formatMoney,
   formatPricePerArea,
@@ -41,6 +40,7 @@ import { FavoriteButton } from '@/components/listing/FavoriteButton';
 import { ListingMedia } from '@/components/listing/ListingMedia';
 import { ReportListing } from '@/components/listing/ReportListing';
 import { ShareActions } from '@/components/listing/ShareActions';
+import { TrackListingView } from '@/components/listing/TrackListingView';
 import { ViewCounter } from '@/components/listing/ViewCounter';
 import { LocationMap } from '@/components/map/maps';
 import { getI18n, localePath } from '@/lib/i18n';
@@ -127,22 +127,18 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
 
   const url = listingUrl(locale, listing.id);
   const district = districtById(listing.district_id);
-  const post = formatListingPost(
-    {
-      type: listing.type,
-      price: listing.price,
-      currency: listing.currency,
-      rooms: listing.rooms,
-      areaM2: listing.area_official_m2 ?? listing.area_scanned_m2,
-      pricePerM2: page.pricePerM2,
-      districtName: district ? placeName(district, locale) : null,
-      cityName: cityName(listing.city_id, locale),
-      complexName: listing.complex_name,
-      has3d: model !== null,
-      url,
-    },
-    locale,
-  );
+  const post = {
+    type: listing.type,
+    price: listing.price,
+    currency: listing.currency,
+    rooms: listing.rooms,
+    areaM2: listing.area_official_m2 ?? listing.area_scanned_m2,
+    pricePerM2: page.pricePerM2,
+    districtName: district ? placeName(district, locale) : null,
+    cityName: cityName(listing.city_id, locale),
+    complexName: listing.complex_name,
+    has3d: model !== null,
+  };
   const live = listing.status === 'published';
   const search = (changes: Parameters<typeof searchQuery>[1]) =>
     `${localePath(locale, '/search')}${searchQuery(DEFAULT_FILTERS, changes)}`;
@@ -150,6 +146,14 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
   return (
     <article className="space-y-6">
       <ViewCounter listingId={listing.id} />
+      <TrackListingView
+        listing_id={listing.id}
+        listing_type={listing.type}
+        status={listing.status}
+        has_3d={model !== null}
+        photo_count={photos.length}
+        district={district?.slug ?? null}
+      />
 
       {!live && (
         <p className="rounded-2xl bg-primary px-5 py-4 font-medium text-on-primary">
@@ -208,7 +212,7 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
         </p>
       </header>
 
-      <ListingMedia locale={locale} photos={photos} model={model} />
+      <ListingMedia listingId={listing.id} locale={locale} photos={photos} model={model} />
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
         {/* First on phones (right under the photos), beside the content on wide screens. */}
@@ -221,7 +225,7 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
             {live && <ContactButtons listingId={listing.id} locale={locale} />}
             <div className="grid grid-cols-2 gap-2">
               <FavoriteButton listingId={listing.id} locale={locale} variant="labeled" />
-              <ShareActions post={post} url={url} locale={locale} />
+              <ShareActions listingId={listing.id} post={post} url={url} locale={locale} />
             </div>
             {live && (
               <div className="border-t border-line pt-4 text-center">

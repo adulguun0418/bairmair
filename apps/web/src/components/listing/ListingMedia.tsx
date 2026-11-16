@@ -5,11 +5,12 @@ import type { Locale } from '@bairmair/i18n';
 import { computeMetrics, type RoomModelV1 } from '@bairmair/room-model';
 import { FloorPlan } from '@bairmair/viewer';
 import dynamic from 'next/dynamic';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { CameraIcon, CubeIcon, PlanIcon } from '@/components/icons';
 import { PhotoDialog, type ScenePhoto } from '@/components/viewer/PhotoDialog';
 import { useSceneState } from '@/components/viewer/use-scene-state';
 import { useViewerText } from '@/components/viewer/use-viewer-text';
+import { track } from '@/lib/analytics';
 import { ListingGallery } from './ListingGallery';
 
 // three.js is large and needs WebGL: loaded in the browser, after the page itself.
@@ -34,10 +35,12 @@ type Tab = 'photos' | '3d' | 'plan';
  * (with areas) selects rooms too. Photos placed in a room open from the 3D markers.
  */
 export function ListingMedia({
+  listingId,
   locale,
   photos,
   model,
 }: {
+  listingId: string;
   locale: Locale;
   photos: ListingPhoto[];
   /** With the seller's room labels and photo rooms applied; null without a scan. */
@@ -72,7 +75,11 @@ export function ListingMedia({
               type="button"
               role="tab"
               aria-selected={tab === value}
-              onClick={() => setTab(value)}
+              onClick={() => {
+                if (value !== tab)
+                  track('listing_media_tab', { listing_id: listingId, tab: value });
+                setTab(value);
+              }}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition [&>svg]:size-[18px] ${
                 tab === value ? 'bg-primary text-on-primary shadow-sm' : 'text-fg-2 hover:text-fg'
               }`}
@@ -87,10 +94,16 @@ export function ListingMedia({
       <div>
         {tab === 'photos' || !model ? (
           <div className="h-[min(50vh,24rem)] overflow-hidden rounded-3xl sm:h-[min(62vh,34rem)] sm:min-h-72">
-            <ListingGallery photos={photos} locale={locale} />
+            <ListingGallery
+              photos={photos}
+              locale={locale}
+              onOpen={() =>
+                track('listing_photo_opened', { listing_id: listingId, from: 'gallery' })
+              }
+            />
           </div>
         ) : (
-          <Scene locale={locale} model={model} photos={photos} view={tab} />
+          <Scene listingId={listingId} locale={locale} model={model} photos={photos} view={tab} />
         )}
       </div>
     </section>
@@ -98,11 +111,13 @@ export function ListingMedia({
 }
 
 function Scene({
+  listingId,
   locale,
   model,
   photos,
   view,
 }: {
+  listingId: string;
   locale: Locale;
   model: RoomModelV1;
   photos: ListingPhoto[];
@@ -122,6 +137,16 @@ function Scene({
     scenePhotos,
     text,
   );
+  const openHotspot = (photoId: string) => {
+    track('listing_photo_opened', { listing_id: listingId, from: 'hotspot' });
+    showPhoto(photoId);
+  };
+  const interacted = useRef(false);
+  const onInteract = () => {
+    if (interacted.current) return;
+    interacted.current = true;
+    track('listing_3d_interacted', { listing_id: listingId });
+  };
 
   return (
     <div className="overflow-hidden rounded-3xl bg-surface ring-1 ring-line">
@@ -133,7 +158,8 @@ function Scene({
               text={text}
               selectedRoomId={selectedRoomId}
               onSelectRoom={toggleRoom}
-              onSelectPhoto={showPhoto}
+              onSelectPhoto={openHotspot}
+              onInteract={onInteract}
               pageScroll
             />
           </div>
@@ -145,7 +171,7 @@ function Scene({
               title={t('viewer.viewPlan')}
               selectedRoomId={selectedRoomId}
               onSelectRoom={toggleRoom}
-              onSelectPhoto={showPhoto}
+              onSelectPhoto={openHotspot}
               className="h-full w-full"
             />
           </div>

@@ -26,9 +26,22 @@ const TILES: Record<number, string[]> = {
  * The listing's photos: a mosaic filling its container (cover large, up to four small; the
  * cover alone on phones) that opens a full-size viewer with previous / next and arrow keys.
  */
-export function ListingGallery({ photos, locale }: { photos: ListingPhoto[]; locale: Locale }) {
+export function ListingGallery({
+  photos,
+  locale,
+  onOpen,
+}: {
+  photos: ListingPhoto[];
+  locale: Locale;
+  /** Called when the visitor opens the full-size viewer (not when they step through it). */
+  onOpen?: () => void;
+}) {
   const t = useMemo(() => createTranslator(locale), [locale]);
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpenIndex] = useState<number | null>(null);
+  const setOpen = (index: number | null) => {
+    if (index !== null && open === null) onOpen?.();
+    setOpenIndex(index);
+  };
 
   if (photos.length === 0) {
     return (

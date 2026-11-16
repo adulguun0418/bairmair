@@ -24,6 +24,29 @@ const nextConfig: NextConfig = {
   // localhost unless listed. Development only; private LAN ranges.
   allowedDevOrigins: ['192.168.*.*', '10.*.*.*', '172.*.*.*'],
   partialPrefetching: true,
+  // PostHog (EU) through our own origin, so tracker blocklists do not drop analytics
+  // (`src/lib/analytics.ts`, `ANALYTICS_PATH`; the locale proxy skips the path). Before the
+  // pages, so `[lang]` never sees it.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/bmr/static/:path*',
+          destination: 'https://eu-assets.i.posthog.com/static/:path*',
+        },
+        {
+          source: '/bmr/array/:path*',
+          destination: 'https://eu-assets.i.posthog.com/array/:path*',
+        },
+        { source: '/bmr/:path*', destination: 'https://eu.i.posthog.com/:path*' },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+  // PostHog's endpoints end with a slash (`/e/`, `/flags/`); without this, each request would
+  // first get a 308 to the slashless URL.
+  skipTrailingSlashRedirect: true,
   // The Open Graph image reads these fonts with a computed file name, which file tracing cannot
   // follow; without this, the deployed route would not have them.
   outputFileTracingIncludes: {

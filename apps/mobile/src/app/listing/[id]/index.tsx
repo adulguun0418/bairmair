@@ -4,6 +4,7 @@ import {
   loadListingPage,
   locationLine,
   placeName,
+  shareLink,
   updatedText,
   type ListingPageData,
   type ListingPhoto,
@@ -181,7 +182,7 @@ function ListingView({ page, reload }: { page: ListingPageData; reload: () => Pr
         cityName: cityName(listing.city_id, locale),
         complexName: listing.complex_name,
         has3d: model !== null,
-        url: webUrl,
+        url: shareLink(webUrl, 'app'),
       },
       locale,
     );

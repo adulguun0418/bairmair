@@ -30,6 +30,8 @@ export interface RoomViewer3DProps {
   selectedRoomId?: string | null;
   onSelectRoom?: (roomId: string) => void;
   onSelectPhoto?: (photoId: string) => void;
+  /** Called when the visitor starts a camera move (drag, pinch, wheel); for analytics. */
+  onInteract?: () => void;
   showObjects?: boolean;
   /** Show room names and areas on the floors. */
   showLabels?: boolean;
@@ -72,6 +74,7 @@ export function RoomViewer3D({
   selectedRoomId = null,
   onSelectRoom,
   onSelectPhoto,
+  onInteract,
   showObjects = true,
   showLabels = true,
   mode = 'full',
@@ -140,7 +143,10 @@ export function RoomViewer3D({
             enablePan={!showcase}
             autoRotate={rotating.active}
             autoRotateSpeed={SHOWCASE_SPEED}
-            onStart={rotating.pause}
+            onStart={() => {
+              rotating.pause();
+              onInteract?.();
+            }}
             onEnd={rotating.resumeLater}
           />
           <CameraRig bounds={scene.bounds} resetCount={resetCount} />
