@@ -1,7 +1,44 @@
 import { createTranslator, formatArea } from '@bairmair/i18n';
 import { describe, expect, it } from 'vitest';
 import type { ListingRow } from '../src/listing-page';
-import { listingFacts, listingSummary, locationLine, updatedText } from '../src/listing-text';
+import {
+  listingFacts,
+  listingShareTitle,
+  listingSummary,
+  locationLine,
+  updatedText,
+} from '../src/listing-text';
+
+/** Non-breaking spaces (between numbers and units) as plain ones. */
+const plain = (text: string) => text.replace(/\s/g, ' ');
+
+describe('listingShareTitle', () => {
+  const sale = {
+    type: 'sale',
+    price: 350_000_000,
+    currency: 'MNT',
+    rooms: 2,
+    area_official_m2: 55,
+    area_scanned_m2: null,
+    district_id: 2,
+    complex_name: 'Зайсан хотхон',
+  } as ListingRow;
+
+  it('says type, rooms, area, district and price, without the complex', () => {
+    expect(plain(listingShareTitle(sale, 'mn', createTranslator('mn')))).toMatch(
+      /^Зарна: 2 өрөө · 55 м² · .+ дүүрэг — 350 сая ₮$/,
+    );
+  });
+
+  it('shows rent per month and leaves out what is missing', () => {
+    const rent = { ...sale, type: 'rent', price: 1_800_000, rooms: null, district_id: null };
+    expect(plain(listingShareTitle(rent as ListingRow, 'mn', createTranslator('mn')))).toBe(
+      'Түрээслүүлнэ: 55 м² — 1.8 сая ₮/сар',
+    );
+    const bare = { ...rent, price: null, area_official_m2: null };
+    expect(listingShareTitle(bare as ListingRow, 'en', createTranslator('en'))).toBe('For rent');
+  });
+});
 
 const mn = createTranslator('mn');
 const en = createTranslator('en');

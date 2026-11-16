@@ -2,6 +2,7 @@ import {
   cityName,
   DEFAULT_FILTERS,
   listingFacts,
+  listingShareTitle,
   listingSummary,
   locationLine,
   pickSimilar,
@@ -65,26 +66,34 @@ export async function generateMetadata({
   const page = await getListingPage(id);
   if (!page) return {};
   const { locale, t } = await getI18n();
-  const description = listingSummary(page.listing, locale, t);
+  const { listing } = page;
+  // The facts make the title ("Зарна: 2 өрөө · 55 м² · … — 350 сая ₮"); the seller's own title
+  // and the start of the description follow in the description.
+  const title = listingShareTitle(listing, locale, t);
+  const description =
+    shorten(
+      [listing.title, listing.description?.replace(/\s+/g, ' ').trim()].filter(Boolean).join(' — '),
+      200,
+    ) || listingSummary(listing, locale, t);
+  // A route under /api (see its file): no locale prefix, so crawlers get no redirect.
+  const image = {
+    url: `/api/og/listings/${id}${locale === 'mn' ? '' : `?lang=${locale}`}`,
+    width: 1200,
+    height: 630,
+    alt: title,
+  };
   return {
-    title: page.listing.title,
+    title,
     description,
     alternates: { canonical: listingUrl(locale, id) },
     openGraph: {
       type: 'website',
-      title: page.listing.title,
+      title,
       description,
       url: listingUrl(locale, id),
-      // A route under /api (see its file): no locale prefix, so crawlers get no redirect.
-      images: [
-        {
-          url: `/api/og/listings/${id}${locale === 'mn' ? '' : `?lang=${locale}`}`,
-          width: 1200,
-          height: 630,
-          alt: page.listing.title,
-        },
-      ],
+      images: [image],
     },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   };
 }
 
@@ -660,4 +669,12 @@ async function SimilarListings({
       </SimilarClicks>
     </section>
   );
+}
+
+/** `text` cut at a word boundary to at most `max` characters, with "…" when cut. */
+function shorten(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
