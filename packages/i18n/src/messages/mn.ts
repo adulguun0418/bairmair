@@ -691,6 +691,16 @@ export const mn = {
     nextPhoto: 'Дараах',
     closePhoto: 'Хаах',
     noPhotos: 'Зураг алга.',
+    hero: {
+      view3d: '3D-ээр үзэх',
+      viewPlan: 'Төлөвлөлт харах',
+      plan: 'Төлөвлөлт',
+      photoCounter: '{{index}} / {{total}}',
+    },
+    space: {
+      title: 'Орон зай',
+      lead: 'iPhone-оор скан хийж хэмжсэн 3D загвар, төлөвлөлт. Өрөөн дээр дарж талбайг нь харна уу.',
+    },
     seller: {
       owner: 'Эзэмшигч',
       agent: 'Агент',

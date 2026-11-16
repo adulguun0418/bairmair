@@ -691,6 +691,16 @@ export const en: Messages = {
     nextPhoto: 'Next',
     closePhoto: 'Close',
     noPhotos: 'No photos.',
+    hero: {
+      view3d: 'View in 3D',
+      viewPlan: 'View floor plan',
+      plan: 'Floor plan',
+      photoCounter: '{{index}} / {{total}}',
+    },
+    space: {
+      title: 'The space',
+      lead: 'A 3D model and floor plan measured with an iPhone scan. Tap a room to see its area.',
+    },
     seller: {
       owner: 'Owner',
       agent: 'Agent',
