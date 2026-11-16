@@ -1,9 +1,16 @@
 'use client';
 
-import { createTranslator, type Locale } from '@bairmair/i18n';
+import { shareLink, type ShareChannel } from '@bairmair/browse';
+import {
+  createTranslator,
+  formatListingPost,
+  type ListingPostInput,
+  type Locale,
+} from '@bairmair/i18n';
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useDismiss } from '@/components/header/use-dismiss';
 import { CheckIcon, CopyIcon, FacebookIcon, LinkIcon, ShareIcon } from '@/components/icons';
+import { track } from '@/lib/analytics';
 
 const noop = () => () => {};
 
@@ -21,15 +28,19 @@ type Copied = 'link' | 'text' | null;
 /**
  * "Share" button opening a menu: the system share sheet where there is one, the link, a
  * ready-made post to paste into Facebook groups, and Facebook's own share dialog (which shows
- * the floor-plan preview).
+ * the floor-plan preview). Each way adds its own `?via=` to the link (see `shareLink`).
  */
 export function ShareActions({
+  listingId,
   post,
   url,
   locale,
   className = '',
 }: {
-  post: string;
+  listingId: string;
+  /** The post's contents; the link is added per share channel. */
+  post: Omit<ListingPostInput, 'url'>;
+  /** The listing's canonical URL. */
   url: string;
   locale: Locale;
   className?: string;
@@ -41,18 +52,26 @@ export function ShareActions({
   const ref = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
   useDismiss(open, close, ref);
+  const postText = (channel: ShareChannel) =>
+    formatListingPost({ ...post, url: shareLink(url, channel) }, locale);
+  const shared = (channel: ShareChannel) =>
+    track('listing_shared', { listing_id: listingId, channel });
 
   const share = async () => {
     close();
     try {
-      await navigator.share({ text: post });
+      await navigator.share({ text: postText('sheet') });
+      shared('sheet');
     } catch {
       // Cancelled by the user, or refused; nothing to do.
     }
   };
   const copy = async (what: 'link' | 'text') => {
     try {
-      await navigator.clipboard.writeText(what === 'link' ? url : post);
+      await navigator.clipboard.writeText(
+        what === 'link' ? shareLink(url, 'link') : postText('post'),
+      );
+      shared(what === 'link' ? 'link' : 'post');
       setCopied(what);
       setTimeout(() => {
         setCopied(null);
@@ -113,10 +132,13 @@ export function ShareActions({
             {copyLabel('text')}
           </button>
           <a
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink(url, 'facebook'))}`}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={close}
+            onClick={() => {
+              shared('facebook');
+              close();
+            }}
             className={item}
           >
             <FacebookIcon className="size-4 text-[#1877f2]" />

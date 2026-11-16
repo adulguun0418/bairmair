@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { toggleFavorite, useAuth, useFavorites } from '@/components/auth/AuthProvider';
 import { currentPath, signInHref } from '@/components/auth/sign-in-href';
 import { HeartIcon } from '@/components/icons';
+import { track } from '@/lib/analytics';
 
 /**
  * Save a listing: a round ♡ over a card photo (`icon`), or a labelled button ("Save" / "Saved")
@@ -38,7 +39,11 @@ export function FavoriteButton({
     }
     setFailed(false);
     if (!saved) setPops((count) => count + 1);
-    toggleFavorite(listingId).catch(() => setFailed(true));
+    toggleFavorite(listingId)
+      .then(() => {
+        if (!saved) track('favorite_added', { listing_id: listingId });
+      })
+      .catch(() => setFailed(true));
   };
 
   const label = saved ? t('favorites.remove') : t('favorites.save');

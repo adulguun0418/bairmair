@@ -3,6 +3,7 @@ packages:
   - 'packages/*'
   - 'supabase'
 allowBuilds:
+  core-js: false
   esbuild: false
   sharp: false
   unrs-resolver: false

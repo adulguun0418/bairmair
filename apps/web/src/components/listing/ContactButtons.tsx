@@ -4,6 +4,7 @@ import { dbErrorKey } from '@bairmair/db';
 import { createTranslator, type Locale } from '@bairmair/i18n';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { CheckIcon, CopyIcon, MessageIcon, PhoneIcon } from '@/components/icons';
+import { track } from '@/lib/analytics';
 import { browserClient } from '@/lib/supabase-browser';
 
 type State =
@@ -75,6 +76,7 @@ export function ContactButtons({
   const [revealed, setState] = useState<State>({ kind: 'idle' });
   const [copied, setCopied] = useState(false);
   const bar = variant === 'bar';
+  const placement = { listing_id: listingId, placement: variant };
   // Not on the server (no storage there): the button renders first, the number right after.
   const cached = useSyncExternalStore(
     subscribe,
@@ -90,6 +92,7 @@ export function ContactButtons({
       p_listing_id: listingId,
     });
     if (!error && data) {
+      track('phone_revealed', placement);
       writeCached(listingId, data);
       setState({ kind: 'shown', phone: data });
       return;
@@ -119,6 +122,7 @@ export function ContactButtons({
     const copy = async () => {
       try {
         await navigator.clipboard.writeText(state.phone);
+        track('phone_copied', { listing_id: listingId });
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } catch {
@@ -129,6 +133,7 @@ export function ContactButtons({
       <div className={row}>
         <a
           href={`tel:${state.phone}`}
+          onClick={() => track('contact_call', placement)}
           title={`${t('listingPage.contact.call')} · ${t('listingPage.contact.mention')}`}
           className={`${primary} whitespace-nowrap px-3 font-semibold tabular-nums sm:text-[17px]`}
         >
@@ -140,6 +145,7 @@ export function ContactButtons({
         </a>
         <a
           href={`sms:${state.phone}`}
+          onClick={() => track('contact_sms', placement)}
           aria-label={t('listingPage.contact.sms')}
           title={t('listingPage.contact.sms')}
           className={square}

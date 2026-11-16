@@ -50,7 +50,8 @@ const mn: ContentPage = {
             'Та "Одоогийн байршлаа ашиглах" товчийг дарсан үед л утасны байршлыг уншина.',
           ],
         },
-        'Бид зар сурталчилгааны зорилгоор хянах (tracking) хэрэгсэл, гуравдагч талын аналитик ашигладаггүй.',
+        'Вэбсайтын хэрэглээний статистик: аль хуудсыг нээсэн, хаанаас (жишээ нь Facebook-ийн холбоос) ирсэн, зарын хуудсан дээр зураг, 3D загвар, төлөвлөлтийг нээсэн эсэх, "Утасны дугаар харах", хадгалах, хуваалцах товч дарсан эсэх, хуудсыг хэр доош гүйлгэсэн, төхөөрөмж, хөтчийн төрөл, ойролцоо улс, хот (IP хаягаас). Күүки (cookie) болон хөтчийн санах ой ашигладаггүй; таныг нэр, утасны дугаар, бүртгэлээр нь таньдаггүй. Хаана хуваалцсан холбоосоор ирснийг ялгахын тулд хуваалцах холбоосонд "?via=" гэсэн тэмдэглэгээ нэмдэг.',
+        'Бид зар сурталчилгааны зорилгоор хянах (tracking) хэрэгсэл ашигладаггүй, таныг өөр сайт дээр мөрддөггүй.',
       ],
     },
     {
@@ -92,6 +93,7 @@ const mn: ContentPage = {
             'Apple, Google: та тэдгээрээр нэвтэрвэл.',
             'OpenFreeMap: газрын зургийн зураг (таны хөтөч, апп шууд хүсэлт илгээнэ).',
             'Expo: аппликейшний шинэчлэлийг хүргэх.',
+            'PostHog: вэбсайтын хэрэглээний статистик (серверүүд Европын холбоонд, Германы Франкфурт хотод).',
           ],
         },
         'Хуулийн дагуу эрх бүхий байгууллага шаардсан тохиолдолд мэдээллийг өгч болно.',
@@ -101,7 +103,7 @@ const mn: ContentPage = {
       id: 'abroad',
       heading: '6. Мэдээллийг гадаадад хадгалах',
       blocks: [
-        'Бидний өгөгдлийн сан, файлууд Монгол Улсаас гадна (Бүгд Найрамдах Солонгос Улс) байрлах серверт хадгалагдана. Үйлчилгээ үзүүлэгчид мэдээллийг шифрлэн дамжуулж, хадгалдаг.',
+        'Бидний өгөгдлийн сан, файлууд Монгол Улсаас гадна (Бүгд Найрамдах Солонгос Улс) байрлах серверт, вэбсайтын хэрэглээний статистик Европын холбоонд (Герман) хадгалагдана. Үйлчилгээ үзүүлэгчид мэдээллийг шифрлэн дамжуулж, хадгалдаг.',
       ],
     },
     {
@@ -208,7 +210,8 @@ const en: ContentPage = {
             'Your device location, only when you tap "Use my current location".',
           ],
         },
-        'We do not use advertising trackers or third-party analytics.',
+        'Website usage statistics: which pages are opened, where visitors come from (for example a Facebook link), whether photos, the 3D model or the floor plan are opened on a listing page, taps on "Show phone number", save and share, how far a page is scrolled, device and browser type, and the approximate country and city (from the IP address). No cookies or browser storage are used, and you are not identified by name, phone number or account. Share links carry a "?via=" marker so we can tell which kind of share a visitor came from.',
+        'We do not use advertising trackers and do not follow you across other sites.',
       ],
     },
     {
@@ -250,6 +253,7 @@ const en: ContentPage = {
             'Apple and Google: if you sign in with them.',
             'OpenFreeMap: map imagery (your browser or app requests it directly).',
             'Expo: delivering app updates.',
+            'PostHog: website usage statistics (servers in the European Union, Frankfurt, Germany).',
           ],
         },
         'We may disclose data to authorities when the law requires it.',
@@ -259,7 +263,7 @@ const en: ContentPage = {
       id: 'abroad',
       heading: '6. Storage outside Mongolia',
       blocks: [
-        'Our database and files are stored on servers outside Mongolia (in the Republic of Korea). Our providers encrypt data in transit and at rest.',
+        'Our database and files are stored on servers outside Mongolia (in the Republic of Korea), and website usage statistics in the European Union (Germany). Our providers encrypt data in transit and at rest.',
       ],
     },
     {

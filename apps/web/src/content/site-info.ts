@@ -19,5 +19,5 @@ export const SITE_INFO = {
   email: 'support@[domain]',
   phone: '[+976 0000 0000]',
   /** When the legal pages last changed (shown on them as "last updated"). */
-  legalUpdated: '2026-11-13',
+  legalUpdated: '2026-11-16',
 };
