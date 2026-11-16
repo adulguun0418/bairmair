@@ -56,6 +56,7 @@ import { ListingRowSkeleton, SectionHeading } from '@/components/SectionHeading'
 import { SellBand } from '@/components/SellBand';
 import { getI18n, localePath } from '@/lib/i18n';
 import { listingPlanSrc } from '@/lib/listing-plan';
+import { ogImageVersion } from '@/lib/og-version';
 import { comparePrice } from '@/lib/price-compare';
 import { publicEnv } from '@/lib/public-env';
 import { getListingPage } from '@/server/listing-page';
@@ -78,8 +79,23 @@ export async function generateMetadata({
       200,
     ) || listingSummary(listing, locale, t);
   // A route under /api (see its file): no locale prefix, so crawlers get no redirect.
+  // `v` changes with the picture's content, so Facebook (which caches images by URL) fetches
+  // the new one; the route itself ignores it.
+  const metrics = page.model ? computeMetrics(page.model) : null;
+  const version = ogImageVersion({
+    type: listing.type,
+    price: listing.price,
+    currency: listing.currency,
+    rooms: listing.rooms,
+    area_official_m2: listing.area_official_m2,
+    area_scanned_m2: listing.area_scanned_m2,
+    district_id: listing.district_id,
+    complex_name: listing.complex_name,
+    coverPhotoId: page.photos[0]?.id ?? null,
+    scan: metrics && { rooms: metrics.rooms.length, totalAreaM2: metrics.totalAreaM2 },
+  });
   const image = {
-    url: `/api/og/listings/${id}${locale === 'mn' ? '' : `?lang=${locale}`}`,
+    url: `/api/og/listings/${id}?v=${version}${locale === 'mn' ? '' : `&lang=${locale}`}`,
     width: 1200,
     height: 630,
     alt: title,
