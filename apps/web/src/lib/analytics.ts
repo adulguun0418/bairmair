@@ -1,5 +1,6 @@
 import { SHARE_PARAM, type ShareChannel } from '@bairmair/browse';
-import type { PostHog } from 'posthog-js';
+import type { CaptureResult, PostHog } from 'posthog-js';
+import { isReportableException, type ReportedException } from './error-filter';
 
 /**
  * Product analytics (PostHog, EU cloud), to see where visitors of shared listings come from
@@ -9,10 +10,12 @@ import type { PostHog } from 'posthog-js';
  *   nothing).
  * - Cookieless: no cookies, no local or session storage; PostHog counts visitors with a daily
  *   server-side hash. Never identified: no user ids, phone numbers or names are sent.
- * - Only page views, page leaves (with scroll depth) and the events below. No autocapture,
- *   session recordings, surveys, heatmaps or feature flags.
+ * - Only page views, page leaves (with scroll depth), the events below and errors (uncaught
+ *   errors and promise rejections in the browser, plus `captureError` from error pages; server
+ *   errors come from `src/server/error-reporting.ts`). No autocapture of clicks, session
+ *   recordings, surveys, heatmaps or feature flags.
  * - Loaded after the page (a separate chunk), so it never delays the first paint; events
- *   tracked before it loads are queued.
+ *   tracked and errors thrown before it loads are queued.
  * - Sent through our own origin (`/bmr`, rewritten in `next.config.ts`), so tracker blocklists
  *   do not drop them.
  */
@@ -70,17 +73,44 @@ export interface AnalyticsEvents {
 
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const QUEUE_LIMIT = 50;
+const ERROR_QUEUE_LIMIT = 10;
 
 let client: PostHog | null = null;
 let started = false;
 const queue: [string, Record<string, unknown>][] = [];
+const errorQueue: [unknown, Record<string, unknown> | undefined][] = [];
+
+/** Drops error reports that are not ours to fix (see `error-filter.ts`). */
+function filterErrors(event: CaptureResult | null): CaptureResult | null {
+  if (event?.event !== '$exception') return event;
+  const list = event.properties.$exception_list as ReportedException[] | undefined;
+  return isReportableException(list) ? event : null;
+}
+
+function queueError(error: unknown, properties?: Record<string, unknown>): void {
+  if (errorQueue.length < ERROR_QUEUE_LIMIT) errorQueue.push([error, properties]);
+}
 
 /** Loads and starts PostHog in the browser. Called once from `instrumentation-client.ts`. */
 export function startAnalytics(): void {
   if (!key || started || typeof window === 'undefined') return;
   started = true;
-  void import('posthog-js')
-    .then(({ default: posthog }) => {
+  // Errors thrown before PostHog has loaded; PostHog's own handlers take over once it runs.
+  const onError = (event: ErrorEvent) => queueError(event.error ?? event.message);
+  const onRejection = (event: PromiseRejectionEvent) => queueError(event.reason);
+  window.addEventListener('error', onError);
+  window.addEventListener('unhandledrejection', onRejection);
+  const stopEarlyCapture = () => {
+    window.removeEventListener('error', onError);
+    window.removeEventListener('unhandledrejection', onRejection);
+  };
+  void Promise.all([
+    import('posthog-js'),
+    // PostHog would fetch its error handlers as a separate script, which
+    // `disable_external_dependency_loading` forbids; bundled here instead (it registers itself).
+    import('posthog-js/dist/exception-autocapture'),
+  ])
+    .then(([{ default: posthog }]) => {
       posthog.init(key, {
         api_host: ANALYTICS_PATH,
         ui_host: 'https://eu.posthog.com',
@@ -94,10 +124,17 @@ export function startAnalytics(): void {
         person_profiles: 'never',
         custom_campaign_params: [SHARE_PARAM],
         autocapture: false,
+        // Uncaught errors and promise rejections; console.error stays out (React and libraries
+        // log there for things that are not failures).
+        capture_exceptions: {
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
+          capture_console_errors: false,
+        },
+        before_send: filterErrors,
         rageclick: false,
         capture_dead_clicks: false,
         capture_heatmaps: false,
-        capture_exceptions: false,
         capture_performance: false,
         disable_session_recording: true,
         disable_surveys: true,
@@ -108,12 +145,32 @@ export function startAnalytics(): void {
         advanced_disable_flags: true,
       });
       client = posthog;
+      stopEarlyCapture();
       for (const [event, properties] of queue.splice(0)) posthog.capture(event, properties);
+      for (const [error, properties] of errorQueue.splice(0)) {
+        posthog.captureException(error, properties);
+      }
     })
     .catch(() => {
       // Blocked or offline: analytics stays off for this page.
+      stopEarlyCapture();
       queue.length = 0;
+      errorQueue.length = 0;
     });
+}
+
+/**
+ * Reports an error that an error boundary caught (`error.tsx`, `global-error.tsx`): React
+ * handles those itself, so PostHog's uncaught-error handler never sees them. Does nothing
+ * without a PostHog key.
+ */
+export function captureError(error: unknown, properties?: Record<string, unknown>): void {
+  if (!key || typeof window === 'undefined') return;
+  if (client) {
+    client.captureException(error, properties);
+  } else {
+    queueError(error, properties);
+  }
 }
 
 /** Sends one event. Does nothing without a PostHog key. */

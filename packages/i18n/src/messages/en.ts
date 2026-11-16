@@ -103,6 +103,13 @@ export const en: Messages = {
     title: 'Page not found',
     back: 'Back to the home page',
   },
+  errorPage: {
+    title: 'Something went wrong',
+    body: 'This page could not be shown. Please try again; if it keeps happening, try again a little later.',
+    retry: 'Try again',
+    home: 'Back to the home page',
+    reference: 'Error code: {{code}}',
+  },
   rooms: {
     livingRoom: 'Living room',
     bedroom: 'Bedroom',
