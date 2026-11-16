@@ -242,6 +242,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Like analytics: off without `NEXT_PUBLIC_POSTHOG_KEY` (Production only). No source maps uploaded yet: browser stack traces point into minified chunks (the message, page and `digest` usually suffice; upload needs a PostHog personal API key, later if needed).
   - Privacy policy (mn + en): "Вэбсайтын алдааны мэдээ" paragraph; PostHog's processor line mentions error reports.
   - Verified: typecheck, lint, tests; production build with a dummy key + headless Chrome: an uncaught error, a rejected promise and an error thrown before PostHog loaded arrive as `$exception` (cookieless, no person profile); a fake extension error and "Script error." are dropped; a temporary page throwing on the server (not committed) showed the error page in mn and en, and both reports went out with the same digest (the server's with the real message, route and `render_source`, intercepted locally). Not verified: events in the real PostHog project (after merge).
+- Error tracking in the app (app version 0.1.9, OTA to both preview builds; JS only):
+  - `posthog-react-native` 4.85.4 (`src/lib/error-tracking.ts`, imported first in the root layout): uncaught JS errors (a crash is kept in PostHog's file queue and sent on the next launch) and unhandled rejections; no screens, taps or app lifecycle events. Same EU project as the website. Anonymous: random id per install, `personProfiles: 'never'`, no IP lookup. `$app_version` = the version Бүртгэл shows, `$app_build` = the running update id (or `embedded`).
+  - Safe as an update: the package has no native code; its optional native helpers (expo-application, PostHog's native plugin, react-native-device-info) are `require`d inside try/catch and simply missing. Checked: Metro bundles iOS and Android, `expo-doctor` 20/20.
+  - The app's automatic capture follows the PostHog project setting **Exception autocapture** (the SDK reads the project's remote config at every start and turns autocapture off when the setting is off; it was off on 2026-11-16). The website captures regardless.
+  - Root `ErrorBoundary` (`app/_layout.tsx`): a screen that fails to render shows "Алдаа гарлаа" with "Дахин оролдох" (Mongolian: it sits outside the language provider) instead of closing the app, and reports the error (`boundary: root`).
+  - `EXPO_PUBLIC_POSTHOG_KEY` added to the EAS `preview` environment (plaintext, public key); development builds have none and send nothing.
+  - Privacy policy (mn + en): the error-report paragraph covers the app (phone model, OS and app version, a random number kept on the phone).
+  - Verified: typecheck, lint, tests, `expo export` for iOS and Android, `expo-doctor`. Not verified: an error arriving from a phone (after the update and the PostHog setting).
 - Tests: 525 unit (room-model 217, browse 118, mobile 91, web 45, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
 
 ## Commands
@@ -264,7 +272,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Turnstile (web sign-in): `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` in `apps/web/.env.local` (Cloudflare's always-pass test keys are in `.env.example` for local development) and in Vercel: Production has the real widget's keys, Preview has the always-pass test keys (preview URLs differ from the widget's hostname, and the real secret is stored hidden). Test keys on public previews open no new hole: Supabase's own OTP endpoint is reachable without the captcha anyway.
 - Analytics: `NEXT_PUBLIC_POSTHOG_KEY` is the one exception to "every variable in both Vercel environments": optional, Production only, so previews and local builds send nothing. Set on Vercel Production on 2026-11-16.
 - Deploying the web: merge to `main` (Vercel builds from GitHub), or Redeploy in the Vercel dashboard. Not `vercel --prod` from this PC: it uploads the local working folder (1.7 GB here). A changed `NEXT_PUBLIC_*` value needs a new deployment, since Next.js builds it into the pages.
-- Mobile env: `EXPO_PUBLIC_SITE_URL` (optional) is the public site for share links; it defaults to `EXPO_PUBLIC_API_URL`.
+- Mobile env: `EXPO_PUBLIC_POSTHOG_KEY` (optional; only in the EAS `preview` environment, so development builds send no error reports). `EXPO_PUBLIC_SITE_URL` (optional) is the public site for share links; it defaults to `EXPO_PUBLIC_API_URL`.
 - SQL: `pnpm supabase db query --read-only "<sql>" --remote`
 
 ## Decisions made
@@ -378,7 +386,11 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 
 ## Next
 - You, error tracking (after merge; Vercel deploys `main`): in PostHog open **Error tracking**. Errors on the live site show up there as issues (message, page, count). Nothing to set up: the key is already in Vercel. To see one, open the browser console on the live site and run `setTimeout(() => { throw new Error('bairmair test') })`; within a minute the issue appears. Then mark it resolved. Optional: Error tracking → set up an alert (e-mail or Slack) for new issues.
-- Next (your call): error tracking in the app with `posthog-react-native` (plain JavaScript, ships as an OTA update; adds app analytics too, so the app's privacy labels and policy change).
+- You, app error tracking (0.1.9, OTA):
+  1. PostHog → Settings → Error tracking → turn on **Exception autocapture** (without it the app reports only what its error screen catches).
+  2. Close and reopen the app twice on each phone; Бүртгэл shows 0.1.9.
+  3. Errors from the phones appear under Error tracking with `$app_version` 0.1.9 and the phone model. Nothing to provoke on purpose; when the app shows "Алдаа гарлаа" or closes by itself, the issue should be there within a minute (a crash: after the next launch).
+  4. When submitting to the stores: App Store privacy labels → Diagnostics → Crash data + other diagnostic data, not linked to the user, not used for tracking; Google Play data safety → Crash logs + Diagnostics, collected, not shared.
 - You, analytics (after merge):
   1. Create a free PostHog account in the **EU** region (eu.posthog.com), one project "bairmair".
   2. Project settings → turn on **cookieless server hash mode** (without it, PostHog drops every event from our cookieless setup). While there, leave session replay, surveys and heatmaps off.
@@ -423,7 +435,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - the room strip sits above the home indicator; back swipe returns to the listing.
   - with the web server stopped: the failed message, "Дахин оролдох" and "3D загварыг хөтөч дээр үзэх".
 - You, still open: 5c and 6b checks on the iPhone (now on build 3).
-- Then (your call on the order): error tracking in the app (website done with PostHog); production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Before launch: Supabase-wide captcha (see web sign-in).
+- Then (your call on the order): production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Before launch: Supabase-wide captcha (see web sign-in).
 
 ## SMS (WeSend, live since 2026-11-13)
 - Verified: a real number gets "Bairmair код: 780190. Хэнд ч бүү хэлээрэй." and signs in. WeSend adds no brand prefix to plain `/v1/sms` texts.

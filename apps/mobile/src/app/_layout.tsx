@@ -1,19 +1,31 @@
+// First, so error tracking is listening before anything else runs.
+import { captureError } from '@/lib/error-tracking';
 import { Onest_400Regular } from '@expo-google-fonts/onest/400Regular';
 import { Onest_500Medium } from '@expo-google-fonts/onest/500Medium';
 import { Onest_600SemiBold } from '@expo-google-fonts/onest/600SemiBold';
 import { Onest_700Bold } from '@expo-google-fonts/onest/700Bold';
 import { Onest_800ExtraBold } from '@expo-google-fonts/onest/800ExtraBold';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
+import { createTranslator, DEFAULT_LOCALE } from '@bairmair/i18n';
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+  type ErrorBoundaryProps,
+  type Theme,
+} from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { StyleSheet, useColorScheme, View } from 'react-native';
 import { AuthProvider } from '@/auth/auth-provider';
 import { startFavorites } from '@/browse/favorites';
 import { I18nProvider, useI18n } from '@/i18n/i18n';
 import { startListingSync } from '@/listings/listings';
 import { loadThemePreference } from '@/ui/appearance';
+import { Button } from '@/ui/button';
+import { Text } from '@/ui/text';
 import { FONT_FAMILIES, useColors, type Colors } from '@/ui/theme';
 
 // Kept up until the fonts are loaded (a moment: they ship inside the app or the update).
@@ -43,6 +55,25 @@ function navigationTheme(colors: Colors, dark: boolean, fontsLoaded: boolean): T
       heavy: face(FONT_FAMILIES.extrabold, base.fonts.heavy),
     },
   };
+}
+
+/**
+ * A screen failed to render: report it and offer a retry, instead of the app closing. Shown in
+ * place of the whole app, outside the language provider, so in Mongolian (the app's default).
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const colors = useColors();
+  const t = createTranslator(DEFAULT_LOCALE);
+  useEffect(() => {
+    captureError(error, { boundary: 'root' });
+  }, [error]);
+  return (
+    <View style={[styles.error, { backgroundColor: colors.background }]}>
+      <Text style={[styles.errorTitle, { color: colors.text }]}>{t('errorPage.title')}</Text>
+      <Text style={[styles.errorBody, { color: colors.textMuted }]}>{t('errorPage.body')}</Text>
+      <Button title={t('errorPage.retry')} onPress={() => void retry()} />
+    </View>
+  );
 }
 
 export const unstable_settings = {
@@ -138,3 +169,9 @@ function RootStack() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  error: { flex: 1, justifyContent: 'center', gap: 16, padding: 24 },
+  errorTitle: { fontSize: 22, fontWeight: '700' },
+  errorBody: { fontSize: 16, lineHeight: 22 },
+});
