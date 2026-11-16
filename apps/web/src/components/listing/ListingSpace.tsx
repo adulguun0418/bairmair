@@ -181,6 +181,7 @@ function Scene({
                 onSelectPhoto={openHotspot}
                 onInteract={onInteract}
                 pageScroll
+                introSpin
               />
             ) : (
               <Spinner />

@@ -704,6 +704,16 @@ export const en: Messages = {
     similar: {
       title: 'Similar listings',
     },
+    gallery: {
+      otherPhotos: 'Other photos',
+      planHint: 'Tap a room on the plan to see its photos.',
+    },
+    badgeInfo: {
+      more: 'What this means',
+      has3d:
+        'This apartment was scanned with an iPhone LiDAR sensor. "The space" below has the 3D model, the floor plan and each room\'s area.',
+      has3dLink: 'Go to the space',
+    },
     seller: {
       owner: 'Owner',
       agent: 'Agent',

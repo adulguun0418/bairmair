@@ -60,6 +60,12 @@ export interface AnalyticsEvents {
   similar_listing_clicked: { listing_id: string; target_id: string; position: number };
   /** "Зар нэмэх" in the navy seller band. */
   sell_band_clicked: { placement: 'home' | 'listing' };
+  /** The photo gallery: from "N зураг", the phone counter, or the "+N" tile. */
+  listing_gallery_opened: { listing_id: string; from: 'button' | 'counter' | 'more' };
+  /** A room picked in the gallery, on the plan or as a chip. */
+  gallery_room_selected: { listing_id: string; via: 'plan' | 'chip' };
+  /** The note behind a badge's ⓘ. */
+  badge_info_opened: { badge: '3d' | 'verified' };
 }
 
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
