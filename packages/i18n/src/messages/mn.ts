@@ -838,6 +838,8 @@ export const mn = {
     close: 'Хаах',
     open: 'Зарыг үзэх',
     approximate: 'Ойролцоо байршил (200–300 м)',
+    zoomIn: 'Томруулах',
+    zoomOut: 'Жижигрүүлэх',
   },
   listingCard: {
     has3d: '3D',
