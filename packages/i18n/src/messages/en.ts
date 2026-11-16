@@ -776,6 +776,7 @@ export const en: Messages = {
     filters: 'Filters',
     query: 'Keywords',
     queryPlaceholder: 'Complex, building name, street…',
+    clearQuery: 'Clear',
     districts: 'District',
     anyDistrict: 'All districts',
     districtCount: '{{count}} districts',

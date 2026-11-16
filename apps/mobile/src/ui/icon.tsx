@@ -34,6 +34,7 @@ const ICONS = {
   divide: { ios: 'scissors', android: 'content_cut' },
   plus: { ios: 'plus', android: 'add' },
   minus: { ios: 'minus', android: 'remove' },
+  close: { ios: 'xmark.circle.fill', android: 'cancel' },
 } as const satisfies Record<string, { ios: SFSymbol; android: AndroidSymbol }>;
 
 export type IconName = keyof typeof ICONS;

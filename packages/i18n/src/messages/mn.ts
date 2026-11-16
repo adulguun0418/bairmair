@@ -776,6 +776,7 @@ export const mn = {
     filters: 'Шүүлтүүр',
     query: 'Хайх үг',
     queryPlaceholder: 'Хотхон, байрны нэр, гудамж…',
+    clearQuery: 'Цэвэрлэх',
     districts: 'Дүүрэг',
     anyDistrict: 'Бүх дүүрэг',
     districtCount: '{{count}} дүүрэг',
