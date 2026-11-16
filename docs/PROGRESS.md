@@ -349,7 +349,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 ## To review
 - Header/footer/legal copy (`nav`, `theme`, `footer`, `legal`, `contact` in `mn.ts`) and the page texts in `apps/web/src/content/` (drafts, not legal advice).
 - The privacy policy's analytics paragraph (`content/privacy.ts`, "Вэбсайтын хэрэглээний статистик…") and how long PostHog keeps data (not stated yet; depends on the plan).
-- Listing page copy: "Орон зай" and its lead "iPhone-оор скан хийж хэмжсэн 3D загвар, төлөвлөлт. Өрөөн дээр дарж талбайг нь харна уу." (`listingPage.space`, `listingPage.hero` in `mn.ts`).
+- Listing page copy: "Орон зай" and its lead "iPhone-оор скан хийж хэмжсэн 3D загвар, төлөвлөлт. Өрөөн дээр дарж талбайг нь харна уу." (`listingPage.space`, `listingPage.hero` in `mn.ts`); the 3D badge note "Энэ байрыг iPhone-ийн LiDAR мэдрэгчээр скан хийсэн…", "Бусад зураг" and the gallery's plan hint (`listingPage.badgeInfo`, `listingPage.gallery`); the share title "Зарна: 2 өрөө · 55 м² · … — 350 сая ₮".
 - Mongolian UI copy (`packages/i18n/src/messages/mn.ts`), e.g. "Төлөвлөлт" for floor plan.
 - OTP SMS text: "Bairmair код: 123456. Хэнд ч бүү хэлээрэй." (`supabase/functions/send-sms/handler.ts`).
 - Scanner copy (`scanSupport`, `scan`, `scanResult` in `mn.ts`) and the iOS permission prompts (`apps/mobile/app.json`).
