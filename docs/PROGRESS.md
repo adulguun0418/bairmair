@@ -250,6 +250,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - `EXPO_PUBLIC_POSTHOG_KEY` added to the EAS `preview` environment (plaintext, public key); development builds have none and send nothing.
   - Privacy policy (mn + en): the error-report paragraph covers the app (phone model, OS and app version, a random number kept on the phone).
   - Verified: typecheck, lint, tests, `expo export` for iOS and Android, `expo-doctor`. Not verified: an error arriving from a phone (after the update and the PostHog setting).
+- Listing-page map in the app moves like the website's (app version 0.1.10, OTA): `LocationMap` was fixed on purpose (no pan or zoom, so the page scrolled past it). Now drag, pinch and double-tap work, plus +/− buttons (`map.zoomIn`/`zoomOut`); no rotation or tilt; zoom 10–18 (exact) or 10–16 (approximate), as on the web. Also the editor's pin preview. Not verified: on a phone (Android: whether vertical drags on the map move the map or scroll the page).
 - Tests: 525 unit (room-model 217, browse 118, mobile 91, web 45, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
 
 ## Commands

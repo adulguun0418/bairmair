@@ -838,6 +838,8 @@ export const en: Messages = {
     close: 'Close',
     open: 'View listing',
     approximate: 'Approximate location (200–300 m)',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
   },
   listingCard: {
     has3d: '3D',

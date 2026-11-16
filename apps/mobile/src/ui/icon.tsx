@@ -32,6 +32,8 @@ const ICONS = {
   person: { ios: 'person.fill', android: 'person' },
   undo: { ios: 'arrow.uturn.backward', android: 'undo' },
   divide: { ios: 'scissors', android: 'content_cut' },
+  plus: { ios: 'plus', android: 'add' },
+  minus: { ios: 'minus', android: 'remove' },
 } as const satisfies Record<string, { ios: SFSymbol; android: AndroidSymbol }>;
 
 export type IconName = keyof typeof ICONS;
