@@ -4,6 +4,7 @@ import { authErrorKey, formatMongolianPhone, type AuthErrorKey } from '@bairmair
 import { createTranslator, localePath, type Locale } from '@bairmair/i18n';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { track } from '@/lib/analytics';
 import { browserClient, safeNextPath } from '@/lib/supabase-browser';
 import { useAuth } from './AuthProvider';
 import { Turnstile } from './Turnstile';
@@ -93,6 +94,7 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
     });
     setBusy(false);
     if (error) setMessage({ key: authErrorKey(error) });
+    else track('sign_in_completed', {});
     // On success the session listener redirects.
   };
 

@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { currentPath, signInHref } from '@/components/auth/sign-in-href';
 import { FlagIcon } from '@/components/icons';
+import { track } from '@/lib/analytics';
 import { browserClient } from '@/lib/supabase-browser';
 
 type Reason = Enums<'report_reason'>;
@@ -81,6 +82,7 @@ export function ReportListing({
       .from('reports')
       .insert({ listing_id: listingId, reason, details: trimmed || null });
     setBusy(false);
+    if (!error) track('listing_reported', { listing_id: listingId, reason });
     setResult(!error ? 'sent' : error.code === UNIQUE_VIOLATION ? 'already' : 'failed');
   };
 

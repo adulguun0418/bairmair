@@ -5,6 +5,7 @@ import { daysLeftInSearch, LISTING_FRESHNESS } from '@bairmair/db';
 import { createTranslator, localePath, type Locale } from '@bairmair/i18n';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { track } from '@/lib/analytics';
 import { confirmAvailable, setListingStatus, type MyListingRow } from '@/lib/my-listings';
 
 type Status = MyListingRow['status'];
@@ -41,6 +42,12 @@ export function StatusSection({
     setError(null);
     try {
       onRow(await setListingStatus(row.id, status));
+      track('listing_status_changed', {
+        listing_id: row.id,
+        listing_type: row.type,
+        from_status: row.status,
+        to_status: status,
+      });
     } catch {
       setError(t('listingStatus.refused'));
     } finally {
@@ -54,6 +61,7 @@ export function StatusSection({
     try {
       const at = await confirmAvailable(row.id);
       onRow({ ...row, last_confirmed_at: at });
+      track('listing_availability_confirmed', { listing_id: row.id, listing_type: row.type });
       setConfirmed(true);
     } catch {
       setError(t('listingStatus.freshness.failed'));

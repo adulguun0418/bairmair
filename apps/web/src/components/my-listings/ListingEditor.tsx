@@ -26,6 +26,7 @@ import {
   type MyListingRow,
   type MyPhoto,
 } from '@/lib/my-listings';
+import { track } from '@/lib/analytics';
 import { PhotoSection } from './PhotoSection';
 import { ScanSection } from './ScanSection';
 import { StatusSection } from './StatusSection';
@@ -140,6 +141,7 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
         await savePrivate(id, pin, unit);
       }
       setLoaded({ row: saved, form, pin, photos });
+      track('listing_saved', { listing_id: id, listing_type: form.type, is_new: row === null });
       setNotice({ text: t('listingForm.saved'), error: false });
       if (!listingId) router.replace(localePath(locale, `/my-listings/${id}`));
     } catch {
@@ -157,6 +159,7 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
     setBusy(true);
     try {
       await deleteMyListing(row.id);
+      track('listing_deleted', { listing_id: row.id, listing_type: row.type });
       router.push(localePath(locale, '/my-listings'));
     } catch {
       setNotice({ text: t('listingForm.saveFailed'), error: true });

@@ -1,4 +1,6 @@
 import type { ApiErrorKey } from '@bairmair/db';
+import { after } from 'next/server';
+import { emitPostHogLog, flushPostHogLogs } from '@/instrumentation';
 import { processScan } from '@/server/process-scan';
 import { adminClient, supabaseScanStore, userIdFromRequest } from '@/server/supabase';
 
@@ -17,21 +19,39 @@ export async function POST(request: Request, ctx: RouteContext<'/api/scans/[id]/
     const outcome = await processScan(supabaseScanStore(adminClient()), id, userId);
     if (!outcome.ok) {
       log('scan_process_rejected', { scanId: id, status: outcome.status, error: outcome.error });
+      emitAndFlushPostHogLog('scan processing rejected', {
+        scan_id: id,
+        status: outcome.status,
+        error_code: outcome.error,
+      });
       return error(outcome.status, outcome.error);
     }
     log('scan_processed', { scanId: id, totalAreaM2: outcome.body.totalAreaM2 });
+    emitAndFlushPostHogLog('scan processed', {
+      scan_id: id,
+      total_area_m2: outcome.body.totalAreaM2,
+    });
     return Response.json(outcome.body);
   } catch (cause) {
     log('scan_process_error', {
       scanId: id,
       message: cause instanceof Error ? cause.message : String(cause),
     });
+    emitAndFlushPostHogLog('scan processing failed', { scan_id: id });
     return error(500, 'server_error');
   }
 }
 
 function error(status: number, key: ApiErrorKey): Response {
   return Response.json({ error: key }, { status });
+}
+
+function emitAndFlushPostHogLog(
+  body: string,
+  attributes: Record<string, string | number | boolean>,
+): void {
+  emitPostHogLog(body, attributes);
+  after(flushPostHogLogs);
 }
 
 function log(event: string, fields: Record<string, unknown>): void {

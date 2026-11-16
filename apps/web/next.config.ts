@@ -4,6 +4,9 @@ import type { NextConfig } from 'next';
 const photoPattern = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? [new URL(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/**`)]
   : [];
+const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+const posthogApiHost = posthogHost ? new URL(posthogHost).hostname : null;
+const posthogAssetsHost = posthogApiHost?.replace('.i.posthog.com', '-assets.i.posthog.com');
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
@@ -24,25 +27,26 @@ const nextConfig: NextConfig = {
   // localhost unless listed. Development only; private LAN ranges.
   allowedDevOrigins: ['192.168.*.*', '10.*.*.*', '172.*.*.*'],
   partialPrefetching: true,
-  // PostHog (EU) through our own origin, so tracker blocklists do not drop analytics
+  // PostHog through our own origin, so tracker blocklists do not drop analytics
   // (`src/lib/analytics.ts`, `ANALYTICS_PATH`; the locale proxy skips the path). Before the
   // pages, so `[lang]` never sees it.
   async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: '/bmr/static/:path*',
-          destination: 'https://eu-assets.i.posthog.com/static/:path*',
-        },
-        {
-          source: '/bmr/array/:path*',
-          destination: 'https://eu-assets.i.posthog.com/array/:path*',
-        },
-        { source: '/bmr/:path*', destination: 'https://eu.i.posthog.com/:path*' },
-      ],
-      afterFiles: [],
-      fallback: [],
-    };
+    const beforeFiles =
+      posthogApiHost && posthogAssetsHost
+        ? [
+            {
+              source: '/bmr/static/:path*',
+              destination: `https://${posthogAssetsHost}/static/:path*`,
+            },
+            {
+              source: '/bmr/array/:path*',
+              destination: `https://${posthogAssetsHost}/array/:path*`,
+            },
+            { source: '/bmr/:path*', destination: `https://${posthogApiHost}/:path*` },
+          ]
+        : [];
+
+    return { beforeFiles, afterFiles: [], fallback: [] };
   },
   // PostHog's endpoints end with a slash (`/e/`, `/flags/`); without this, each request would
   // first get a 308 to the slashless URL.

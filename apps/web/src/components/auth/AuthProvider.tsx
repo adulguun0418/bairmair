@@ -7,6 +7,7 @@ import {
   type FavoritesStore,
 } from '@bairmair/browse';
 import type { Session } from '@supabase/supabase-js';
+import posthog from 'posthog-js';
 import {
   createContext,
   useContext,
@@ -46,7 +47,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setValue({ session, ready: true });
       const userId = session?.user.id ?? null;
       if (userId !== current) {
+        const previousUserId = current;
         current = userId;
+
+        if (userId) {
+          if (previousUserId) posthog.reset();
+          posthog.identify(
+            userId,
+            session?.user.phone ? { phone: session.user.phone } : undefined,
+          );
+        } else if (previousUserId) {
+          posthog.reset();
+        }
+
         void favoritesStore().setUser(userId);
       }
     };
