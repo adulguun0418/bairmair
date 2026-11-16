@@ -1,6 +1,7 @@
 import type { Database } from '@bairmair/db';
 import { createClient } from '@supabase/supabase-js';
 import { publicEnv } from '@/lib/public-env';
+import { reportServerError } from '@/server/error-reporting';
 import { requestCode, verifyTurnstile } from '@/server/request-code';
 
 /**
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
     return Response.json({ sent: true, phone: result.phone });
   } catch (cause) {
     log('otp_error', { message: cause instanceof Error ? cause.message : String(cause) });
+    await reportServerError(cause, { route: '/api/auth/otp', method: 'POST' });
     return Response.json({ error: 'server_error' }, { status: 500 });
   }
 }

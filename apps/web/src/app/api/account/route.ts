@@ -1,5 +1,6 @@
 import type { ApiErrorKey } from '@bairmair/db';
 import { deleteAccount } from '@/server/delete-account';
+import { reportServerError } from '@/server/error-reporting';
 import { adminClient, supabaseAccountStore, userIdFromRequest } from '@/server/supabase';
 
 /**
@@ -23,6 +24,7 @@ export async function DELETE(request: Request) {
       userId,
       message: cause instanceof Error ? cause.message : String(cause),
     });
+    await reportServerError(cause, { route: '/api/account', method: 'DELETE' });
     return error(500, 'server_error');
   }
 }

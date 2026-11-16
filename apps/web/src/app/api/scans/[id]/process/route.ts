@@ -1,4 +1,5 @@
 import type { ApiErrorKey } from '@bairmair/db';
+import { reportServerError } from '@/server/error-reporting';
 import { processScan } from '@/server/process-scan';
 import { adminClient, supabaseScanStore, userIdFromRequest } from '@/server/supabase';
 
@@ -25,6 +26,11 @@ export async function POST(request: Request, ctx: RouteContext<'/api/scans/[id]/
     log('scan_process_error', {
       scanId: id,
       message: cause instanceof Error ? cause.message : String(cause),
+    });
+    await reportServerError(cause, {
+      route: '/api/scans/[id]/process',
+      method: 'POST',
+      scan_id: id,
     });
     return error(500, 'server_error');
   }

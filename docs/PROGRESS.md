@@ -1,6 +1,6 @@
 # Progress
 
-## Current state (2026-11-15)
+## Current state (2026-11-16)
 **All seven build steps are merged and running without your PC:** the web is live at https://bairmair-bairmair.vercel.app (Vercel Hobby, dev Supabase project), and the iOS and Android **preview builds** (standalone, ad hoc, pointing at Vercel) are installed and work. Everything still runs on the dev Supabase project.
 
 **OTA updates reach both phones:** the iOS preview build (from `51a9c31`) and the Android one (from `0cf3f86`) have runtime `0.1.0`; app version `0.1.1` and then `0.1.2` arrived on both as updates (see "Over-the-air updates").
@@ -235,7 +235,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Analytics: `listing_gallery_opened` (`from`: button | counter | more), `gallery_room_selected` (`via`: plan | chip), `badge_info_opened` (`badge`).
   - Copy: `listingPage.gallery.*`, `listingPage.badgeInfo.*`.
   - Verified: typecheck, lint, tests; production build + headless Chrome on the friend's listing: desktop gallery (3 room groups, plan with 6 rooms, a plan click selecting the kitchen, a photo opening the viewer over the gallery), phone gallery with chips, the badge note and its link scrolling to the turning 3D model with the hint pill.
-- Tests: 518 unit (room-model 217, browse 118, mobile 91, web 38, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
+- Error tracking with PostHog (your call: Sentry skipped for now; PostHog is already in, free up to 100,000 exceptions a month, no new processor, and no app build later). Website only; the app comes separately:
+  - Browser (`lib/analytics.ts`): `capture_exceptions` for uncaught errors and promise rejections (not `console.error`). PostHog's handlers normally load as an extra script, which `disable_external_dependency_loading` forbids, so `posthog-js/dist/exception-autocapture` is bundled into the PostHog chunk. Errors thrown before PostHog has loaded are queued (up to 10). `before_send` drops errors from browser extensions (stack frames from `chrome-extension://` etc.), cross-origin "Script error." and ResizeObserver warnings (`lib/error-filter.ts`, tested).
+  - Error pages: `[lang]/(site)/error.tsx` (header and footer stay), `[lang]/embed/error.tsx` (no home link inside the app), `app/global-error.tsx`; one `ErrorView` ("Алдаа гарлаа", "Дахин оролдох", "Нүүр хуудас руу буцах", the error code). They report with `captureError` (error boundaries hide errors from the uncaught handler), with `boundary` and Next's `digest`.
+  - Server (`server/error-reporting.ts`, `posthog-node` 5.64.0): `onRequestError` in `src/instrumentation.ts` reports uncaught errors in pages, server components and route handlers with path (no query string), route, kind and `digest`; the scan-processing, account-deletion and sign-in-code routes report the errors they catch and answer 500 with. Anonymous (random id, no person profile, no IP lookup, no headers), sent before the response (3 s timeout, no retries). Browsers only see React's redacted message for server errors: match the browser and server reports by `digest` (also shown on the error page as "Алдааны код").
+  - Like analytics: off without `NEXT_PUBLIC_POSTHOG_KEY` (Production only). No source maps uploaded yet: browser stack traces point into minified chunks (the message, page and `digest` usually suffice; upload needs a PostHog personal API key, later if needed).
+  - Privacy policy (mn + en): "Вэбсайтын алдааны мэдээ" paragraph; PostHog's processor line mentions error reports.
+  - Verified: typecheck, lint, tests; production build with a dummy key + headless Chrome: an uncaught error, a rejected promise and an error thrown before PostHog loaded arrive as `$exception` (cookieless, no person profile); a fake extension error and "Script error." are dropped; a temporary page throwing on the server (not committed) showed the error page in mn and en, and both reports went out with the same digest (the server's with the real message, route and `render_source`, intercepted locally). Not verified: events in the real PostHog project (after merge).
+- Tests: 525 unit (room-model 217, browse 118, mobile 91, web 45, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -261,6 +268,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - SQL: `pnpm supabase db query --read-only "<sql>" --remote`
 
 ## Decisions made
+- Error tracking: PostHog, not Sentry, for now (your call, 2026-11-16): already integrated and free at our size; Sentry's app SDK is native code (new build, runtime bump). Revisit if PostHog's error tracking proves too limited (source maps, alerts).
 - Dev environment: native Windows + hosted Supabase project. No WSL, no Docker. Overrides the "WSL2" line in the brief.
 - Seller phone: tap to reveal, no login, through a rate-limited RPC. No phone column in `public`.
 - Name `bairmair`, scope `@bairmair/*`, bundle id `mn.bairmair.app`.
@@ -369,6 +377,8 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Divider copy (`roomDivide`, `viewer.dividerNote` in `mn.ts`) and rules: lines straightened within 8°, parts at least 0.5 m², at most 20 lines.
 
 ## Next
+- You, error tracking (after merge; Vercel deploys `main`): in PostHog open **Error tracking**. Errors on the live site show up there as issues (message, page, count). Nothing to set up: the key is already in Vercel. To see one, open the browser console on the live site and run `setTimeout(() => { throw new Error('bairmair test') })`; within a minute the issue appears. Then mark it resolved. Optional: Error tracking → set up an alert (e-mail or Slack) for new issues.
+- Next (your call): error tracking in the app with `posthog-react-native` (plain JavaScript, ships as an OTA update; adds app analytics too, so the app's privacy labels and policy change).
 - You, analytics (after merge):
   1. Create a free PostHog account in the **EU** region (eu.posthog.com), one project "bairmair".
   2. Project settings → turn on **cookieless server hash mode** (without it, PostHog drops every event from our cookieless setup). While there, leave session replay, surveys and heatmaps off.
@@ -388,7 +398,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - You, app redesign phase 1 (app version 0.1.3) on both preview builds: after merging, `pnpm update:preview -m "App redesign, phase 1"` in `apps/mobile` (clean, up-to-date `main`); close and reopen the app twice. Check: Onest everywhere (tabs, headers, Cyrillic); Хайх: switch, list/map button, quick chips (3D, rooms) change results; a 3D card: tap the plan tile → card turns to the labelled plan, tap again → photo; a listing: photos under the header, parallax and pull-stretch, Зураг/Төлөвлөлт/3D switch, price gauge, Орон зай bars, bottom bar reveal → call/SMS; dark mode; map pins navy/white.
 - App redesign, next phases (one PR each): 2. the seller side: Миний зарууд as project cards (photo, status, sync, 3D), the editor as grouped steps with progress, a scan intro on blueprint paper, account screen; 3. motion: shared photo transition from card to listing, heart pop, sheet/skeleton loading.
 - You, on the Android preview build: check that the OTA update with the map pin arrives (Бүртгэл's version line shows "шинэчлэл <time>" after two restarts), then pin a listing on the map (see the map pin entry above).
-- You: fill in `apps/web/src/content/site-info.ts` (company name, registration number, address, support e-mail and phone; the pages show the [bracket] placeholders until then), and have the terms and privacy drafts checked (they describe what the code does today; update them when Sentry, analytics or payments arrive).
+- You: fill in `apps/web/src/content/site-info.ts` (company name, registration number, address, support e-mail and phone; the pages show the [bracket] placeholders until then), and have the terms and privacy drafts checked (they describe what the code does today; update them when app analytics or payments arrive).
 - Store review: the app needs links to the privacy policy and terms (Бүртгэл and sign-in), and App Store Connect needs the privacy policy URL (`/privacy`) and a support URL (`/support`); Google Play needs the account-deletion URL (`/delete-account`).
 - You, on the iPhone dev build (`pnpm dev:mobile`; the server converts on Vercel, which redeploys `main`): check the whole-apartment scan. Your earlier scans re-convert on the phone with the new converter when you open them.
   - A listing → "3D скан": the intro describes one scan for the whole apartment; while scanning there is only "Болих" and "Дуусгах".
@@ -413,7 +423,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - the room strip sits above the home indicator; back swipe returns to the listing.
   - with the web server stopped: the failed message, "Дахин оролдох" and "3D загварыг хөтөч дээр үзэх".
 - You, still open: 5c and 6b checks on the iPhone (now on build 3).
-- Then (your call on the order): error reporting (Sentry) before others test; production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Before launch: Supabase-wide captcha (see web sign-in).
+- Then (your call on the order): error tracking in the app (website done with PostHog); production Supabase project + custom domain; account deletion, privacy policy and terms (store requirements); photo thumbnails; a small pilot with real sellers; then the stores. Before launch: Supabase-wide captcha (see web sign-in).
 
 ## SMS (WeSend, live since 2026-11-13)
 - Verified: a real number gets "Bairmair код: 780190. Хэнд ч бүү хэлээрэй." and signs in. WeSend adds no brand prefix to plain `/v1/sms` texts.
