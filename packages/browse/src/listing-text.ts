@@ -1,5 +1,11 @@
 import { CITIES, districtById } from '@bairmair/db';
-import { formatArea, formatMoney, type Locale, type Translator } from '@bairmair/i18n';
+import {
+  formatArea,
+  formatListingPrice,
+  formatMoney,
+  type Locale,
+  type Translator,
+} from '@bairmair/i18n';
 import type { ListingRow } from './listing-page';
 
 // Text shown about a listing, identical on the web page and in the app.
@@ -24,6 +30,34 @@ export function districtLabel(
 ): string | null {
   const district = districtById(districtId);
   return district ? t('listingPage.district', { district: placeName(district, locale) }) : null;
+}
+
+/**
+ * "Зарна: 2 өрөө · 65 м² · Хан-Уул дүүрэг — 350 сая ₮": the title of a shared link (Facebook,
+ * messengers). Built from the listing's facts, since sellers' own titles often say little
+ * ("Duuree home"); the seller's title goes into the description.
+ */
+export function listingShareTitle(
+  listing: Pick<
+    ListingRow,
+    | 'type'
+    | 'price'
+    | 'currency'
+    | 'rooms'
+    | 'area_official_m2'
+    | 'area_scanned_m2'
+    | 'district_id'
+    | 'complex_name'
+  >,
+  locale: Locale,
+  t: Translator,
+): string {
+  const type = t(`listingPage.types.${listing.type}`);
+  const summary = listingSummary(listing, locale, t, { complex: false });
+  const head = summary ? `${type}: ${summary}` : type;
+  return listing.price === null
+    ? head
+    : `${head} — ${formatListingPrice(listing.price, listing.currency, listing.type, locale)}`;
 }
 
 /** "2 өрөө · 65 м² · Хан-Уул дүүрэг · Зайсан хотхон", for headers, cards and descriptions. */

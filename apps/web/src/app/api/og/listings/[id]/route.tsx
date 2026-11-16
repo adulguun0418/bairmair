@@ -6,23 +6,31 @@ import {
   isLocale,
   type Locale,
 } from '@bairmair/i18n';
-import { renderFloorPlanSvg } from '@bairmair/room-model';
+import { renderFloorPlanSvg, type RoomModelV1 } from '@bairmair/room-model';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
+import { CARD_PLAN_THEME } from '@/lib/listing-plan';
 import { getListingPage } from '@/server/listing-page';
 
-// The preview Facebook and messengers show for a shared listing link: the floor plan (or the
-// cover photo when there is no scan) beside the price and the basics. Facebook does not accept
-// SVG, so the plan is rasterized here.
+// The preview Facebook and messengers show for a shared listing link. The cover photo leads
+// (what the apartment looks like), with the floor plan as an inset for a scanned listing, and
+// the price and basics in a panel beside it. Without photos, the plan takes the photo's place.
+// Facebook does not accept SVG, so the plan is rasterized here.
 //
 // A route handler under /api rather than an `opengraph-image` file: the locale proxy skips
 // /api, so the image URL has no `/mn` prefix (which the proxy would answer with a redirect).
 // `?lang=en` picks English; Mongolian is the default.
 
-/** Size Facebook recommends for link previews. */
+/** Size Facebook recommends for link previews (1.91:1). */
 const OG_SIZE = { width: 1200, height: 630 };
-const PLAN = { width: 630, height: 630 };
+const MEDIA = { width: 720, height: 630 };
+const INSET = 250;
+const INSET_PADDING = 16;
+
+const NAVY = '#1a2b60';
+const SKY = '#199ed6';
+const MUTED = '#55607a';
 
 /**
  * Noto Sans (from @fontsource/noto-sans 5.3.0, OFL), one family per subset: Latin, Latin
@@ -52,6 +60,36 @@ async function loadFonts() {
   );
 }
 
+/**
+ * The cover photo as a data URL, or null when it cannot be loaded in time. Fetched here rather
+ * than by Satori, so a slow or missing photo falls back to the plan instead of failing the
+ * whole image.
+ */
+async function loadPhoto(src: string): Promise<string | null> {
+  try {
+    const response = await fetch(src, { signal: AbortSignal.timeout(6000) });
+    const type = response.headers.get('content-type') ?? '';
+    if (!response.ok || !/^image\/(jpeg|png)/.test(type)) return null;
+    const bytes = Buffer.from(await response.arrayBuffer());
+    return `data:${type};base64,${bytes.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
+/** The floor plan without labels (room names would need fonts inside the nested SVG). */
+function planImage(model: RoomModelV1, size: number): string {
+  const svg = renderFloorPlanSvg(model, {
+    theme: CARD_PLAN_THEME,
+    size: { width: size, height: size },
+    showHotspots: false,
+    showObjects: false,
+    paddingM: 0.3,
+    wallThicknessM: 0.16,
+  });
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
 /** Crawlers fetch the image once per share; a CDN may keep it for an hour. */
 const HEADERS = { 'Cache-Control': 'public, max-age=300, s-maxage=3600' };
 
@@ -65,8 +103,8 @@ export async function GET(request: Request, { params }: RouteContext<'/api/og/li
 
   if (!page) {
     return new ImageResponse(
-      <div style={{ ...fill, alignItems: 'center', justifyContent: 'center', fontSize: 72 }}>
-        {t('app.name')}
+      <div style={{ ...fill, alignItems: 'center', justifyContent: 'center' }}>
+        <Wordmark size={96} />
       </div>,
       { ...options, status: 404 },
     );
@@ -82,70 +120,123 @@ export async function GET(request: Request, { params }: RouteContext<'/api/og/li
   const place = district
     ? t('listingPage.district', { district: locale === 'mn' ? district.nameMn : district.nameEn })
     : null;
-
-  // Without labels: room names would need fonts inside the nested SVG. The text sits beside it.
-  const plan = model
-    ? `data:image/svg+xml;base64,${Buffer.from(
-        renderFloorPlanSvg(model, { size: PLAN, showHotspots: false, paddingM: 0.6 }),
-      ).toString('base64')}`
-    : null;
-  const cover = photos[0]?.src ?? null;
+  const price =
+    listing.price === null
+      ? null
+      : formatListingPrice(listing.price, listing.currency, listing.type, locale);
+  const cover = photos[0] ? await loadPhoto(photos[0].src) : null;
 
   return new ImageResponse(
     <div style={fill}>
       <div
         style={{
           display: 'flex',
-          width: PLAN.width,
-          height: PLAN.height,
-          background: '#ffffff',
+          position: 'relative',
+          width: MEDIA.width,
+          height: MEDIA.height,
           alignItems: 'center',
           justifyContent: 'center',
+          background: cover ? '#dfe5ee' : '#eef3fa',
         }}
       >
-        {plan ? (
-          // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not a browser
-          <img src={plan} width={PLAN.width} height={PLAN.height} alt="" />
-        ) : cover ? (
+        {cover ? (
           // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not a browser
           <img
             src={cover}
-            width={PLAN.width}
-            height={PLAN.height}
+            width={MEDIA.width}
+            height={MEDIA.height}
             alt=""
             style={{ objectFit: 'cover' }}
           />
-        ) : null}
+        ) : model ? (
+          // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not a browser
+          <img
+            src={planImage(model, MEDIA.height - 60)}
+            width={MEDIA.height - 60}
+            height={MEDIA.height - 60}
+            alt=""
+          />
+        ) : (
+          <Wordmark size={88} />
+        )}
+        {cover && model && (
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              left: 28,
+              bottom: 28,
+              width: INSET,
+              height: INSET,
+              padding: INSET_PADDING,
+              borderRadius: 28,
+              background: '#ffffff',
+              boxShadow: '0 12px 32px rgba(14, 23, 51, 0.35)',
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not a browser */}
+            <img
+              src={planImage(model, INSET - INSET_PADDING * 2)}
+              width={INSET - INSET_PADDING * 2}
+              height={INSET - INSET_PADDING * 2}
+              alt=""
+            />
+          </div>
+        )}
       </div>
+
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
           flex: 1,
-          padding: '48px 52px',
+          padding: '44px 44px 40px',
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div style={{ display: 'flex', gap: 12, fontSize: 26 }}>
-            <span style={badge}>{t(`listingPage.types.${listing.type}`)}</span>
-            {model && <span style={{ ...badge, background: '#fde68a' }}>3D</span>}
+          <div style={{ display: 'flex', gap: 10, fontSize: 24 }}>
+            <span style={{ ...badge, background: '#e6ebf4', color: NAVY }}>
+              {t(`listingPage.types.${listing.type}`)}
+            </span>
+            {model && (
+              <span style={{ ...badge, background: NAVY, color: '#ffffff', fontWeight: 700 }}>
+                3D
+              </span>
+            )}
           </div>
-          {listing.price !== null && (
-            <div style={{ fontSize: 64, fontWeight: 700 }}>
-              {formatListingPrice(listing.price, listing.currency, listing.type, locale)}
+          {price && (
+            <div
+              style={{
+                fontSize: price.length > 10 ? 50 : 60,
+                fontWeight: 700,
+                color: NAVY,
+                lineHeight: 1.1,
+              }}
+            >
+              {price}
             </div>
           )}
-          {facts.length > 0 && <div style={{ fontSize: 36 }}>{facts.join(' · ')}</div>}
-          {place && <div style={{ fontSize: 32, color: '#57534e' }}>{place}</div>}
+          {facts.length > 0 && <div style={{ fontSize: 34 }}>{facts.join(' · ')}</div>}
+          {place && <div style={{ fontSize: 28, color: MUTED }}>{place}</div>}
           {listing.complex_name && (
-            <div style={{ fontSize: 28, color: '#57534e' }}>{listing.complex_name}</div>
+            <div style={{ fontSize: 24, color: MUTED }}>{listing.complex_name}</div>
           )}
         </div>
-        <div style={{ fontSize: 30, fontWeight: 700 }}>{t('app.name')}</div>
+        <Wordmark size={34} />
       </div>
     </div>,
     options,
+  );
+}
+
+/** "bairmair" in the logo's two colours. */
+function Wordmark({ size }: { size: number }) {
+  return (
+    <div style={{ display: 'flex', fontSize: size, fontWeight: 700, letterSpacing: -1 }}>
+      <span style={{ color: NAVY }}>bair</span>
+      <span style={{ color: SKY }}>mair</span>
+    </div>
   );
 }
 
@@ -153,8 +244,8 @@ const fill = {
   display: 'flex',
   width: '100%',
   height: '100%',
-  background: '#f5f5f4',
-  color: '#1c1917',
+  background: '#f7f8fb',
+  color: '#0e1733',
   fontFamily: FONT_STACK,
 } as const;
 
@@ -162,5 +253,4 @@ const badge = {
   display: 'flex',
   padding: '6px 18px',
   borderRadius: 999,
-  background: '#e7e5e4',
 } as const;
