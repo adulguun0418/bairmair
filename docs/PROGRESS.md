@@ -255,7 +255,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
 - A running `pnpm dev:web` can keep a stale `globals.css` after branch switches (e.g. switching to an old `main` before pulling): pages then lose their colours. Restart it; if that is not enough, delete `apps/web/.next`.
-- `pnpm dev:mobile` (Metro for the development build). Runs with `--max-workers 2`: with one worker per CPU thread, Metro crashed out of memory on this PC (exit code -1073740791 = 0xC0000409).
+- `pnpm dev:mobile` (Metro for the development build). Metro uses 2 workers (`apps/mobile/metro.config.js`, also `--max-workers 2` on the dev script): with one worker per CPU thread, Metro crashed out of memory on this PC (exit code -1073740791 = 0xC0000409), which also broke `pnpm update:preview` (0.1.9 was published from a manual export with `eas update --skip-bundler --input-dir dist`).
 - In `apps/mobile`: `pnpm eas <command>` (EAS CLI 27.7.2 via `pnpm dlx`), `pnpm doctor`
 - `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm format`
 - `pnpm --filter @bairmair/room-model samples` regenerates the sample JSON
