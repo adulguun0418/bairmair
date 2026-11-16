@@ -42,6 +42,7 @@ import { StatusSection } from '@/listings/status-section';
 import { SyncStatusLine } from '@/listings/sync-status-line';
 import { Button } from '@/ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
+import { ScrollLockHost } from '@/ui/scroll-lock';
 import { Section } from '@/ui/section';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
@@ -148,237 +149,246 @@ function Editor({ listing }: { listing: LocalListing }) {
   ];
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={styles.content}
-      contentInsetAdjustmentBehavior="automatic"
-      automaticallyAdjustKeyboardInsets
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-    >
-      <Stack.Screen
-        options={{
-          title: listing.remote.createAttempted
-            ? t('listingForm.editTitle')
-            : t('listingForm.newTitle'),
-        }}
-      />
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.small, { color: colors.textMuted }]}>
-          {t(`listings.statuses.${listing.serverStatus}`)}
-          {listing.scan?.processing === 'ready' ? ` · ${t('listings.badge3d')}` : ''}
-        </Text>
-        <SyncStatusLine listing={listing} />
-      </View>
-
-      <Section title={t('listingForm.sections.type')}>
-        <ChoiceChips
-          choices={[
-            { value: 'sale' as const, label: t('listingForm.types.sale') },
-            { value: 'rent' as const, label: t('listingForm.types.rent') },
-          ]}
-          value={form.type}
-          onChange={(type) => {
-            if (type) set({ type });
-          }}
-          allowClear={false}
-        />
-      </Section>
-
-      <Section title={t('listingForm.sections.basics')}>
-        {field('title', t('listingForm.title'), {
-          placeholder: t('listingForm.titlePlaceholder'),
-          maxLength: LISTING_LIMITS.title.max,
-          returnKeyType: 'done',
-        })}
-        {field('description', t('listingForm.description'), {
-          placeholder: t('listingForm.descriptionPlaceholder'),
-          maxLength: LISTING_LIMITS.description.max,
-          multiline: true,
-          style: styles.multiline,
-        })}
-      </Section>
-
-      <Section title={t('listingForm.sections.price')}>
-        {!sale && (
-          <ChoiceChips
-            label={t('listingForm.currency')}
-            choices={[
-              { value: 'MNT' as const, label: '₮ MNT' },
-              { value: 'USD' as const, label: '$ USD' },
-            ]}
-            value={form.currency}
-            onChange={(value) => {
-              if (value) set({ currency: value });
+    <ScrollLockHost>
+      {(scrollEnabled) => (
+        <ScrollView
+          scrollEnabled={scrollEnabled}
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={styles.content}
+          contentInsetAdjustmentBehavior="automatic"
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
+          <Stack.Screen
+            options={{
+              title: listing.remote.createAttempted
+                ? t('listingForm.editTitle')
+                : t('listingForm.newTitle'),
             }}
-            allowClear={false}
           />
-        )}
-        {field(
-          'price',
-          `${sale ? t('listingForm.price') : t('listingForm.priceRent')} (${currency === 'USD' ? '$' : '₮'})`,
-          {
-            keyboardType: 'number-pad',
-            maxLength: 20,
-            hint: priceHint,
-          },
-        )}
-        <ToggleRow
-          label={t('listingForm.negotiable')}
-          value={form.negotiable}
-          onValueChange={(negotiable) => set({ negotiable })}
-        />
-        {sale ? (
-          <ChoiceChips
-            label={t('listingForm.mortgage')}
-            choices={yesNo}
-            value={form.mortgageEligible}
-            onChange={(mortgageEligible) => set({ mortgageEligible })}
-          />
-        ) : (
-          <>
-            {field('deposit', `${t('listingForm.deposit')} (${currency === 'USD' ? '$' : '₮'})`, {
-              keyboardType: 'number-pad',
-              maxLength: 20,
-            })}
-            {field('minTermMonths', t('listingForm.minTerm'), {
-              keyboardType: 'number-pad',
-              maxLength: 3,
-            })}
-            <ChoiceChips
-              label={t('listingForm.utilities')}
-              choices={yesNo}
-              value={form.utilitiesIncluded}
-              onChange={(utilitiesIncluded) => set({ utilitiesIncluded })}
-            />
-          </>
-        )}
-      </Section>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.small, { color: colors.textMuted }]}>
+              {t(`listings.statuses.${listing.serverStatus}`)}
+              {listing.scan?.processing === 'ready' ? ` · ${t('listings.badge3d')}` : ''}
+            </Text>
+            <SyncStatusLine listing={listing} />
+          </View>
 
-      <Section title={t('listingForm.sections.property')}>
-        {field('rooms', t('listingForm.rooms'), {
-          keyboardType: 'number-pad',
-          maxLength: 2,
-          hint: t('listingForm.roomsHint'),
-        })}
-        {field('areaOfficial', t('listingForm.area'), {
-          keyboardType: 'decimal-pad',
-          maxLength: 10,
-          hint: t('listingForm.areaHint'),
-        })}
-        <View style={styles.pair}>
-          <View style={styles.grow}>
-            {field('floor', t('listingForm.floor'), {
-              keyboardType: 'numbers-and-punctuation',
+          <Section title={t('listingForm.sections.type')}>
+            <ChoiceChips
+              choices={[
+                { value: 'sale' as const, label: t('listingForm.types.sale') },
+                { value: 'rent' as const, label: t('listingForm.types.rent') },
+              ]}
+              value={form.type}
+              onChange={(type) => {
+                if (type) set({ type });
+              }}
+              allowClear={false}
+            />
+          </Section>
+
+          <Section title={t('listingForm.sections.basics')}>
+            {field('title', t('listingForm.title'), {
+              placeholder: t('listingForm.titlePlaceholder'),
+              maxLength: LISTING_LIMITS.title.max,
+              returnKeyType: 'done',
+            })}
+            {field('description', t('listingForm.description'), {
+              placeholder: t('listingForm.descriptionPlaceholder'),
+              maxLength: LISTING_LIMITS.description.max,
+              multiline: true,
+              style: styles.multiline,
+            })}
+          </Section>
+
+          <Section title={t('listingForm.sections.price')}>
+            {!sale && (
+              <ChoiceChips
+                label={t('listingForm.currency')}
+                choices={[
+                  { value: 'MNT' as const, label: '₮ MNT' },
+                  { value: 'USD' as const, label: '$ USD' },
+                ]}
+                value={form.currency}
+                onChange={(value) => {
+                  if (value) set({ currency: value });
+                }}
+                allowClear={false}
+              />
+            )}
+            {field(
+              'price',
+              `${sale ? t('listingForm.price') : t('listingForm.priceRent')} (${currency === 'USD' ? '$' : '₮'})`,
+              {
+                keyboardType: 'number-pad',
+                maxLength: 20,
+                hint: priceHint,
+              },
+            )}
+            <ToggleRow
+              label={t('listingForm.negotiable')}
+              value={form.negotiable}
+              onValueChange={(negotiable) => set({ negotiable })}
+            />
+            {sale ? (
+              <ChoiceChips
+                label={t('listingForm.mortgage')}
+                choices={yesNo}
+                value={form.mortgageEligible}
+                onChange={(mortgageEligible) => set({ mortgageEligible })}
+              />
+            ) : (
+              <>
+                {field(
+                  'deposit',
+                  `${t('listingForm.deposit')} (${currency === 'USD' ? '$' : '₮'})`,
+                  {
+                    keyboardType: 'number-pad',
+                    maxLength: 20,
+                  },
+                )}
+                {field('minTermMonths', t('listingForm.minTerm'), {
+                  keyboardType: 'number-pad',
+                  maxLength: 3,
+                })}
+                <ChoiceChips
+                  label={t('listingForm.utilities')}
+                  choices={yesNo}
+                  value={form.utilitiesIncluded}
+                  onChange={(utilitiesIncluded) => set({ utilitiesIncluded })}
+                />
+              </>
+            )}
+          </Section>
+
+          <Section title={t('listingForm.sections.property')}>
+            {field('rooms', t('listingForm.rooms'), {
+              keyboardType: 'number-pad',
+              maxLength: 2,
+              hint: t('listingForm.roomsHint'),
+            })}
+            {field('areaOfficial', t('listingForm.area'), {
+              keyboardType: 'decimal-pad',
+              maxLength: 10,
+              hint: t('listingForm.areaHint'),
+            })}
+            <View style={styles.pair}>
+              <View style={styles.grow}>
+                {field('floor', t('listingForm.floor'), {
+                  keyboardType: 'numbers-and-punctuation',
+                  maxLength: 4,
+                })}
+              </View>
+              <View style={styles.grow}>
+                {field('totalFloors', t('listingForm.totalFloors'), {
+                  keyboardType: 'number-pad',
+                  maxLength: 3,
+                })}
+              </View>
+            </View>
+            {field('buildingYear', t('listingForm.buildingYear'), {
+              keyboardType: 'number-pad',
               maxLength: 4,
             })}
-          </View>
-          <View style={styles.grow}>
-            {field('totalFloors', t('listingForm.totalFloors'), {
+            <ChoiceChips
+              label={t('listingForm.material')}
+              choices={(['panel', 'brick', 'monolithic', 'other'] as const).map((value) => ({
+                value,
+                label: t(`listingForm.materials.${value}`),
+              }))}
+              value={form.buildingMaterial}
+              onChange={(buildingMaterial) => set({ buildingMaterial })}
+            />
+            <ToggleRow
+              label={t('listingForm.newBuilding')}
+              value={form.newBuilding}
+              onValueChange={(newBuilding) => set({ newBuilding })}
+            />
+            <ChoiceChips
+              label={t('listingForm.heating')}
+              choices={(['central', 'autonomous', 'electric', 'other'] as const).map((value) => ({
+                value,
+                label: t(`listingForm.heatings.${value}`),
+              }))}
+              value={form.heating}
+              onChange={(heating) => set({ heating })}
+            />
+            {field('balconies', t('listingForm.balconies'), {
               keyboardType: 'number-pad',
-              maxLength: 3,
+              maxLength: 2,
             })}
-          </View>
-        </View>
-        {field('buildingYear', t('listingForm.buildingYear'), {
-          keyboardType: 'number-pad',
-          maxLength: 4,
-        })}
-        <ChoiceChips
-          label={t('listingForm.material')}
-          choices={(['panel', 'brick', 'monolithic', 'other'] as const).map((value) => ({
-            value,
-            label: t(`listingForm.materials.${value}`),
-          }))}
-          value={form.buildingMaterial}
-          onChange={(buildingMaterial) => set({ buildingMaterial })}
-        />
-        <ToggleRow
-          label={t('listingForm.newBuilding')}
-          value={form.newBuilding}
-          onValueChange={(newBuilding) => set({ newBuilding })}
-        />
-        <ChoiceChips
-          label={t('listingForm.heating')}
-          choices={(['central', 'autonomous', 'electric', 'other'] as const).map((value) => ({
-            value,
-            label: t(`listingForm.heatings.${value}`),
-          }))}
-          value={form.heating}
-          onChange={(heating) => set({ heating })}
-        />
-        {field('balconies', t('listingForm.balconies'), {
-          keyboardType: 'number-pad',
-          maxLength: 2,
-        })}
-        <ChoiceChips
-          label={t('listingForm.parking')}
-          choices={(['none', 'outdoor', 'garage', 'underground'] as const).map((value) => ({
-            value,
-            label: t(`listingForm.parkings.${value}`),
-          }))}
-          value={form.parking}
-          onChange={(parking) => set({ parking })}
-        />
-        <ChoiceChips
-          label={t('listingForm.furnishing')}
-          choices={(['none', 'partial', 'full'] as const).map((value) => ({
-            value,
-            label: t(`listingForm.furnishings.${value}`),
-          }))}
-          value={form.furnishing}
-          onChange={(furnishing) => set({ furnishing })}
-        />
-      </Section>
+            <ChoiceChips
+              label={t('listingForm.parking')}
+              choices={(['none', 'outdoor', 'garage', 'underground'] as const).map((value) => ({
+                value,
+                label: t(`listingForm.parkings.${value}`),
+              }))}
+              value={form.parking}
+              onChange={(parking) => set({ parking })}
+            />
+            <ChoiceChips
+              label={t('listingForm.furnishing')}
+              choices={(['none', 'partial', 'full'] as const).map((value) => ({
+                value,
+                label: t(`listingForm.furnishings.${value}`),
+              }))}
+              value={form.furnishing}
+              onChange={(furnishing) => set({ furnishing })}
+            />
+          </Section>
 
-      <Section title={t('listingForm.sections.location')}>
-        <ChoiceChips
-          label={t('listingForm.district')}
-          choices={DISTRICTS.map((district) => ({
-            value: district.id,
-            label: locale === 'mn' ? district.nameMn : district.nameEn,
-          }))}
-          value={form.districtId}
-          onChange={(districtId) => set({ districtId })}
-        />
-        {field('khoroo', t('listingForm.khoroo'), { keyboardType: 'number-pad', maxLength: 2 })}
-        {field('complexName', t('listingForm.complexName'), {
-          placeholder: t('listingForm.complexPlaceholder'),
-          maxLength: LISTING_LIMITS.complexName.max,
-        })}
-        {field('addressText', t('listingForm.addressText'), {
-          placeholder: t('listingForm.addressPlaceholder'),
-          maxLength: LISTING_LIMITS.addressText.max,
-          multiline: true,
-          style: styles.multiline,
-        })}
-        <LocationPin listing={listing} />
-        <ToggleRow
-          label={t('listingForm.showExact')}
-          hint={t('listingForm.showExactHint')}
-          value={form.showExactLocation}
-          onValueChange={(showExactLocation) => set({ showExactLocation })}
-        />
-        {field('unitNumber', t('listingForm.unitNumber'), {
-          maxLength: LISTING_LIMITS.unitNumber.max,
-          hint: t('listingForm.unitHint'),
-        })}
-      </Section>
+          <Section title={t('listingForm.sections.location')}>
+            <ChoiceChips
+              label={t('listingForm.district')}
+              choices={DISTRICTS.map((district) => ({
+                value: district.id,
+                label: locale === 'mn' ? district.nameMn : district.nameEn,
+              }))}
+              value={form.districtId}
+              onChange={(districtId) => set({ districtId })}
+            />
+            {field('khoroo', t('listingForm.khoroo'), { keyboardType: 'number-pad', maxLength: 2 })}
+            {field('complexName', t('listingForm.complexName'), {
+              placeholder: t('listingForm.complexPlaceholder'),
+              maxLength: LISTING_LIMITS.complexName.max,
+            })}
+            {field('addressText', t('listingForm.addressText'), {
+              placeholder: t('listingForm.addressPlaceholder'),
+              maxLength: LISTING_LIMITS.addressText.max,
+              multiline: true,
+              style: styles.multiline,
+            })}
+            <LocationPin listing={listing} />
+            <ToggleRow
+              label={t('listingForm.showExact')}
+              hint={t('listingForm.showExactHint')}
+              value={form.showExactLocation}
+              onValueChange={(showExactLocation) => set({ showExactLocation })}
+            />
+            {field('unitNumber', t('listingForm.unitNumber'), {
+              maxLength: LISTING_LIMITS.unitNumber.max,
+              hint: t('listingForm.unitHint'),
+            })}
+          </Section>
 
-      <Section title={t('listingForm.sections.photos')}>
-        <Photos listing={listing} />
-      </Section>
+          <Section title={t('listingForm.sections.photos')}>
+            <Photos listing={listing} />
+          </Section>
 
-      <Section title={t('listingForm.sections.scan')}>
-        <ScanSection listing={listing} />
-      </Section>
+          <Section title={t('listingForm.sections.scan')}>
+            <ScanSection listing={listing} />
+          </Section>
 
-      <Section title={t('listingForm.sections.publish')}>
-        <StatusSection listing={listing} />
-      </Section>
+          <Section title={t('listingForm.sections.publish')}>
+            <StatusSection listing={listing} />
+          </Section>
 
-      <Button title={t('listingForm.delete')} variant="danger" onPress={confirmDelete} />
-    </ScrollView>
+          <Button title={t('listingForm.delete')} variant="danger" onPress={confirmDelete} />
+        </ScrollView>
+      )}
+    </ScrollLockHost>
   );
 }
 

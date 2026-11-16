@@ -21,7 +21,7 @@ import { BlueprintGrid } from '@/ui/blueprint';
 import { Button } from '@/ui/button';
 import { Icon, type IconName } from '@/ui/icon';
 import { radius, useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { Text, TextInput } from '@/ui/text';
 
 /**
  * Loaded on first use: MapLibre's native module is only in development build 3 and later, so on
@@ -50,23 +50,27 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          headerSearchBarOptions: {
-            placeholder: t('search.queryPlaceholder'),
-            hideWhenScrolling: false,
-            onSearchButtonPress: (event) =>
-              setSearchFilters({ q: event.nativeEvent.text.trim().slice(0, MAX_QUERY_LENGTH) }),
-            onCancelButtonPress: () => setSearchFilters({ q: '' }),
-          },
-        }}
-      />
+      {/* Android's header search is only a collapsed icon, so Android gets its own field below. */}
+      {Platform.OS === 'ios' && (
+        <Stack.Screen
+          options={{
+            headerSearchBarOptions: {
+              placeholder: t('search.queryPlaceholder'),
+              hideWhenScrolling: false,
+              onSearchButtonPress: (event) =>
+                setSearchFilters({ q: event.nativeEvent.text.trim().slice(0, MAX_QUERY_LENGTH) }),
+              onCancelButtonPress: () => setSearchFilters({ q: '' }),
+            },
+          }}
+        />
+      )}
       <View
         style={[
           styles.toolbar,
           { paddingTop: (Platform.OS === 'ios' ? headerHeight : 0) + TOOLBAR_PADDING },
         ]}
       >
+        {Platform.OS !== 'ios' && <QueryField query={filters.q} />}
         <View style={styles.toolbarRow}>
           <Segments
             value={filters.type ?? 'all'}
@@ -103,6 +107,57 @@ export default function SearchScreen() {
       ) : (
         <ResultList filters={filters} />
       )}
+    </View>
+  );
+}
+
+/**
+ * The text search on Android, always visible (iOS uses the header's search bar). The query
+ * applies when the keyboard's search key is pressed; the clear button removes it at once.
+ */
+function QueryField({ query }: { query: string }) {
+  const { t } = useI18n();
+  const colors = useColors();
+  const [text, setText] = useState(query);
+  // A query changed elsewhere (the filters sheet's "clear all") shows here too.
+  const [shown, setShown] = useState(query);
+  if (shown !== query) {
+    setShown(query);
+    setText(query);
+  }
+
+  return (
+    <View style={styles.toolbarRow}>
+      <View
+        style={[styles.queryBox, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      >
+        <Icon name="search" size={18} color={colors.textMuted} />
+        <TextInput
+          value={text}
+          onChangeText={setText}
+          placeholder={t('search.queryPlaceholder')}
+          placeholderTextColor={colors.textSubtle}
+          returnKeyType="search"
+          maxLength={MAX_QUERY_LENGTH}
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
+          accessibilityLabel={t('search.query')}
+          onSubmitEditing={() => setSearchFilters({ q: text.trim() })}
+          style={[styles.queryInput, { color: colors.text }]}
+        />
+        {text !== '' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('search.clearQuery')}
+            hitSlop={10}
+            onPress={() => {
+              setText('');
+              if (query !== '') setSearchFilters({ q: '' });
+            }}
+          >
+            <Icon name="close" size={18} color={colors.textSubtle} />
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -393,6 +448,17 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
   },
+  queryBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 44,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  queryInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
   viewButton: {
     width: 44,
     height: 44,

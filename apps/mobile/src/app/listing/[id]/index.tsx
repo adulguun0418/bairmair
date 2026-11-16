@@ -54,6 +54,7 @@ import { BlueprintGrid } from '@/ui/blueprint';
 import { Button } from '@/ui/button';
 import { Icon, type IconName } from '@/ui/icon';
 import { ScanFloorPlan } from '@/ui/scan-floor-plan';
+import { ScrollLockHost } from '@/ui/scroll-lock';
 import { Text } from '@/ui/text';
 import { PAPER, PAPER_GRID, radius, useColors } from '@/ui/theme';
 
@@ -228,242 +229,255 @@ function ListingView({ page, reload }: { page: ListingPageData; reload: () => Pr
           ),
         }}
       />
-      <Animated.ScrollView
-        ref={scrollRef}
-        contentInsetAdjustmentBehavior="never"
-        scrollEventThrottle={16}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void refresh()}
-            progressViewOffset={insets.top + 44}
-          />
-        }
-        contentContainerStyle={{ paddingBottom: showBar ? 140 + insets.bottom : 40 }}
-      >
-        <Hero
-          photos={photos}
-          roomNames={roomNames}
-          model={model}
-          height={heroHeight}
-          scroll={scroll}
-          onOpen3d={() =>
-            router.push({ pathname: '/listing/[id]/model', params: { id: listing.id } })
-          }
-        />
-
-        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
-          <View style={[styles.grabber, { backgroundColor: colors.borderStrong }]} />
-
-          {!live && (
-            <View style={[styles.banner, { backgroundColor: colors.ink }]}>
-              <Text style={[styles.bannerText, { color: colors.onInk }]}>
-                {listing.type === 'sale' ? t('listingPage.sold') : t('listingPage.rented')}
-              </Text>
-            </View>
-          )}
-          {live && !page.freshness.fresh && (
-            <View style={[styles.banner, { backgroundColor: colors.warningSoft }]}>
-              <Text style={[styles.bannerText, { color: colors.onWarningSoft }]}>
-                {t('listingPage.stale', { days: LISTING_FRESHNESS.confirmEveryDays })}
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.badges}>
-            <View style={[styles.typeChip, { backgroundColor: colors.accentSoft }]}>
-              <Text style={[styles.typeChipText, { color: colors.onAccentSoft }]}>
-                {t(`listingPage.types.${listing.type}`)}
-              </Text>
-            </View>
-            {model && <Badge3d label={t('listingCard.has3d')} />}
-            {listing.scan_verified && (
-              <View style={[styles.typeChip, { backgroundColor: colors.successSoft }]}>
-                <Icon name="verified" size={12} color={colors.success} />
-                <Text style={[styles.typeChipText, { color: colors.onSuccessSoft }]}>
-                  {t('listingPage.scanVerified')}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {listing.price !== null && (
-            <View style={styles.priceBlock}>
-              <Text style={[styles.price, text]}>
-                {formatListingPrice(listing.price, listing.currency, listing.type, locale)}
-              </Text>
-              <Text style={[styles.small, muted]}>
-                {formatMoney(listing.price, listing.currency)}
-                {listing.negotiable ? ` · ${t('listingPage.negotiable')}` : ''}
-              </Text>
-            </View>
-          )}
-
-          <Text style={[styles.title, text]} accessibilityRole="header">
-            {listing.title}
-          </Text>
-          <View style={styles.metaRow}>
-            <Icon name="pin" size={15} color={colors.brand} />
-            <Text style={[styles.small, styles.grow, { color: colors.textSecondary }]}>
-              {[
-                district && t('listingPage.district', { district: placeName(district, locale) }),
-                listing.complex_name,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-          </View>
-          {page.freshness.daysAgo !== null && (
-            <View style={styles.metaRow}>
-              <Icon name="calendar" size={15} color={colors.textSubtle} />
-              <Text style={[styles.small, muted]}>{updatedText(page.freshness.daysAgo, t)}</Text>
-            </View>
-          )}
-
-          <KeyFacts
-            items={[
-              listing.rooms !== null && {
-                icon: 'rooms' as const,
-                label: t('listingSheet.key.rooms'),
-                value: String(listing.rooms),
-              },
-              area !== null && {
-                icon: 'area' as const,
-                label: t('listingSheet.key.area'),
-                value: formatArea(area, locale),
-              },
-              listing.floor !== null && {
-                icon: 'floor' as const,
-                label: t('listingSheet.key.floor'),
-                value:
-                  listing.total_floors === null
-                    ? String(listing.floor)
-                    : `${listing.floor}/${listing.total_floors}`,
-              },
-              listing.building_year !== null && {
-                icon: 'calendar' as const,
-                label: t('listingSheet.key.year'),
-                value: String(listing.building_year),
-              },
-            ]}
-          />
-
-          {page.pricePerM2 !== null && (
-            <PriceGauge
-              pricePerM2={page.pricePerM2}
-              currency={listing.currency}
-              median={page.districtMedian}
-              districtName={district ? placeName(district, locale) : null}
-            />
-          )}
-
-          {model && (
-            <SpaceSection
+      <ScrollLockHost>
+        {(scrollEnabled) => (
+          <Animated.ScrollView
+            ref={scrollRef}
+            scrollEnabled={scrollEnabled}
+            contentInsetAdjustmentBehavior="never"
+            scrollEventThrottle={16}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => void refresh()}
+                progressViewOffset={insets.top + 44}
+              />
+            }
+            contentContainerStyle={{ paddingBottom: showBar ? 140 + insets.bottom : 40 }}
+          >
+            <Hero
+              photos={photos}
+              roomNames={roomNames}
               model={model}
+              height={heroHeight}
+              scroll={scroll}
               onOpen3d={() =>
                 router.push({ pathname: '/listing/[id]/model', params: { id: listing.id } })
               }
             />
-          )}
 
-          {listing.description ? (
-            <Section title={t('listingPage.sections.description')}>
-              <Text style={[styles.body, { color: colors.textSecondary }]} selectable>
-                {listing.description}
-              </Text>
-            </Section>
-          ) : null}
+            <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+              <View style={[styles.grabber, { backgroundColor: colors.borderStrong }]} />
 
-          <Section title={t('listingPage.sections.location')}>
-            <Text style={[styles.body, text]}>{locationLine(listing, locale, t)}</Text>
-            {listing.complex_name ? (
-              <Text style={[styles.body, styles.strong, text]}>{listing.complex_name}</Text>
-            ) : null}
-            {listing.address_text ? (
-              <Text style={[styles.body, { color: colors.textSecondary }]}>
-                {listing.address_text}
-              </Text>
-            ) : null}
-            {listing.public_lat !== null && listing.public_lng !== null && (
-              <View style={styles.mapFrame}>
-                <Suspense fallback={<ActivityIndicator />}>
-                  <LocationMap
-                    lat={listing.public_lat}
-                    lng={listing.public_lng}
-                    exact={listing.show_exact_location}
-                  />
-                </Suspense>
-              </View>
-            )}
-            {!listing.show_exact_location && (
-              <Text style={[styles.small, muted]}>{t('listingPage.approximateLocation')}</Text>
-            )}
-          </Section>
-
-          <Section title={t('listingSheet.details')}>
-            <View style={[styles.table, { backgroundColor: colors.surface }]}>
-              {listingFacts(listing, locale, t).map(({ label, value }, index) => (
-                <View
-                  key={label}
-                  style={[
-                    styles.fact,
-                    index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 },
-                  ]}
-                >
-                  <Text style={[styles.small, styles.grow, muted]}>{label}</Text>
-                  <Text style={[styles.small, styles.strong, styles.factValue, text]}>{value}</Text>
+              {!live && (
+                <View style={[styles.banner, { backgroundColor: colors.ink }]}>
+                  <Text style={[styles.bannerText, { color: colors.onInk }]}>
+                    {listing.type === 'sale' ? t('listingPage.sold') : t('listingPage.rented')}
+                  </Text>
                 </View>
-              ))}
-            </View>
-          </Section>
+              )}
+              {live && !page.freshness.fresh && (
+                <View style={[styles.banner, { backgroundColor: colors.warningSoft }]}>
+                  <Text style={[styles.bannerText, { color: colors.onWarningSoft }]}>
+                    {t('listingPage.stale', { days: LISTING_FRESHNESS.confirmEveryDays })}
+                  </Text>
+                </View>
+              )}
 
-          <Section title={t('listingPage.sections.seller')}>
-            <SellerCard
-              name={seller.agencyName ?? seller.displayName ?? t('listingPage.seller.unnamed')}
-              role={
-                seller.isAgent
-                  ? seller.verifiedAgent
-                    ? t('listingPage.seller.verifiedAgent')
-                    : t('listingPage.seller.agent')
-                  : t('listingPage.seller.owner')
-              }
-              person={seller.isAgent ? seller.displayName : null}
-              verified={seller.isAgent && seller.verifiedAgent}
-              onPress={
-                seller.isAgent
-                  ? () => router.push({ pathname: '/agent/[id]', params: { id: listing.owner_id } })
-                  : undefined
-              }
-            />
-          </Section>
+              <View style={styles.badges}>
+                <View style={[styles.typeChip, { backgroundColor: colors.accentSoft }]}>
+                  <Text style={[styles.typeChipText, { color: colors.onAccentSoft }]}>
+                    {t(`listingPage.types.${listing.type}`)}
+                  </Text>
+                </View>
+                {model && <Badge3d label={t('listingCard.has3d')} />}
+                {listing.scan_verified && (
+                  <View style={[styles.typeChip, { backgroundColor: colors.successSoft }]}>
+                    <Icon name="verified" size={12} color={colors.success} />
+                    <Text style={[styles.typeChipText, { color: colors.onSuccessSoft }]}>
+                      {t('listingPage.scanVerified')}
+                    </Text>
+                  </View>
+                )}
+              </View>
 
-          {own ? (
-            <View style={[styles.ownCard, { backgroundColor: colors.accentSoft }]}>
-              <Text style={[styles.body, { color: colors.onAccentSoft }]}>
-                {t('browse.yourListing')}
+              {listing.price !== null && (
+                <View style={styles.priceBlock}>
+                  <Text style={[styles.price, text]}>
+                    {formatListingPrice(listing.price, listing.currency, listing.type, locale)}
+                  </Text>
+                  <Text style={[styles.small, muted]}>
+                    {formatMoney(listing.price, listing.currency)}
+                    {listing.negotiable ? ` · ${t('listingPage.negotiable')}` : ''}
+                  </Text>
+                </View>
+              )}
+
+              <Text style={[styles.title, text]} accessibilityRole="header">
+                {listing.title}
               </Text>
-              {editable && (
-                <Button
-                  title={t('browse.edit')}
-                  onPress={() =>
-                    router.push({ pathname: '/listings/[id]', params: { id: listing.id } })
+              <View style={styles.metaRow}>
+                <Icon name="pin" size={15} color={colors.brand} />
+                <Text style={[styles.small, styles.grow, { color: colors.textSecondary }]}>
+                  {[
+                    district &&
+                      t('listingPage.district', { district: placeName(district, locale) }),
+                    listing.complex_name,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Text>
+              </View>
+              {page.freshness.daysAgo !== null && (
+                <View style={styles.metaRow}>
+                  <Icon name="calendar" size={15} color={colors.textSubtle} />
+                  <Text style={[styles.small, muted]}>
+                    {updatedText(page.freshness.daysAgo, t)}
+                  </Text>
+                </View>
+              )}
+
+              <KeyFacts
+                items={[
+                  listing.rooms !== null && {
+                    icon: 'rooms' as const,
+                    label: t('listingSheet.key.rooms'),
+                    value: String(listing.rooms),
+                  },
+                  area !== null && {
+                    icon: 'area' as const,
+                    label: t('listingSheet.key.area'),
+                    value: formatArea(area, locale),
+                  },
+                  listing.floor !== null && {
+                    icon: 'floor' as const,
+                    label: t('listingSheet.key.floor'),
+                    value:
+                      listing.total_floors === null
+                        ? String(listing.floor)
+                        : `${listing.floor}/${listing.total_floors}`,
+                  },
+                  listing.building_year !== null && {
+                    icon: 'calendar' as const,
+                    label: t('listingSheet.key.year'),
+                    value: String(listing.building_year),
+                  },
+                ]}
+              />
+
+              {page.pricePerM2 !== null && (
+                <PriceGauge
+                  pricePerM2={page.pricePerM2}
+                  currency={listing.currency}
+                  median={page.districtMedian}
+                  districtName={district ? placeName(district, locale) : null}
+                />
+              )}
+
+              {model && (
+                <SpaceSection
+                  model={model}
+                  onOpen3d={() =>
+                    router.push({ pathname: '/listing/[id]/model', params: { id: listing.id } })
                   }
                 />
               )}
+
+              {listing.description ? (
+                <Section title={t('listingPage.sections.description')}>
+                  <Text style={[styles.body, { color: colors.textSecondary }]} selectable>
+                    {listing.description}
+                  </Text>
+                </Section>
+              ) : null}
+
+              <Section title={t('listingPage.sections.location')}>
+                <Text style={[styles.body, text]}>{locationLine(listing, locale, t)}</Text>
+                {listing.complex_name ? (
+                  <Text style={[styles.body, styles.strong, text]}>{listing.complex_name}</Text>
+                ) : null}
+                {listing.address_text ? (
+                  <Text style={[styles.body, { color: colors.textSecondary }]}>
+                    {listing.address_text}
+                  </Text>
+                ) : null}
+                {listing.public_lat !== null && listing.public_lng !== null && (
+                  <View style={styles.mapFrame}>
+                    <Suspense fallback={<ActivityIndicator />}>
+                      <LocationMap
+                        lat={listing.public_lat}
+                        lng={listing.public_lng}
+                        exact={listing.show_exact_location}
+                      />
+                    </Suspense>
+                  </View>
+                )}
+                {!listing.show_exact_location && (
+                  <Text style={[styles.small, muted]}>{t('listingPage.approximateLocation')}</Text>
+                )}
+              </Section>
+
+              <Section title={t('listingSheet.details')}>
+                <View style={[styles.table, { backgroundColor: colors.surface }]}>
+                  {listingFacts(listing, locale, t).map(({ label, value }, index) => (
+                    <View
+                      key={label}
+                      style={[
+                        styles.fact,
+                        index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 },
+                      ]}
+                    >
+                      <Text style={[styles.small, styles.grow, muted]}>{label}</Text>
+                      <Text style={[styles.small, styles.strong, styles.factValue, text]}>
+                        {value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </Section>
+
+              <Section title={t('listingPage.sections.seller')}>
+                <SellerCard
+                  name={seller.agencyName ?? seller.displayName ?? t('listingPage.seller.unnamed')}
+                  role={
+                    seller.isAgent
+                      ? seller.verifiedAgent
+                        ? t('listingPage.seller.verifiedAgent')
+                        : t('listingPage.seller.agent')
+                      : t('listingPage.seller.owner')
+                  }
+                  person={seller.isAgent ? seller.displayName : null}
+                  verified={seller.isAgent && seller.verifiedAgent}
+                  onPress={
+                    seller.isAgent
+                      ? () =>
+                          router.push({ pathname: '/agent/[id]', params: { id: listing.owner_id } })
+                      : undefined
+                  }
+                />
+              </Section>
+
+              {own ? (
+                <View style={[styles.ownCard, { backgroundColor: colors.accentSoft }]}>
+                  <Text style={[styles.body, { color: colors.onAccentSoft }]}>
+                    {t('browse.yourListing')}
+                  </Text>
+                  {editable && (
+                    <Button
+                      title={t('browse.edit')}
+                      onPress={() =>
+                        router.push({ pathname: '/listings/[id]', params: { id: listing.id } })
+                      }
+                    />
+                  )}
+                </View>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={report}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.report, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Icon name="flag" size={14} color={colors.textSubtle} />
+                  <Text style={[styles.small, { color: colors.textSubtle }]}>
+                    {t('report.button')}
+                  </Text>
+                </Pressable>
+              )}
             </View>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              onPress={report}
-              hitSlop={8}
-              style={({ pressed }) => [styles.report, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <Icon name="flag" size={14} color={colors.textSubtle} />
-              <Text style={[styles.small, { color: colors.textSubtle }]}>{t('report.button')}</Text>
-            </Pressable>
-          )}
-        </View>
-      </Animated.ScrollView>
+          </Animated.ScrollView>
+        )}
+      </ScrollLockHost>
 
       {showBar && (
         <View

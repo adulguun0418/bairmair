@@ -12,6 +12,7 @@ import { useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { Icon } from '@/ui/icon';
+import { useScrollLockTouches } from '@/ui/scroll-lock';
 import { useColors } from '@/ui/theme';
 import { useMapStyle } from './map-style';
 import { Text } from '@/ui/text';
@@ -26,7 +27,8 @@ const CONTROL_INK = '#1a2b60';
 /**
  * A listing's public location: a dot when the owner shows the exact spot, otherwise a shaded
  * circle around the approximate pin. Like the website's: drag to move, pinch or double-tap to
- * zoom, plus +/− buttons; no rotation or tilt. The page scrolls from outside the map.
+ * zoom, plus +/− buttons; no rotation or tilt. The page scrolls from outside the map (inside a
+ * `ScrollLockHost`, which Android needs so vertical drags reach the map).
  */
 export function LocationMap({ lat, lng, exact }: { lat: number; lng: number; exact: boolean }) {
   const { t, locale } = useI18n();
@@ -35,6 +37,7 @@ export function LocationMap({ lat, lng, exact }: { lat: number; lng: number; exa
   const mapRef = useRef<MapRef>(null);
   const cameraRef = useRef<CameraRef>(null);
   const maxZoom = exact ? MAX_ZOOM.exact : MAX_ZOOM.approximate;
+  const touches = useScrollLockTouches();
 
   if (style.kind !== 'ready') {
     return (
@@ -79,7 +82,7 @@ export function LocationMap({ lat, lng, exact }: { lat: number; lng: number; exa
       };
 
   return (
-    <View style={styles.frame} accessibilityLabel={t('listingPage.mapLabel')}>
+    <View style={styles.frame} accessibilityLabel={t('listingPage.mapLabel')} {...touches}>
       <Map
         ref={mapRef}
         style={styles.fill}
