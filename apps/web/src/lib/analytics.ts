@@ -22,6 +22,12 @@ export const ANALYTICS_PATH = '/bmr';
 
 type Placement = 'card' | 'bar';
 
+/**
+ * The listing page's layout, sent with `listing_viewed` to compare before and after a redesign.
+ * 1: media tabs with 3D first (until 2026-11-16). 2: photos first, 3D in "Орон зай" below.
+ */
+export const LISTING_PAGE_VERSION = 2;
+
 /** The events we send, with their properties. */
 export interface AnalyticsEvents {
   listing_viewed: {
@@ -31,9 +37,16 @@ export interface AnalyticsEvents {
     has_3d: boolean;
     photo_count: number;
     district: string | null;
+    page_version: number;
   };
-  /** A media tab chosen by the visitor (not the one the page opens on). */
-  listing_media_tab: { listing_id: string; tab: 'photos' | '3d' | 'plan' };
+  /**
+   * The visitor asked for the 3D model or the plan: from the photo hero's buttons, or by
+   * switching the "Орон зай" tabs (not the view the section opens on). Version 1 also had
+   * a `photos` tab and no `from`.
+   */
+  listing_media_tab: { listing_id: string; tab: '3d' | 'plan'; from: 'hero' | 'tabs' };
+  /** The first swipe past the cover in the phone photo strip, once per page. */
+  listing_photos_swiped: { listing_id: string };
   /** The first drag, pinch or wheel on the 3D model, once per page. */
   listing_3d_interacted: { listing_id: string };
   listing_photo_opened: { listing_id: string; from: 'gallery' | 'hotspot' };

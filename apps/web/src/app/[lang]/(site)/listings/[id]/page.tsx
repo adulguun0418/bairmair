@@ -12,6 +12,7 @@ import {
   type ListingSeller,
 } from '@bairmair/browse';
 import { districtById, LISTING_FRESHNESS } from '@bairmair/db';
+import { computeMetrics } from '@bairmair/room-model';
 import {
   formatArea,
   formatListingPrice,
@@ -37,13 +38,15 @@ import {
 } from '@/components/icons';
 import { ContactButtons } from '@/components/listing/ContactButtons';
 import { FavoriteButton } from '@/components/listing/FavoriteButton';
-import { ListingMedia } from '@/components/listing/ListingMedia';
+import { ListingHero } from '@/components/listing/ListingHero';
+import { ListingSpace } from '@/components/listing/ListingSpace';
 import { ReportListing } from '@/components/listing/ReportListing';
 import { ShareActions } from '@/components/listing/ShareActions';
 import { TrackListingView } from '@/components/listing/TrackListingView';
 import { ViewCounter } from '@/components/listing/ViewCounter';
 import { LocationMap } from '@/components/map/maps';
 import { getI18n, localePath } from '@/lib/i18n';
+import { listingPlanSrc } from '@/lib/listing-plan';
 import { comparePrice } from '@/lib/price-compare';
 import { publicEnv } from '@/lib/public-env';
 import { getListingPage } from '@/server/listing-page';
@@ -104,8 +107,7 @@ export default function ListingPage(props: PageProps<'/[lang]/listings/[id]'>) {
             <div className="space-y-4" aria-hidden>
               <div className="h-4 w-40 rounded-full bg-shimmer" />
               <div className="h-10 w-2/3 rounded-xl bg-shimmer" />
-              <div className="h-11 w-72 rounded-full bg-shimmer" />
-              <div className="h-[min(50vh,24rem)] rounded-3xl bg-shimmer sm:h-[min(62vh,34rem)]" />
+              <div className="aspect-[4/3] rounded-3xl bg-shimmer sm:aspect-auto sm:h-[min(62vh,34rem)]" />
             </div>
           </ViewTransition>
         }
@@ -212,7 +214,30 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
         </p>
       </header>
 
-      <ListingMedia listingId={listing.id} locale={locale} photos={photos} model={model} />
+      {/* Photos first: what the apartment looks like. A scan without photos leads with its
+          3D model instead. */}
+      {photos.length > 0 ? (
+        <ListingHero
+          listingId={listing.id}
+          locale={locale}
+          photos={photos}
+          plan={
+            model
+              ? {
+                  full: listingPlanSrc(listing.id, locale),
+                  thumb: listingPlanSrc(listing.id, locale, { thumb: true }),
+                  area: formatArea(computeMetrics(model).totalAreaM2, locale),
+                }
+              : null
+          }
+        />
+      ) : model ? (
+        <ListingSpace listingId={listing.id} locale={locale} photos={photos} model={model} eager />
+      ) : (
+        <p className="flex h-48 items-center justify-center rounded-3xl bg-surface-2 text-fg-subtle">
+          {t('listingPage.noPhotos')}
+        </p>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
         {/* First on phones (right under the photos), beside the content on wide screens. */}
@@ -237,6 +262,9 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
 
         <div className="min-w-0 space-y-6">
           <KeyFacts listing={listing} locale={locale} t={t} />
+          {model && photos.length > 0 && (
+            <ListingSpace listingId={listing.id} locale={locale} photos={photos} model={model} />
+          )}
           <PriceComparisonCard page={page} locale={locale} t={t} />
 
           {listing.description && (
