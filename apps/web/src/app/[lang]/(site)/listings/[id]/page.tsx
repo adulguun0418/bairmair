@@ -4,8 +4,10 @@ import {
   listingFacts,
   listingSummary,
   locationLine,
+  pickSimilar,
   placeName,
   searchQuery,
+  SIMILAR_MIN_IN_DISTRICT,
   updatedText,
   type ListingPageData,
   type ListingRow,
@@ -36,20 +38,25 @@ import {
   StairsIcon,
   VerifiedIcon,
 } from '@/components/icons';
+import { ListingGrid } from '@/components/listing/ListingCard';
 import { ContactButtons } from '@/components/listing/ContactButtons';
 import { FavoriteButton } from '@/components/listing/FavoriteButton';
 import { ListingHero } from '@/components/listing/ListingHero';
 import { ListingSpace } from '@/components/listing/ListingSpace';
 import { ReportListing } from '@/components/listing/ReportListing';
 import { ShareActions } from '@/components/listing/ShareActions';
+import { SimilarClicks } from '@/components/listing/SimilarClicks';
 import { TrackListingView } from '@/components/listing/TrackListingView';
 import { ViewCounter } from '@/components/listing/ViewCounter';
 import { LocationMap } from '@/components/map/maps';
+import { ListingRowSkeleton, SectionHeading } from '@/components/SectionHeading';
+import { SellBand } from '@/components/SellBand';
 import { getI18n, localePath } from '@/lib/i18n';
 import { listingPlanSrc } from '@/lib/listing-plan';
 import { comparePrice } from '@/lib/price-compare';
 import { publicEnv } from '@/lib/public-env';
 import { getListingPage } from '@/server/listing-page';
+import { searchListings } from '@/server/search';
 
 export async function generateMetadata({
   params,
@@ -307,6 +314,15 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
             )}
           </Card>
         </div>
+      </div>
+
+      {/* Visitors from a shared link arrive with nowhere else to go: offer the next listing,
+          and a way in for those with their own apartment to sell. */}
+      <div className="space-y-16 pt-10">
+        <Suspense fallback={<ListingRowSkeleton />}>
+          <SimilarListings listing={listing} locale={locale} t={t} />
+        </Suspense>
+        <SellBand locale={locale} t={t} placement="listing" />
       </div>
 
       {/* Phones: price and the call button always at hand. */}
@@ -603,5 +619,45 @@ function SellerSummary({
       {body}
       <ChevronRightIcon className="size-4 shrink-0 text-fg-subtle" />
     </Link>
+  );
+}
+
+/**
+ * "Ижил төстэй зарууд": up to four live listings of the same type, ranked by `pickSimilar`
+ * (rooms, price, district, 3D). Searches the listing's district first and the whole city only
+ * when the district has too few. Streams in after the listing; nothing shows without matches.
+ */
+async function SimilarListings({
+  listing,
+  locale,
+  t,
+}: {
+  listing: ListingRow;
+  locale: Locale;
+  t: Translator;
+}) {
+  const base = { p_type: listing.type, p_limit: 24 } as const;
+  let candidates =
+    listing.district_id === null
+      ? []
+      : (await searchListings({ ...base, p_district_ids: [listing.district_id] })).rows;
+  if (candidates.filter((row) => row.id !== listing.id).length < SIMILAR_MIN_IN_DISTRICT) {
+    candidates = [...candidates, ...(await searchListings(base)).rows];
+  }
+  const similar = pickSimilar(listing, candidates);
+  if (similar.length === 0) return null;
+
+  const district = districtById(listing.district_id);
+  const more = `${localePath(locale, '/search')}${searchQuery(DEFAULT_FILTERS, {
+    type: listing.type,
+    ...(district ? { districts: [district.slug] } : {}),
+  })}`;
+  return (
+    <section className="space-y-6">
+      <SectionHeading title={t('listingPage.similar.title')} href={more} more={t('home.seeAll')} />
+      <SimilarClicks listingId={listing.id}>
+        <ListingGrid cards={similar} locale={locale} supabaseUrl={publicEnv.supabaseUrl} />
+      </SimilarClicks>
+    </section>
   );
 }

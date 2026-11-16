@@ -701,6 +701,9 @@ export const en: Messages = {
       title: 'The space',
       lead: 'A 3D model and floor plan measured with an iPhone scan. Tap a room to see its area.',
     },
+    similar: {
+      title: 'Similar listings',
+    },
     seller: {
       owner: 'Owner',
       agent: 'Agent',

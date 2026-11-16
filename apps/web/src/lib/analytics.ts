@@ -56,6 +56,10 @@ export interface AnalyticsEvents {
   phone_copied: { listing_id: string };
   listing_shared: { listing_id: string; channel: ShareChannel };
   favorite_added: { listing_id: string };
+  /** A card in "Ижил төстэй зарууд" opened; `position` counts from 1. */
+  similar_listing_clicked: { listing_id: string; target_id: string; position: number };
+  /** "Зар нэмэх" in the navy seller band. */
+  sell_band_clicked: { placement: 'home' | 'listing' };
 }
 
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;

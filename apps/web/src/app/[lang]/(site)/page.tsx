@@ -10,11 +10,12 @@ import {
   ArrowRightIcon,
   CubeIcon,
   PlanIcon,
-  PlusIcon,
   ScanIcon,
   SparkleIcon,
 } from '@/components/icons';
 import { ListingGrid } from '@/components/listing/ListingCard';
+import { ListingRowSkeleton, SectionHeading } from '@/components/SectionHeading';
+import { SellBand } from '@/components/SellBand';
 import { getI18n, localePath } from '@/lib/i18n';
 import { CARD_PLAN_THEME } from '@/lib/listing-plan';
 import { publicEnv } from '@/lib/public-env';
@@ -91,7 +92,7 @@ export default async function HomePage() {
       <div className="mx-auto max-w-7xl space-y-20 px-4 py-16">
         <HowItWorks t={t} />
 
-        <Suspense fallback={<ListingsSkeleton />}>
+        <Suspense fallback={<ListingRowSkeleton />}>
           <HomeListings locale={locale} t={t} />
         </Suspense>
 
@@ -122,7 +123,7 @@ export default async function HomePage() {
           </ul>
         </section>
 
-        <SellBand locale={locale} t={t} />
+        <SellBand locale={locale} t={t} placement="home" />
       </div>
     </>
   );
@@ -258,7 +259,7 @@ async function HomeListings({ locale, t }: { locale: Locale; t: Translator }) {
     <>
       {with3d.rows.length > 0 && (
         <section className="space-y-6">
-          <Heading
+          <SectionHeading
             title={t('home.latest3d')}
             href={search(searchQuery({ ...DEFAULT_FILTERS, has3d: true, sort: 'newest' }))}
             more={t('home.seeAll')}
@@ -269,7 +270,7 @@ async function HomeListings({ locale, t }: { locale: Locale; t: Translator }) {
       )}
 
       <section className="space-y-6">
-        <Heading
+        <SectionHeading
           title={t('home.latest')}
           href={search(searchQuery({ ...DEFAULT_FILTERS, sort: 'newest' }))}
           more={t('home.seeAll')}
@@ -281,82 +282,5 @@ async function HomeListings({ locale, t }: { locale: Locale; t: Translator }) {
         )}
       </section>
     </>
-  );
-}
-
-/** Card-shaped placeholders while the listings load. */
-function ListingsSkeleton() {
-  return (
-    <section className="space-y-6" aria-hidden>
-      <div className="h-8 w-56 animate-pulse rounded-lg bg-surface-3" />
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div key={index} className="h-80 animate-pulse rounded-3xl bg-surface-3" />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Heading({
-  title,
-  href,
-  more,
-  icon,
-}: {
-  title: string;
-  href: string;
-  more: string;
-  icon?: ReactNode;
-}) {
-  return (
-    <div className="flex items-end justify-between gap-4">
-      <h2 className="inline-flex items-center gap-2.5 text-xl font-semibold tracking-tight sm:text-2xl">
-        {icon && (
-          <span className="flex size-9 items-center justify-center rounded-xl bg-accent-subtle text-accent [&>svg]:size-5">
-            {icon}
-          </span>
-        )}
-        {title}
-      </h2>
-      <Link
-        href={href}
-        className="group inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-line transition hover:bg-surface hover:ring-line-2"
-      >
-        {more}
-        <ArrowRightIcon className="size-3.5 transition group-hover:translate-x-0.5" />
-      </Link>
-    </div>
-  );
-}
-
-/** For sellers: a navy band with the call to add a listing. */
-function SellBand({ locale, t }: { locale: Locale; t: Translator }) {
-  return (
-    <section className="relative overflow-hidden rounded-[2rem] bg-[#1a2b60] px-6 py-10 text-white sm:px-10 sm:py-14">
-      <div
-        aria-hidden
-        className="absolute inset-0 text-white opacity-40 bg-blueprint [mask-image:linear-gradient(to_left,black,transparent_70%)]"
-      />
-      <div
-        aria-hidden
-        className="absolute -right-24 -top-24 size-80 rounded-full bg-[#199ed6]/40 blur-3xl"
-      />
-      <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="max-w-xl space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {t('home.sellTitle')}
-          </h2>
-          <p className="text-white/75">{t('home.sellBody')}</p>
-        </div>
-        <Link
-          href={localePath(locale, '/my-listings/new')}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-[#1a2b60] transition hover:bg-[#eaf6fd]"
-        >
-          <PlusIcon className="size-5" />
-          {t('home.sellCta')}
-        </Link>
-      </div>
-    </section>
   );
 }

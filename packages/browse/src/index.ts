@@ -12,3 +12,4 @@ export * from './map-style';
 export * from './phone';
 export * from './search-filters';
 export * from './share-link';
+export * from './similar';
