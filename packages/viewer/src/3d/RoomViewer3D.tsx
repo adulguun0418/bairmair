@@ -47,12 +47,20 @@ export interface RoomViewer3DProps {
    * fills the screen (the app's 3D screen), where every drag should turn the model.
    */
   pageScroll?: boolean;
+  /**
+   * `full` mode: the first time the view is on screen, turn it for a few seconds by itself, so
+   * visitors see that it moves. Stops at the first touch; off under reduced motion.
+   */
+  introSpin?: boolean;
   className?: string;
   style?: CSSProperties;
 }
 
 /** OrbitControls' `autoRotateSpeed`: 2 is one turn per 30 s at 60 fps, so 0.9 ≈ one per minute. */
 const SHOWCASE_SPEED = 0.9;
+/** The intro turn: about a fifth of a turn in its 3 seconds. */
+const INTRO_SPEED = 4;
+const INTRO_MS = 3000;
 /** After a drag, the showcase waits this long before turning by itself again. */
 const SHOWCASE_RESUME_MS = 4000;
 
@@ -79,6 +87,7 @@ export function RoomViewer3D({
   showLabels = true,
   mode = 'full',
   pageScroll = false,
+  introSpin = false,
   className,
   style,
 }: RoomViewer3DProps) {
@@ -91,6 +100,10 @@ export function RoomViewer3D({
   const overlay = useRef<HTMLDivElement>(null) as RefObject<HTMLElement>;
   const showcase = mode === 'showcase';
   const rotating = useShowcaseRotation(showcase, overlay);
+  const intro = useIntroSpin(introSpin && !showcase, overlay);
+  // The usage hint stays until the visitor has moved the model once.
+  const [touched, setTouched] = useState(false);
+  const turning = rotating.active || intro.active;
 
   return (
     <div
@@ -107,8 +120,8 @@ export function RoomViewer3D({
       <ViewerErrorBoundary fallback={<p style={styles.fallback}>{text.webglUnavailable}</p>}>
         <Canvas
           flat
-          // A turning showcase draws every frame; otherwise only when something changes.
-          frameloop={rotating.active ? 'always' : 'demand'}
+          // A turning view draws every frame; otherwise only when something changes.
+          frameloop={turning ? 'always' : 'demand'}
           dpr={[1, 2]}
           camera={{ fov: 40, near: 0.05, far: 500, position: [0, 12, 12] }}
           fallback={<p style={styles.fallback}>{text.webglUnavailable}</p>}
@@ -141,10 +154,12 @@ export function RoomViewer3D({
             maxPolarAngle={Math.PI * 0.46}
             enableZoom={!showcase}
             enablePan={!showcase}
-            autoRotate={rotating.active}
-            autoRotateSpeed={SHOWCASE_SPEED}
+            autoRotate={turning}
+            autoRotateSpeed={intro.active ? INTRO_SPEED : SHOWCASE_SPEED}
             onStart={() => {
               rotating.pause();
+              intro.stop();
+              setTouched(true);
               onInteract?.();
             }}
             onEnd={rotating.resumeLater}
@@ -161,13 +176,43 @@ export function RoomViewer3D({
           >
             {text.resetView}
           </button>
-          <p style={styles.hint} aria-hidden="true">
+          <p style={{ ...styles.hint, opacity: touched ? 0 : 1 }} aria-hidden="true">
             {text.hint}
           </p>
         </>
       )}
     </div>
   );
+}
+
+/**
+ * The intro turn: starts the first time the view is on screen and stops after `INTRO_MS` or
+ * at `stop()` (the first touch). Never under reduced motion.
+ */
+function useIntroSpin(enabled: boolean, element: RefObject<HTMLElement>) {
+  const [phase, setPhase] = useState<'waiting' | 'spinning' | 'done'>('waiting');
+
+  useEffect(() => {
+    if (!enabled || phase !== 'waiting') return;
+    const target = element.current;
+    if (!target || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) setPhase('spinning');
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [enabled, phase, element]);
+
+  useEffect(() => {
+    if (phase !== 'spinning') return;
+    const timer = setTimeout(() => setPhase('done'), INTRO_MS);
+    return () => clearTimeout(timer);
+  }, [phase]);
+
+  return { active: phase === 'spinning', stop: () => setPhase('done') };
 }
 
 /**
@@ -544,14 +589,21 @@ const styles = {
     color: '#23272a',
     cursor: 'pointer',
   },
+  // A pill at the bottom centre until the first touch, then it fades away.
   hint: {
     position: 'absolute',
-    left: 12,
-    bottom: 10,
+    left: '50%',
+    bottom: 12,
+    transform: 'translateX(-50%)',
     margin: 0,
-    fontSize: 12,
-    color: '#5d656b',
+    padding: '6px 14px',
+    borderRadius: 999,
+    background: 'rgba(14, 23, 51, 0.72)',
+    color: '#ffffff',
+    fontSize: 13,
+    whiteSpace: 'nowrap',
     pointerEvents: 'none',
+    transition: 'opacity 400ms ease',
   },
   marker: {
     display: 'flex',

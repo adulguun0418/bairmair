@@ -15,12 +15,13 @@ import {
   type ListingSeller,
 } from '@bairmair/browse';
 import { districtById, LISTING_FRESHNESS } from '@bairmair/db';
-import { computeMetrics } from '@bairmair/room-model';
+import { computeMetrics, type RoomModelV1 } from '@bairmair/room-model';
 import {
   formatArea,
   formatListingPrice,
   formatMoney,
   formatPricePerArea,
+  roomDisplayName,
   type Locale,
   type Translator,
 } from '@bairmair/i18n';
@@ -42,6 +43,7 @@ import {
 import { ListingGrid } from '@/components/listing/ListingCard';
 import { ContactButtons } from '@/components/listing/ContactButtons';
 import { FavoriteButton } from '@/components/listing/FavoriteButton';
+import { InfoBadge } from '@/components/listing/InfoBadge';
 import { ListingHero } from '@/components/listing/ListingHero';
 import { ListingSpace } from '@/components/listing/ListingSpace';
 import { ReportListing } from '@/components/listing/ReportListing';
@@ -204,16 +206,27 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
         <div className="flex flex-wrap gap-2 text-sm">
           <Badge>{t(`listingPage.types.${listing.type}`)}</Badge>
           {model && (
-            <Badge tone="navy">
+            <InfoBadge
+              badge="3d"
+              className={BADGE_TONES.navy}
+              label={t('listingPage.badgeInfo.more')}
+              info={t('listingPage.badgeInfo.has3d')}
+              spaceLink={t('listingPage.badgeInfo.has3dLink')}
+            >
               <CubeIcon className="size-4" />
               {t('listingPage.has3d')}
-            </Badge>
+            </InfoBadge>
           )}
           {listing.scan_verified && (
-            <Badge tone="accent" title={t('listingPage.scanVerifiedHint')}>
+            <InfoBadge
+              badge="verified"
+              className={BADGE_TONES.accent}
+              label={t('listingPage.badgeInfo.more')}
+              info={t('listingPage.scanVerifiedHint')}
+            >
               <VerifiedIcon className="size-4" />
               {t('listingPage.scanVerified')}
-            </Badge>
+            </InfoBadge>
           )}
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
@@ -237,15 +250,7 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
           listingId={listing.id}
           locale={locale}
           photos={photos}
-          plan={
-            model
-              ? {
-                  full: listingPlanSrc(listing.id, locale),
-                  thumb: listingPlanSrc(listing.id, locale, { thumb: true }),
-                  area: formatArea(computeMetrics(model).totalAreaM2, locale),
-                }
-              : null
-          }
+          plan={model ? heroPlan(listing.id, model, locale, t) : null}
         />
       ) : model ? (
         <ListingSpace listingId={listing.id} locale={locale} photos={photos} model={model} eager />
@@ -546,28 +551,36 @@ function Card({
   );
 }
 
-function Badge({
-  children,
-  tone = 'plain',
-  title,
-}: {
-  children: ReactNode;
-  tone?: 'plain' | 'accent' | 'navy';
-  title?: string;
-}) {
-  const tones = {
-    plain: 'bg-surface-3 text-fg-2',
-    accent: 'bg-accent-subtle text-on-accent-soft',
-    navy: 'bg-[#1a2b60] text-white [&>svg]:text-[#7fd0f3]',
-  };
+/** Badge colours; the 3D and "scanned on-site" badges use them through `InfoBadge`. */
+const BADGE_TONES = {
+  plain: 'bg-surface-3 text-fg-2',
+  accent: 'bg-accent-subtle text-on-accent-soft',
+  navy: 'bg-[#1a2b60] text-white [&>svg]:text-[#7fd0f3]',
+} as const;
+
+function Badge({ children }: { children: ReactNode }) {
   return (
     <span
-      title={title}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium ${tones[tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium ${BADGE_TONES.plain}`}
     >
       {children}
     </span>
   );
+}
+
+/** What the photo hero needs from a scan: plan images, total area, rooms for the gallery. */
+function heroPlan(listingId: string, model: RoomModelV1, locale: Locale, t: Translator) {
+  const metrics = computeMetrics(model);
+  const rooms = new Map(model.rooms.map((room) => [room.id, room]));
+  return {
+    full: listingPlanSrc(listingId, locale),
+    thumb: listingPlanSrc(listingId, locale, { thumb: true }),
+    area: formatArea(metrics.totalAreaM2, locale),
+    rooms: metrics.rooms.flatMap(({ id, areaM2 }) => {
+      const room = rooms.get(id);
+      return room ? [{ id, name: roomDisplayName(t, room), area: formatArea(areaM2, locale) }] : [];
+    }),
+  };
 }
 
 function listingUrl(locale: Locale, id: string): string {

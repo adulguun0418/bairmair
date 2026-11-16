@@ -15,6 +15,7 @@ import {
 import { CameraIcon, CubeIcon, PlanIcon } from '@/components/icons';
 import { Photo } from '@/components/Photo';
 import { track } from '@/lib/analytics';
+import { PhotoGallery, type GalleryRoom } from './PhotoGallery';
 import { openSpace } from './space-signal';
 
 /** The cover takes the left half of the wide-screen grid. */
@@ -44,7 +45,8 @@ const TILES_WITH_PLAN: Record<number, string[]> = {
  * - Wide screens: a mosaic (cover large, up to four more), or with a scan the cover, two
  *   photos and a floor-plan panel showing the scanned area.
  *
- * Tapping a photo opens a full-size viewer with previous / next and arrow keys.
+ * Tapping a photo opens a full-size viewer with previous / next and arrow keys. "N зураг", the
+ * "+N" tile and the phone counter open the gallery: every photo, grouped by room.
  */
 export function ListingHero({
   listingId,
@@ -56,13 +58,22 @@ export function ListingHero({
   locale: Locale;
   /** At least one. */
   photos: ListingPhoto[];
-  /** For a scanned listing: the plan images and the scanned total area, formatted. */
-  plan: { full: string; thumb: string; area: string } | null;
+  /**
+   * For a scanned listing: the plan images (`full` is labelled), the scanned total area and the
+   * rooms (names and areas formatted), for grouping photos.
+   */
+  plan: { full: string; thumb: string; area: string; rooms: GalleryRoom[] } | null;
 }) {
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [open, setOpenIndex] = useState<number | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [current, setCurrent] = useState(0);
   const swiped = useRef(false);
+
+  const openGallery = (from: 'button' | 'counter' | 'more') => {
+    track('listing_gallery_opened', { listing_id: listingId, from });
+    setGalleryOpen(true);
+  };
 
   const shown = Math.min(photos.length, plan ? 3 : 5);
   const hidden = photos.length - shown;
@@ -102,7 +113,12 @@ export function ListingHero({
           <button
             key={photo.id}
             type="button"
-            onClick={() => setOpen(index)}
+            onClick={() =>
+              // The "+N" tile (wide screens only) opens the gallery; a phone slide its photo.
+              index === shown - 1 && hidden > 0 && window.matchMedia('(min-width: 640px)').matches
+                ? openGallery('more')
+                : setOpen(index)
+            }
             aria-label={label(index)}
             className={`group relative block h-full w-full shrink-0 snap-center overflow-hidden bg-surface-3 ${
               index < shown ? (tiles[index] ?? '') : 'sm:hidden'
@@ -152,9 +168,15 @@ export function ListingHero({
       </div>
 
       {photos.length > 1 && (
-        <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium tabular-nums text-white backdrop-blur sm:hidden">
+        <button
+          type="button"
+          onClick={() => openGallery('counter')}
+          aria-label={t('listingPage.photoCount', { count: photos.length })}
+          className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium tabular-nums text-white backdrop-blur sm:hidden"
+        >
+          <CameraIcon className="size-3.5" />
           {t('listingPage.hero.photoCounter', { index: current + 1, total: photos.length })}
-        </span>
+        </button>
       )}
 
       <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
@@ -171,9 +193,9 @@ export function ListingHero({
         )}
         <button
           type="button"
-          onClick={() => setOpen(0)}
+          onClick={() => openGallery('button')}
           className={`${pill} hidden bg-white/90 text-[#0e1733] backdrop-blur hover:bg-white sm:inline-flex`}
-          // Phones show the counter instead; a tap on the photo opens the viewer.
+          // Phones have the counter for this.
         >
           <CameraIcon />
           {t('listingPage.photoCount', { count: photos.length })}
@@ -192,6 +214,17 @@ export function ListingHero({
         </button>
       )}
 
+      <PhotoGallery
+        listingId={listingId}
+        locale={locale}
+        photos={photos}
+        rooms={plan?.rooms ?? null}
+        planSrc={plan?.full ?? null}
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onPhoto={setOpen}
+      />
+      {/* After the gallery: opened from it, the viewer shows on top. */}
       <PhotoViewer
         photos={photos}
         index={open}
