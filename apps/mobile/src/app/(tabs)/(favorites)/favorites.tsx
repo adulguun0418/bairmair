@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import {
   fetchFavoriteCards,
   reloadFavorites,
@@ -13,6 +13,7 @@ import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
 import { Text } from '@/ui/text';
+import { CardSkeletonList } from '@/ui/skeleton';
 
 type State = { kind: 'loading' } | { kind: 'ready'; items: FavoriteCard[] } | { kind: 'error' };
 
@@ -58,17 +59,24 @@ export default function FavoritesScreen() {
       </View>
     );
   }
+  if (state.kind === 'loading') {
+    return (
+      <ScrollView
+        style={{ backgroundColor: colors.background }}
+        contentInsetAdjustmentBehavior="automatic"
+        scrollEnabled={false}
+      >
+        <CardSkeletonList count={2} />
+      </ScrollView>
+    );
+  }
   if (state.kind !== 'ready') {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        {state.kind === 'loading' ? (
-          <ActivityIndicator />
-        ) : (
-          <>
-            <Text style={[styles.body, { color: colors.text }]}>{t('browse.loadFailed')}</Text>
-            <Button title={t('browse.retry')} variant="secondary" onPress={() => void load()} />
-          </>
-        )}
+        <>
+          <Text style={[styles.body, { color: colors.text }]}>{t('browse.loadFailed')}</Text>
+          <Button title={t('browse.retry')} variant="secondary" onPress={() => void load()} />
+        </>
       </View>
     );
   }

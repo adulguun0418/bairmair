@@ -20,6 +20,7 @@ import {
   roomDisplayName,
 } from '@bairmair/i18n';
 import { computeMetrics, type RoomModelV1 } from '@bairmair/room-model';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
@@ -34,6 +35,7 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  FadeInDown,
   interpolate,
   useAnimatedRef,
   useAnimatedStyle,
@@ -42,6 +44,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth/auth-provider';
+import { rememberedCover } from '@/browse/cover-cache';
 import { ContactButtons } from '@/browse/contact-buttons';
 import { FavoriteButton } from '@/browse/favorite-button';
 import { Badge3d } from '@/browse/listing-card';
@@ -55,6 +58,7 @@ import { Button } from '@/ui/button';
 import { Icon, type IconName } from '@/ui/icon';
 import { ScanFloorPlan } from '@/ui/scan-floor-plan';
 import { ScrollLockHost } from '@/ui/scroll-lock';
+import { Skeleton, SkeletonLine } from '@/ui/skeleton';
 import { Text } from '@/ui/text';
 import { PAPER, PAPER_GRID, radius, useColors } from '@/ui/theme';
 
@@ -77,6 +81,9 @@ const LIQUID_GLASS = Platform.OS === 'ios' && Number.parseInt(String(Platform.Ve
 
 /** How far the sheet slides up over the photos. */
 const SHEET_OVERLAP = 28;
+
+/** The sheet rises into place once the listing has loaded (a still fade under reduced motion). */
+const SHEET_ENTER = FadeInDown.duration(320);
 
 /**
  * A listing's public page in the app: the same content as the web page (shared loader and
@@ -118,21 +125,17 @@ export default function ListingScreen() {
     }
   }, [id, load]);
 
+  if (state.kind === 'loading') return <ListingSkeleton listingId={id} />;
+
   if (state.kind !== 'ready') {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ headerTransparent: false }} />
-        {state.kind === 'loading' ? (
-          <ActivityIndicator />
-        ) : (
-          <>
-            <Text style={[styles.body, { color: colors.text }]}>
-              {state.kind === 'missing' ? t('browse.notFound') : t('browse.loadFailed')}
-            </Text>
-            {state.kind === 'error' && (
-              <Button title={t('browse.retry')} variant="secondary" onPress={() => void load()} />
-            )}
-          </>
+        <Text style={[styles.body, { color: colors.text }]}>
+          {state.kind === 'missing' ? t('browse.notFound') : t('browse.loadFailed')}
+        </Text>
+        {state.kind === 'error' && (
+          <Button title={t('browse.retry')} variant="secondary" onPress={() => void load()} />
         )}
       </View>
     );
@@ -256,7 +259,10 @@ function ListingView({ page, reload }: { page: ListingPageData; reload: () => Pr
               }
             />
 
-            <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+            <Animated.View
+              entering={SHEET_ENTER}
+              style={[styles.sheet, { backgroundColor: colors.background }]}
+            >
               <View style={[styles.grabber, { backgroundColor: colors.borderStrong }]} />
 
               {!live && (
@@ -474,7 +480,7 @@ function ListingView({ page, reload }: { page: ListingPageData; reload: () => Pr
                   </Text>
                 </Pressable>
               )}
-            </View>
+            </Animated.View>
           </Animated.ScrollView>
         )}
       </ScrollLockHost>
@@ -518,6 +524,42 @@ function ListingView({ page, reload }: { page: ListingPageData; reload: () => Pr
  * The top of the screen: the photos, or the floor plan on blueprint paper, with a switch over
  * them (3D opens full screen). Drifts up slower than the page and stretches when pulled down.
  */
+/**
+ * While the listing loads: the cover photo the tapped card showed (already downloaded, so it
+ * appears at once) where the photos will be, and the shape of the sheet below it.
+ */
+function ListingSkeleton({ listingId }: { listingId: string }) {
+  const colors = useColors();
+  const { width } = useWindowDimensions();
+  const cover = rememberedCover(listingId);
+  return (
+    <View style={[styles.fill, { backgroundColor: colors.background }]}>
+      <Stack.Screen
+        options={{
+          title: '',
+          headerTransparent: Platform.OS === 'ios',
+          headerBlurEffect: LIQUID_GLASS ? undefined : 'systemChromeMaterial',
+        }}
+      />
+      <View style={[styles.hero, { height: Math.round(width * 1.02) }]}>
+        {cover ? (
+          <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        ) : (
+          <Skeleton style={StyleSheet.absoluteFill} />
+        )}
+      </View>
+      <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+        <View style={[styles.grabber, { backgroundColor: colors.borderStrong }]} />
+        <SkeletonLine width={96} height={22} />
+        <SkeletonLine width="55%" height={32} />
+        <SkeletonLine width="80%" height={18} />
+        <SkeletonLine width="45%" />
+        <Skeleton style={styles.factsSkeleton} />
+      </View>
+    </View>
+  );
+}
+
 function Hero({
   photos,
   roomNames,
@@ -914,6 +956,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.2 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   keyFacts: { flexDirection: 'row', borderRadius: radius.lg, paddingVertical: 14 },
+  factsSkeleton: { height: 78, borderRadius: radius.lg },
   keyFact: { flex: 1, alignItems: 'center', gap: 3, paddingHorizontal: 4 },
   keyValue: { fontSize: 19, fontWeight: '800', letterSpacing: -0.4 },
   card: { borderRadius: radius.lg, padding: 16, gap: 10 },

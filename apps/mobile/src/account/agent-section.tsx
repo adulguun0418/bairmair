@@ -22,7 +22,14 @@ interface AgentProfile {
  * Registering as an agent: an agency name (and a short bio) creates `agent_profiles`, which makes
  * the account an agent and gives it a public agent page. Admins verify agents in the dashboard.
  */
-export function AgentSection({ userId }: { userId: string }) {
+export function AgentSection({
+  userId,
+  reloadKey = 0,
+}: {
+  userId: string;
+  /** Changing it loads the agent profile again (pull to refresh). */
+  reloadKey?: number;
+}) {
   const { t } = useI18n();
   const colors = useColors();
   const [saved, setSaved] = useState<AgentProfile | null>(null);
@@ -50,13 +57,18 @@ export function AgentSection({ userId }: { userId: string }) {
           setSaved(profile);
           setAgencyName(profile.agencyName);
           setBio(profile.bio);
+        } else {
+          // None, or removed on the website since the last load.
+          setSaved(null);
+          setAgencyName('');
+          setBio('');
         }
         setLoaded(true);
       });
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, reloadKey]);
 
   // Unknown until loaded: saving now could try to create a profile that exists.
   if (!loaded) return null;

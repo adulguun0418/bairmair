@@ -22,6 +22,7 @@ import { Button } from '@/ui/button';
 import { Icon, type IconName } from '@/ui/icon';
 import { radius, useColors } from '@/ui/theme';
 import { Text, TextInput } from '@/ui/text';
+import { CardSkeletonList } from '@/ui/skeleton';
 
 /**
  * Loaded on first use: MapLibre's native module is only in development build 3 and later, so on
@@ -332,13 +333,7 @@ function ResultList({ filters }: { filters: SearchFilters }) {
     setRefreshing(false);
   };
 
-  if (state.kind === 'loading') {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  if (state.kind === 'loading') return <CardSkeletonList />;
   if (state.kind === 'error') {
     return (
       <View style={styles.center}>

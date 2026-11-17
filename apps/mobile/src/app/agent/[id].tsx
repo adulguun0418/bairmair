@@ -1,13 +1,14 @@
 import { loadAgentPage, type AgentPageData } from '@bairmair/browse';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { ListingCard } from '@/browse/listing-card';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
 import { Text } from '@/ui/text';
+import { CardSkeletonList } from '@/ui/skeleton';
 
 type State =
   | { kind: 'loading' }
@@ -42,25 +43,32 @@ export default function AgentScreen() {
     };
   }, [id, key]);
 
+  if (state.kind === 'loading') {
+    return (
+      <ScrollView
+        style={{ backgroundColor: colors.background }}
+        contentInsetAdjustmentBehavior="automatic"
+        scrollEnabled={false}
+      >
+        <CardSkeletonList count={2} />
+      </ScrollView>
+    );
+  }
   if (state.kind !== 'ready') {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        {state.kind === 'loading' ? (
-          <ActivityIndicator />
-        ) : (
-          <>
-            <Text style={[styles.body, { color: colors.text }]}>
-              {state.kind === 'missing' ? t('browse.notFound') : t('browse.loadFailed')}
-            </Text>
-            {state.kind === 'error' && (
-              <Button
-                title={t('browse.retry')}
-                variant="secondary"
-                onPress={() => setAttempt((n) => n + 1)}
-              />
-            )}
-          </>
-        )}
+        <>
+          <Text style={[styles.body, { color: colors.text }]}>
+            {state.kind === 'missing' ? t('browse.notFound') : t('browse.loadFailed')}
+          </Text>
+          {state.kind === 'error' && (
+            <Button
+              title={t('browse.retry')}
+              variant="secondary"
+              onPress={() => setAttempt((n) => n + 1)}
+            />
+          )}
+        </>
       </View>
     );
   }

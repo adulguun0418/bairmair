@@ -3,7 +3,15 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { AgentSection } from '@/account/agent-section';
 import { deleteAccount } from '@/account/delete-account';
 import { signOut } from '@/auth/actions';
@@ -25,6 +33,12 @@ type Method = (typeof METHODS)[number];
 
 function isMethod(value: unknown): value is Method {
   return typeof value === 'string' && (METHODS as readonly string[]).includes(value);
+}
+
+/** The saved display name (empty when none). */
+async function loadDisplayName(userId: string): Promise<string> {
+  const { data } = await supabase.from('profiles').select('display_name').eq('id', userId).single();
+  return data?.display_name ?? '';
 }
 
 /** Up to two initials from a name ("Бат Дорж" → "БД"). */
@@ -53,20 +67,18 @@ export default function AccountScreen() {
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  /** Bumped by pull to refresh, so the agent card loads again. */
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     let active = true;
-    void supabase
-      .from('profiles')
-      .select('display_name')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
-        if (!active) return;
-        setName(data?.display_name ?? '');
-        setSavedName(data?.display_name ?? '');
-      });
+    void loadDisplayName(user.id).then((saved) => {
+      if (!active) return;
+      setName(saved);
+      setSavedName(saved);
+    });
     return () => {
       active = false;
     };
@@ -120,6 +132,22 @@ export default function AccountScreen() {
     }
   };
 
+  /** Pull to refresh: the session (phone status), the name and the agent card from the server. */
+  const refresh = async () => {
+    setRefreshing(true);
+    setMessage(null);
+    try {
+      const [saved] = await Promise.all([loadDisplayName(user.id), supabase.auth.refreshSession()]);
+      setName(saved);
+      setSavedName(saved);
+      setReloadKey((key) => key + 1);
+    } catch {
+      // Offline: what is shown stays.
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const removeAccount = async () => {
     setDeleting(true);
     setMessage(null);
@@ -163,6 +191,7 @@ export default function AccountScreen() {
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
     >
       <View style={[styles.card, styles.profile, { backgroundColor: colors.surface }]}>
         <View style={[styles.avatar, { backgroundColor: colors.ink }]}>
@@ -246,7 +275,7 @@ export default function AccountScreen() {
         </View>
       </Group>
 
-      <AgentSection userId={user.id} />
+      <AgentSection userId={user.id} reloadKey={reloadKey} />
 
       <AppSettings />
 

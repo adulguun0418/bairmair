@@ -17,6 +17,7 @@ import { BlueprintGrid } from '@/ui/blueprint';
 import { Icon, type IconName } from '@/ui/icon';
 import { Text } from '@/ui/text';
 import { PAPER, PAPER_GRID, radius, useColors } from '@/ui/theme';
+import { rememberCover } from './cover-cache';
 import { FavoriteButton } from './favorite-button';
 import { LabelledPlan, listingPlanUrl } from './plan-image';
 
@@ -49,12 +50,17 @@ export function ListingCard({
   const area = card.area_official_m2 ?? card.area_scanned_m2;
   const district = districtById(card.district_id);
   const rooms: Spec = { icon: 'rooms', text: t('listingPage.roomsCount', { count: card.rooms }) };
+  // The listing screen shows this photo at once while it loads (cover-cache.ts).
+  const open = () => {
+    rememberCover(card.id, cover);
+    onPress();
+  };
 
   if (compact) {
     return (
       <Pressable
         accessibilityRole="link"
-        onPress={onPress}
+        onPress={open}
         style={({ pressed }) => [
           styles.compact,
           { backgroundColor: colors.surface, boxShadow: `0 4px 14px ${colors.shadow}` },
@@ -93,7 +99,7 @@ export function ListingCard({
   return (
     <Pressable
       accessibilityRole="link"
-      onPress={onPress}
+      onPress={open}
       style={({ pressed }) => [
         styles.card,
         { backgroundColor: colors.surface, boxShadow: `0 6px 20px ${colors.shadow}` },

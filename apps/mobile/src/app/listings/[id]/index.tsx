@@ -10,6 +10,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -117,6 +118,16 @@ function Editor({ listing }: { listing: LocalListing }) {
   const currency = sale ? 'MNT' : form.currency;
 
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  /** Pull to refresh: takes edits made on the website, unless something here is still unsent. */
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshFromServer({ ids: [id], maxAgeMs: 0 });
+    } finally {
+      setRefreshing(false);
+    }
+  };
   /** Where each step starts in the scroll content, for the header's step row. */
   const offsets = useRef<Partial<Record<EditorStepId, number>>>({});
   const steps = editorSteps(listing);
@@ -189,6 +200,9 @@ function Editor({ listing }: { listing: LocalListing }) {
         <ScrollView
           ref={scrollRef}
           scrollEnabled={scrollEnabled}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />
+          }
           style={{ backgroundColor: colors.background }}
           contentContainerStyle={styles.content}
           contentInsetAdjustmentBehavior="automatic"
