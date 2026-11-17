@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isReportableException } from '../src/lib/error-filter';
 
-const ownFrame = { filename: 'https://bairmair-bairmair.vercel.app/_next/static/chunks/abc.js' };
+const ownFrame = { filename: 'https://bairmair.vercel.app/_next/static/chunks/abc.js' };
 
 describe('isReportableException', () => {
   it('keeps errors from our own code', () => {
