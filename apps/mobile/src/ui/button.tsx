@@ -3,6 +3,16 @@ import { Icon, type IconName } from './icon';
 import { Text } from './text';
 import { radius, useColors } from './theme';
 
+/** Button colours on plan paper (the light theme's). */
+const PAPER_COLORS = {
+  primary: '#1a2b60',
+  onPrimary: '#ffffff',
+  danger: '#b91c1c',
+  surface2: '#ffffff',
+  text: '#0e1733',
+  borderStrong: '#cfd6e3',
+};
+
 interface ButtonProps {
   title: string;
   onPress: () => void;
@@ -14,6 +24,8 @@ interface ButtonProps {
   /** An icon before the title. */
   icon?: IconName;
   size?: 'regular' | 'small';
+  /** On blueprint paper, which stays light in dark mode: light-theme colours in both themes. */
+  paper?: boolean;
   disabled?: boolean;
   /** When the title alone does not say what the button does. */
   accessibilityLabel?: string;
@@ -26,11 +38,13 @@ export function Button({
   variant = 'primary',
   icon,
   size = 'regular',
+  paper = false,
   disabled,
   accessibilityLabel,
   style,
 }: ButtonProps) {
-  const colors = useColors();
+  const themed = useColors();
+  const colors = paper ? PAPER_COLORS : themed;
   const background =
     variant === 'primary'
       ? colors.primary

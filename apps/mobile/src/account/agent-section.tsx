@@ -4,7 +4,8 @@ import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
+import { Icon } from '@/ui/icon';
+import { radius, useColors } from '@/ui/theme';
 import { Text } from '@/ui/text';
 
 /** agent_profiles CHECK constraints. */
@@ -108,11 +109,27 @@ export function AgentSection({ userId }: { userId: string }) {
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }]}>
-      <Text style={[styles.heading, { color: colors.text }]}>{t('account.agent.title')}</Text>
+      <View style={styles.headingRow}>
+        <Icon name="briefcase" size={18} color={colors.brand} />
+        <Text style={[styles.heading, { color: colors.text }]}>{t('account.agent.title')}</Text>
+      </View>
       {saved ? (
-        <Text style={[styles.body, { color: saved.verified ? colors.success : colors.textMuted }]}>
-          {saved.verified ? t('account.agent.verified') : t('account.agent.pending')}
-        </Text>
+        <View
+          style={[
+            styles.status,
+            { backgroundColor: saved.verified ? colors.successSoft : colors.surface2 },
+          ]}
+        >
+          {saved.verified && <Icon name="verified" size={12} color={colors.success} />}
+          <Text
+            style={[
+              styles.statusText,
+              { color: saved.verified ? colors.onSuccessSoft : colors.textMuted },
+            ]}
+          >
+            {saved.verified ? t('account.agent.verified') : t('account.agent.pending')}
+          </Text>
+        </View>
       ) : (
         <Text style={[styles.small, { color: colors.textMuted }]}>{t('account.agent.intro')}</Text>
       )}
@@ -169,8 +186,19 @@ export function AgentSection({ userId }: { userId: string }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 12, padding: 16, gap: 10 },
-  heading: { fontSize: 18, fontWeight: '700' },
+  card: { borderRadius: radius.lg, padding: 16, gap: 12 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heading: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
+  status: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  statusText: { fontSize: 13, fontWeight: '700' },
   body: { fontSize: 16, lineHeight: 22 },
   small: { fontSize: 14, lineHeight: 20 },
   multiline: { minHeight: 96, textAlignVertical: 'top' },
