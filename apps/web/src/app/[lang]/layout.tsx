@@ -23,6 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(publicEnv.siteUrl),
     title: { default: t('app.name'), template: `%s · ${t('app.name')}` },
     description: t('app.tagline'),
+    // Home-screen web app (iOS reads these; the manifest is app/manifest.ts).
+    appleWebApp: { capable: true, title: t('app.name'), statusBarStyle: 'default' },
   };
 }
 
