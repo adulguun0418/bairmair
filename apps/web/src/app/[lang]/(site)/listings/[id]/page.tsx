@@ -355,11 +355,12 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
         <SellBand locale={locale} t={t} placement="listing" />
       </div>
 
-      {/* Phones: price and the call button always at hand. */}
+      {/* Phones: price and the call button always at hand. Wider side padding than the page
+          (24 px): the bar sits in the screen's rounded bottom corners. */}
       {live && listing.price !== null && (
         <div
           data-bottom-bar
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden"
         >
           <div className="mx-auto flex max-w-xl items-center gap-3">
             <div className="min-w-0 flex-1">
