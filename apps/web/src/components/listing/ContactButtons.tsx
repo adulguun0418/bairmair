@@ -140,7 +140,7 @@ export function ContactButtons({
           title={`${t('listingPage.contact.call')} · ${t('listingPage.contact.mention')}`}
           className={`${primary} min-w-0 whitespace-nowrap px-3 font-semibold ${bar ? '' : 'sm:text-[17px]'}`}
         >
-          <PhoneIcon className="size-[18px] shrink-0" />
+          <PhoneIcon className={`size-[18px] shrink-0 ${bar ? 'max-[359px]:hidden' : ''}`} />
           <span>
             {phone.prefix && !bar && <span className="max-[359px]:hidden">{phone.prefix} </span>}
             {phone.local}
