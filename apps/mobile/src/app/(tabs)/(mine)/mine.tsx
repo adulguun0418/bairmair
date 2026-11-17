@@ -4,7 +4,7 @@ import { formatArea, formatListingPrice } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { editorProgress, editorSteps } from '@/listings/editor-steps';
@@ -14,6 +14,7 @@ import {
   isKnownLocally,
   photoUri,
   refreshFromServer,
+  retrySyncNow,
   useLocalListings,
 } from '@/listings/listings';
 import { isLive, type LocalListing } from '@/listings/model';
@@ -41,6 +42,7 @@ export default function MyListingsScreen() {
   const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const userId = user?.id ?? null;
   useFocusEffect(
@@ -80,6 +82,29 @@ export default function MyListingsScreen() {
           .map((row) => [row.id, daysLeftInSearch(row.last_confirmed_at, fetchedAt)] as const)
       : [],
   );
+
+  /** Pull to refresh: edits made on the website (or another phone) reach this phone now. */
+  const refresh = async () => {
+    if (!userId) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refreshFromServer({ maxAgeMs: 0 }),
+        fetchMyListings(supabase, userId)
+          .then((rows) => {
+            setServer(rows);
+            setFetchedAt(new Date());
+          })
+          .catch(() => {
+            // Offline: the phone's own listings stay as they are.
+          }),
+      ]);
+      // Anything waiting to be sent tries again too.
+      retrySyncNow();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const openNew = () => {
     if (!userId) return;
@@ -165,6 +190,11 @@ export default function MyListingsScreen() {
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
+      refreshControl={
+        user ? (
+          <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />
+        ) : undefined
+      }
     >
       {content}
       {error && <Text style={[styles.body, { color: colors.danger }]}>{error}</Text>}

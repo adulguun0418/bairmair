@@ -1,6 +1,15 @@
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Pressable, StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { useColors } from '@/ui/theme';
 import { SignedOutError, toggleFavorite, useIsFavorite } from './favorites';
@@ -21,8 +30,21 @@ export function FavoriteButton({
   const colors = useColors();
   const router = useRouter();
   const saved = useIsFavorite(listingId);
+  const signedIn = Boolean(useAuth().session);
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 
   const press = () => {
+    // Saving pops the heart (only on the user's own tap, never when the list re-renders).
+    if (!saved && signedIn && !reduceMotion) {
+      scale.set(
+        withSequence(
+          withTiming(1.35, { duration: 110 }),
+          withSpring(1, { damping: 7, stiffness: 260 }),
+        ),
+      );
+    }
     toggleFavorite(listingId).catch((error: unknown) => {
       if (error instanceof SignedOutError) {
         Alert.alert(t('favorites.signIn'), undefined, [
@@ -49,12 +71,14 @@ export function FavoriteButton({
         { opacity: pressed ? 0.6 : 1 },
       ]}
     >
-      <SymbolView
-        name={saved ? 'heart.fill' : 'heart'}
-        size={size}
-        tintColor={tint}
-        fallback={<Text style={{ color: tint, fontSize: size }}>{saved ? '♥' : '♡'}</Text>}
-      />
+      <Animated.View style={popStyle}>
+        <SymbolView
+          name={saved ? 'heart.fill' : 'heart'}
+          size={size}
+          tintColor={tint}
+          fallback={<Text style={{ color: tint, fontSize: size }}>{saved ? '♥' : '♡'}</Text>}
+        />
+      </Animated.View>
     </Pressable>
   );
 }
