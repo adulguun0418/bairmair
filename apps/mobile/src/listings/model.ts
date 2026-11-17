@@ -6,7 +6,13 @@ import {
   type RoomLabelOverride,
   withRoomLabel,
 } from '@bairmair/room-model';
-import { EMPTY_FORM, PRIVATE_FIELDS, type ListingForm, type ListingStatus } from '@bairmair/browse';
+import {
+  EMPTY_FORM,
+  PRIVATE_FIELDS,
+  type ListingFields,
+  type ListingForm,
+  type ListingStatus,
+} from '@bairmair/browse';
 
 // A listing as saved on the phone, and the pure changes made to it by the editor (user edits)
 // and by the sync engine (progress). Saved as JSON in `Documents/listings/<id>/listing.json`.
@@ -112,6 +118,13 @@ export interface LocalListing {
   /** Bumped by every change to `listings` columns; `syncedRev` is the last one written. */
   rev: number;
   syncedRev: number;
+  /**
+   * The `listings` columns as the server last confirmed them (after a create or update, or from
+   * a server copy). An update sends only the columns that differ from these, so a change made
+   * elsewhere (the website) to another column is not overwritten with this phone's old value.
+   * Null for listings saved before this existed: the next update sends every column.
+   */
+  syncedFields: ListingFields | null;
   /** The same for `listing_private` (location, unit number). */
   privateRev: number;
   privateSyncedRev: number;
@@ -140,6 +153,7 @@ export function newListing(id: string, ownerId: string, now: string): LocalListi
     remote: { createAttempted: false, created: false },
     rev: 1,
     syncedRev: 0,
+    syncedFields: null,
     privateRev: 0,
     privateSyncedRev: 0,
     editVersion: 0,
@@ -155,6 +169,7 @@ export function normalizeListing(saved: LocalListing): LocalListing {
   return {
     ...raw,
     serverStatus: raw.serverStatus ?? raw.status,
+    syncedFields: raw.syncedFields ?? null,
     statusRev: raw.statusRev ?? 0,
     statusSyncedRev: raw.statusSyncedRev ?? 0,
     scan: raw.scan ? { ...raw.scan, roomDividers: raw.scan.roomDividers ?? [] } : null,
@@ -446,16 +461,35 @@ export function markCreateAttempted(listing: LocalListing): LocalListing {
   return { ...listing, remote: { ...listing.remote, createAttempted: true } };
 }
 
-export function markCreated(listing: LocalListing, rev: number): LocalListing {
+export function markCreated(
+  listing: LocalListing,
+  rev: number,
+  fields: ListingFields,
+): LocalListing {
   return {
     ...listing,
     remote: { createAttempted: true, created: true },
     syncedRev: Math.max(listing.syncedRev, rev),
+    syncedFields: fields,
   };
 }
 
-export function markSynced(listing: LocalListing, rev: number): LocalListing {
-  return { ...listing, syncedRev: Math.max(listing.syncedRev, rev) };
+/**
+ * An update was accepted. `sent` holds the columns it wrote; without a baseline it wrote every
+ * column (`changedFields` without a baseline), so it becomes the baseline.
+ */
+export function markSynced(
+  listing: LocalListing,
+  rev: number,
+  sent: Partial<ListingFields>,
+): LocalListing {
+  return {
+    ...listing,
+    syncedRev: Math.max(listing.syncedRev, rev),
+    syncedFields: listing.syncedFields
+      ? { ...listing.syncedFields, ...sent }
+      : (sent as ListingFields),
+  };
 }
 
 export function markPrivateSynced(listing: LocalListing, rev: number): LocalListing {

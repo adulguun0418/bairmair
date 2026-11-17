@@ -78,6 +78,7 @@ export function mergeServerCopy(
   const sameStatus = local.serverStatus === server.serverStatus;
   const scan = mergeScan(local.scan, server.scan);
   const photosUnchanged = samePhotos(local.photos, server.photos);
+  const sameBaseline = stableJson(local.syncedFields) === stableJson(server.syncedFields);
 
   if (
     sameFields &&
@@ -85,7 +86,8 @@ export function mergeServerCopy(
     sameLocation &&
     sameStatus &&
     scan === local.scan &&
-    photosUnchanged
+    photosUnchanged &&
+    sameBaseline
   ) {
     return null;
   }
@@ -118,6 +120,8 @@ export function mergeServerCopy(
           : { ...local.form, unitNumber: server.form.unitNumber }
         : server.form,
       location: sameLocation ? local.location : server.location,
+      // What the server has now is what the next update is compared with.
+      syncedFields: server.syncedFields,
       photos,
       scan,
       removedPhotoIds: [],

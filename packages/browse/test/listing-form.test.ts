@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  changedFields,
   EMPTY_FORM,
   formFromRow,
   formToFields,
@@ -225,5 +226,36 @@ describe('missingForPublish', () => {
         photoCount: 1,
       }),
     ).toEqual(['validFields']);
+  });
+});
+
+describe('changedFields', () => {
+  const fieldsOf = (form: Partial<ListingForm>) => {
+    const result = formToFields({ ...EMPTY_FORM, title: 'Зайсан, 3 өрөө', ...form });
+    if (!result.ok) throw new Error('invalid');
+    return result.fields;
+  };
+
+  it('keeps only the columns that differ from the baseline', () => {
+    const baseline = fieldsOf({ price: '250000000', rooms: '3' });
+    expect(changedFields(fieldsOf({ price: '240000000', rooms: '3' }), baseline)).toEqual({
+      price: 240000000,
+    });
+    expect(changedFields(baseline, baseline)).toEqual({});
+  });
+
+  it('includes every column a type switch changes', () => {
+    const sale = fieldsOf({ type: 'sale', mortgageEligible: true });
+    const rent = fieldsOf({ type: 'rent', currency: 'USD', mortgageEligible: true });
+    expect(changedFields(rent, sale)).toEqual({
+      type: 'rent',
+      currency: 'USD',
+      mortgage_eligible: null,
+    });
+  });
+
+  it('returns every column without a baseline', () => {
+    const fields = fieldsOf({});
+    expect(changedFields(fields, null)).toEqual(fields);
   });
 });

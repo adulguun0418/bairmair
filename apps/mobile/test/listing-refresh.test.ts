@@ -1,4 +1,4 @@
-import { EMPTY_FORM } from '@bairmair/browse';
+import { EMPTY_FORM, formToFields } from '@bairmair/browse';
 import { describe, expect, it } from 'vitest';
 import {
   updateForm,
@@ -54,7 +54,7 @@ function scan(id = SCAN): LocalScan {
 
 /** A listing as the server holds it (the shape `fetchServerCopies` builds): fully synced. */
 function serverCopy(changes: Partial<LocalListing> = {}): LocalListing {
-  return {
+  const listing = {
     version: 1,
     id: ID,
     ownerId: OWNER,
@@ -86,7 +86,15 @@ function serverCopy(changes: Partial<LocalListing> = {}): LocalListing {
     privateSyncedRev: 1,
     editVersion: 0,
     ...changes,
-  };
+  } as LocalListing;
+  // The server's columns are the baseline (as `fetchServerCopies` sets it).
+  return { ...listing, syncedFields: changes.syncedFields ?? fieldsOf(listing) };
+}
+
+function fieldsOf(listing: LocalListing) {
+  const result = formToFields(listing.form);
+  if (!result.ok) throw new Error('invalid test form');
+  return result.fields;
 }
 
 /** The phone's copy of the same listing: as typed, with its own photo and scan files. */

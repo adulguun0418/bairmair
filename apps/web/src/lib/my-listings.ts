@@ -1,6 +1,6 @@
 'use client';
 
-import { UNIQUE_VIOLATION, type ListingFields } from '@bairmair/browse';
+import { changedFields, UNIQUE_VIOLATION, type ListingFields } from '@bairmair/browse';
 import {
   BUCKETS,
   CONTENT_TYPES,
@@ -109,20 +109,32 @@ export function photoUrl(listingId: string, photoId: string): string {
   );
 }
 
-/** Creates the listing (a draft) with a client id, or saves its fields. */
+/**
+ * Creates the listing (a draft) with a client id, or saves the columns that differ from
+ * `baseline` (the row as this page loaded or last saved it; null: every column), so a change
+ * made meanwhile in the app to another column is kept. Returns the row as the server has it now.
+ */
 export async function saveListingFields(
   id: string,
   fields: ListingFields,
   isNew: boolean,
+  baseline: ListingFields | null,
 ): Promise<MyListingRow> {
   const client = browserClient();
-  const result = isNew
-    ? await client
-        .from('listings')
-        .insert({ id, ...fields })
-        .select('*')
-        .single()
-    : await client.from('listings').update(fields).eq('id', id).select('*').single();
+  if (isNew) {
+    const created = await client
+      .from('listings')
+      .insert({ id, ...fields })
+      .select('*')
+      .single();
+    fail(created.error);
+    return created.data!;
+  }
+  const changed = changedFields(fields, baseline);
+  const result =
+    Object.keys(changed).length === 0
+      ? await client.from('listings').select('*').eq('id', id).single()
+      : await client.from('listings').update(changed).eq('id', id).select('*').single();
   fail(result.error);
   return result.data!;
 }

@@ -135,11 +135,22 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
     setNotice(null);
     const id = listingId ?? row?.id ?? (newId.current ??= crypto.randomUUID());
     try {
-      const saved = await saveListingFields(id, result.fields, row === null);
+      // Only what this page changed since it loaded (or last saved) is written.
+      const base = formToFields(loaded.form);
+      const saved = await saveListingFields(
+        id,
+        result.fields,
+        row === null,
+        base.ok ? base.fields : null,
+      );
       if (pin && (!samePin(pin, loaded.pin) || unit !== privateUnitNumber(loaded.form))) {
         await savePrivate(id, pin, unit);
       }
-      setLoaded({ row: saved, form, pin, photos });
+      // The row as the server has it now, including changes made meanwhile in the app.
+      const fresh = formFromRow(saved, form.unitNumber);
+      setLoaded({ row: saved, form: fresh, pin, photos });
+      setForm(fresh);
+      setRow(saved);
       setNotice({ text: t('listingForm.saved'), error: false });
       if (!listingId) router.replace(localePath(locale, `/my-listings/${id}`));
     } catch {

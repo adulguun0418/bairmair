@@ -1,6 +1,6 @@
 import type { Tables, TypedSupabaseClient } from '@bairmair/db';
 import { parseRoomDividers, parseRoomLabelOverrides } from '@bairmair/room-model';
-import { formFromRow } from '@bairmair/browse';
+import { formFromRow, formToFields } from '@bairmair/browse';
 import type { LocalListing, LocalPhoto, LocalScan } from './model';
 import { classifyPostgrestError, SyncError } from './sync-errors';
 
@@ -175,6 +175,9 @@ function localCopy({
     savedRoom:
       photo.scan_id && photo.room_id ? { scanId: photo.scan_id, roomId: photo.room_id } : null,
   }));
+  const form = formFromRow(row, location?.unit_number);
+  // The baseline for sending only changed columns: the server's row as the form writes it.
+  const parsed = formToFields(form);
 
   return {
     version: 1,
@@ -186,7 +189,7 @@ function localCopy({
     serverStatus: row.status,
     statusRev: 0,
     statusSyncedRev: 0,
-    form: formFromRow(row, location?.unit_number),
+    form,
     location: location
       ? { lat: location.lat, lng: location.lng, accuracyM: null, capturedAt: location.updated_at }
       : null,
@@ -198,6 +201,7 @@ function localCopy({
     remote: { createAttempted: true, created: true },
     rev: 1,
     syncedRev: 1,
+    syncedFields: parsed.ok ? parsed.fields : null,
     privateRev: 1,
     privateSyncedRev: 1,
     editVersion: 0,
