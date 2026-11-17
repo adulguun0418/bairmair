@@ -33,6 +33,9 @@ export const mn = {
     toLight: 'Цайвар горимд шилжих',
     toDark: 'Бараан горимд шилжих',
   },
+  pullToRefresh: {
+    refreshing: 'Шинэчилж байна…',
+  },
   footer: {
     browse: 'Хайх',
     company: 'bairmair',

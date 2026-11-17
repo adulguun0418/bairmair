@@ -1,10 +1,11 @@
 import { cacheLife } from 'next/cache';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { SiteHeader } from '@/components/header/SiteHeader';
+import { PullToRefresh } from '@/components/PullToRefresh';
 import { SiteFooter } from '@/components/SiteFooter';
 import { getI18n } from '@/lib/i18n';
 
-/** The website's pages: sticky header, the page, footer. */
+/** The website's pages: sticky header, the page, footer (+ pull-to-refresh in the home-screen app). */
 export default async function SiteLayout({ children }: LayoutProps<'/[lang]'>) {
   const { locale, t } = await getI18n();
   const language = {
@@ -18,6 +19,7 @@ export default async function SiteLayout({ children }: LayoutProps<'/[lang]'>) {
       <SiteHeader locale={locale} t={t} language={language} />
       <main className="flex-1">{children}</main>
       <SiteFooter locale={locale} t={t} language={language} year={year} />
+      <PullToRefresh refreshingLabel={t('pullToRefresh.refreshing')} />
     </AuthProvider>
   );
 }

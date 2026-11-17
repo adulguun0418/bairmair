@@ -35,6 +35,9 @@ export const en: Messages = {
     toLight: 'Switch to light mode',
     toDark: 'Switch to dark mode',
   },
+  pullToRefresh: {
+    refreshing: 'Refreshing…',
+  },
   footer: {
     browse: 'Browse',
     company: 'bairmair',
