@@ -1,5 +1,5 @@
 import type { RoomDivider, RoomLabelOverride } from '@bairmair/room-model';
-import type { ListingStatus } from '@bairmair/browse';
+import { formToFields, type ListingFields, type ListingStatus } from '@bairmair/browse';
 import type { LocalListing, LocalScan, PhotoRoom } from '../src/listings/model';
 import { ListingStore, type ListingPersistence } from '../src/listings/store';
 import {
@@ -54,9 +54,13 @@ export class FakeRemote implements ListingRemote {
     await this.call('createListing');
     this.rows.set(id, fields);
   }
-  async updateListing(id: string, fields: unknown) {
+  /** The columns each update sent, in order. */
+  updates: Record<string, unknown>[] = [];
+  async updateListing(id: string, fields: Record<string, unknown>) {
     await this.call('updateListing');
-    this.rows.set(id, fields);
+    this.updates.push(fields);
+    // Like the database: an update changes only the columns it names.
+    this.rows.set(id, { ...(this.rows.get(id) as object), ...fields });
   }
   async savePrivate() {
     await this.call('savePrivate');
@@ -161,4 +165,11 @@ export function setup(listing: LocalListing) {
   const clock = new FakeClock();
   const engine = new SyncEngine(store, remote, files, clock);
   return { store, remote, files, clock, engine };
+}
+
+/** The `listings` columns a valid test listing's form maps to (the baseline after a create). */
+export function fieldsOf(listing: LocalListing): ListingFields {
+  const result = formToFields(listing.form);
+  if (!result.ok) throw new Error('invalid test form');
+  return result.fields;
 }

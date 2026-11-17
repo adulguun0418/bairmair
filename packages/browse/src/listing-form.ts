@@ -291,6 +291,23 @@ export function formToFields(form: ListingForm): FormResult {
   };
 }
 
+/**
+ * The columns of `current` that differ from `baseline` (what the server last confirmed), so an
+ * update writes only what this editor changed and keeps changes made elsewhere to other columns.
+ * Without a baseline, every column.
+ */
+export function changedFields(
+  current: ListingFields,
+  baseline: ListingFields | null,
+): Partial<ListingFields> {
+  if (!baseline) return current;
+  const changed: Record<string, unknown> = {};
+  for (const key of Object.keys(current) as (keyof ListingFields)[]) {
+    if (current[key] !== baseline[key]) changed[key] = current[key];
+  }
+  return changed as Partial<ListingFields>;
+}
+
 export function privateUnitNumber(form: ListingForm): string | null {
   return text(form.unitNumber);
 }

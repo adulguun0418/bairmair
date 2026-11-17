@@ -31,7 +31,7 @@ import {
   planSync,
   scanProgress,
 } from '../src/listings/sync-plan';
-import { OWNER, setup } from './sync-fakes';
+import { fieldsOf, OWNER, setup } from './sync-fakes';
 
 const ID = '11111111-1111-4111-8111-111111111111';
 const NOW = '2026-11-13T10:00:00.000Z';
@@ -56,7 +56,7 @@ function synced(form: Parameters<typeof updateForm>[1] = {}): LocalListing {
   let listing = updateForm(newListing(ID, OWNER, NOW), { title: 'Зайсан, 3 өрөө', ...form }, NOW);
   listing = setLocation(listing, ZAISAN, NOW);
   listing = addPhotos(listing, [{ id: PHOTO, file: 'p.jpg', width: 2048, height: 1536 }], NOW);
-  listing = markCreated(listing, listing.rev);
+  listing = markCreated(listing, listing.rev, fieldsOf(listing));
   listing = markPrivateSynced(listing, listing.privateRev);
   return markPhotoSaved(markPhotoUploaded(listing, PHOTO), PHOTO, 0);
 }

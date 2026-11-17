@@ -1,5 +1,6 @@
 import type { RoomDivider, RoomLabelOverride } from '@bairmair/room-model';
 import {
+  changedFields,
   formToFields,
   missingForPublish,
   privateUnitNumber,
@@ -16,7 +17,8 @@ import { isLive, type LocalListing, type LocalScan, type PhotoRoom } from './mod
 export type SyncOp =
   | { kind: 'deleteListing' }
   | { kind: 'createListing'; rev: number; fields: ListingFields }
-  | { kind: 'updateListing'; rev: number; fields: ListingFields }
+  /** Only the columns that changed since the server last confirmed them (`changedFields`). */
+  | { kind: 'updateListing'; rev: number; fields: Partial<ListingFields> }
   | {
       kind: 'savePrivate';
       rev: number;
@@ -124,7 +126,14 @@ export function planSync(listing: LocalListing): SyncPlan {
 
   const fieldsPending = listing.rev > listing.syncedRev;
   if (fieldsPending && result.ok && liveMissing.length === 0) {
-    return { op: { kind: 'updateListing', rev: listing.rev, fields: result.fields }, block: null };
+    return {
+      op: {
+        kind: 'updateListing',
+        rev: listing.rev,
+        fields: changedFields(result.fields, listing.syncedFields),
+      },
+      block: null,
+    };
   }
 
   // The private row needs coordinates (NOT NULL), so a unit number waits for the location.

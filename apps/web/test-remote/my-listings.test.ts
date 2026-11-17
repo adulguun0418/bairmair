@@ -66,7 +66,8 @@ afterAll(async () => {
 describe('website seller data layer', () => {
   it('runs a listing from draft to published to sold, then deletes it', async () => {
     // Create a draft with only a title, then fill it in.
-    const draft = await saveListingFields(listingId, fields({ title: 'Вэб тест байр' }), true);
+    const draftFields = fields({ title: 'Вэб тест байр' });
+    const draft = await saveListingFields(listingId, draftFields, true, null);
     expect(draft.status).toBe('draft');
 
     const full = fields({
@@ -78,9 +79,32 @@ describe('website seller data layer', () => {
       floor: '4',
       totalFloors: '12',
     });
-    const saved = await saveListingFields(listingId, full, false);
+    const saved = await saveListingFields(listingId, full, false, draftFields);
     expect(saved.price).toBe(250_000_000);
     expect(saved.area_official_m2).toBe(55.5);
+
+    // The app changes the description meanwhile; the page (still on `full`) then changes the
+    // price. Only the price is written, so the app's description stays.
+    const app = await browserClient()
+      .from('listings')
+      .update({ description: 'Апп-аас нэмсэн тайлбар' })
+      .eq('id', listingId);
+    expect(app.error).toBeNull();
+    const repriced = await saveListingFields(
+      listingId,
+      { ...full, price: 240_000_000 },
+      false,
+      full,
+    );
+    expect(repriced.price).toBe(240_000_000);
+    expect(repriced.description).toBe('Апп-аас нэмсэн тайлбар');
+
+    // Nothing changed: no write, the current row comes back.
+    const unchanged = await saveListingFields(listingId, { ...full, price: 240_000_000 }, false, {
+      ...full,
+      price: 240_000_000,
+    });
+    expect(unchanged.description).toBe('Апп-аас нэмсэн тайлбар');
 
     // Pin + unit number: insert first time, update the second.
     await savePrivate(listingId, { lat: 47.9, lng: 106.9 }, '12');
@@ -138,7 +162,7 @@ describe('website seller data layer', () => {
     // The editor always asks for the signed-in user's listing.
     expect(await loadMyListing(other.data.id, userId)).toBeNull();
     await expect(
-      saveListingFields(other.data.id, fields({ title: 'Хакердсан гарчиг' }), false),
+      saveListingFields(other.data.id, fields({ title: 'Хакердсан гарчиг' }), false, null),
     ).rejects.toBeTruthy();
   });
 });

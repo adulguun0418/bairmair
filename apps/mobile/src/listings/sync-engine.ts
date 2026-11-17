@@ -34,7 +34,7 @@ export interface ListingRemote {
   /** Inserts the draft row. An existing row with this id counts as success (a retried insert). */
   createListing(id: string, fields: ListingFields): Promise<void>;
   /** Throws `listingMissing` if the row is gone (deleted on another device). */
-  updateListing(id: string, fields: ListingFields): Promise<void>;
+  updateListing(id: string, fields: Partial<ListingFields>): Promise<void>;
   savePrivate(
     listingId: string,
     value: { lat: number; lng: number; unitNumber: string | null },
@@ -294,11 +294,12 @@ export class SyncEngine {
       case 'createListing':
         this.store.update(id, markCreateAttempted);
         await this.remote.createListing(id, op.fields);
-        this.store.update(id, (current) => markCreated(current, op.rev));
+        this.store.update(id, (current) => markCreated(current, op.rev, op.fields));
         return;
       case 'updateListing':
-        await this.remote.updateListing(id, op.fields);
-        this.store.update(id, (current) => markSynced(current, op.rev));
+        // Edited and changed back: nothing differs from the server, so nothing to send.
+        if (Object.keys(op.fields).length > 0) await this.remote.updateListing(id, op.fields);
+        this.store.update(id, (current) => markSynced(current, op.rev, op.fields));
         return;
       case 'savePrivate':
         await this.remote.savePrivate(id, {

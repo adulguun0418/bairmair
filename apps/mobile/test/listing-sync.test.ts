@@ -20,7 +20,7 @@ import {
   SyncError,
 } from '../src/listings/sync-errors';
 import { isSynced, planSync } from '../src/listings/sync-plan';
-import { OWNER, setup } from './sync-fakes';
+import { fieldsOf, OWNER, setup } from './sync-fakes';
 
 const ID = '11111111-1111-4111-8111-111111111111';
 const NOW = '2026-11-13T10:00:00.000Z';
@@ -39,7 +39,7 @@ function titled(): LocalListing {
 
 function created(): LocalListing {
   const listing = titled();
-  return markCreated(listing, listing.rev);
+  return markCreated(listing, listing.rev, fieldsOf(listing));
 }
 
 describe('model', () => {
