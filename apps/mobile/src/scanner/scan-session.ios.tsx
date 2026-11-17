@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
 import { deviceFacts } from './device';
+import { ScanFailure, ScanIntro } from './scan-intro';
 import { initialScanState, scanReducer, type NativeStatus, type ScanError } from './scan-state';
 import { newScanId } from './scan-meta';
 import type { ScanSessionProps } from './scan-session.types';
@@ -112,20 +113,11 @@ export function ScanSession({ onSaved, onCancel }: ScanSessionProps) {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      {/* Dark text on the paper intro and error pages, light over the camera. */}
+      <StatusBar style={state.phase === 'intro' || state.phase === 'failed' ? 'dark' : 'light'} />
       <RoomPlanView {...viewProps} style={StyleSheet.absoluteFill} />
 
-      {state.phase === 'intro' && (
-        <View style={[styles.sheet, bottom]}>
-          <Text style={styles.title}>{t('scan.introTitle')}</Text>
-          <Text style={styles.body}>1. {t('scan.step1')}</Text>
-          <Text style={styles.body}>2. {t('scan.step2')}</Text>
-          <Text style={styles.body}>3. {t('scan.step3')}</Text>
-          <Text style={styles.warning}>{t('scan.unsavedWarning')}</Text>
-          <Button title={t('scan.start')} onPress={start} />
-          <Button title={t('scan.cancel')} variant="secondary" onPress={close} />
-        </View>
-      )}
+      {state.phase === 'intro' && <ScanIntro onStart={start} onCancel={close} />}
 
       {state.phase === 'scanning' && (
         <>
@@ -148,15 +140,14 @@ export function ScanSession({ onSaved, onCancel }: ScanSessionProps) {
       )}
 
       {state.phase === 'failed' && (
-        <View style={[styles.sheet, bottom]}>
-          <Text style={styles.title}>{t('scan.errorTitle')}</Text>
-          <Text style={styles.body}>{errorText(state.error)}</Text>
-          {state.error?.message ? <Text style={styles.detail}>{state.error.message}</Text> : null}
-          {state.error?.kind === 'camera' && (
-            <Button title={t('scan.openSettings')} onPress={() => void Linking.openSettings()} />
-          )}
-          <Button title={t('scan.close')} variant="secondary" onPress={close} />
-        </View>
+        <ScanFailure
+          message={errorText(state.error)}
+          detail={state.error?.message ?? null}
+          onClose={close}
+          onOpenSettings={
+            state.error?.kind === 'camera' ? () => void Linking.openSettings() : undefined
+          }
+        />
       )}
     </View>
   );
@@ -164,21 +155,6 @@ export function ScanSession({ onSaved, onCancel }: ScanSessionProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000000' },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    gap: 12,
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    backgroundColor: 'rgba(20, 22, 25, 0.94)',
-  },
-  title: { color: '#ffffff', fontSize: 22, fontWeight: '700' },
-  body: { color: '#e9ecef', fontSize: 16, lineHeight: 22 },
-  warning: { color: '#ffc078', fontSize: 15, lineHeight: 21 },
-  detail: { color: '#adb5bd', fontSize: 13, fontFamily: 'Menlo' },
   topBar: {
     position: 'absolute',
     top: 0,

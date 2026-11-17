@@ -2,7 +2,7 @@ import { LOCALES } from '@bairmair/i18n';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AgentSection } from '@/account/agent-section';
 import { deleteAccount } from '@/account/delete-account';
@@ -12,9 +12,12 @@ import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { setThemePreference, THEME_PREFERENCES, useThemePreference } from '@/ui/appearance';
+import { BlueprintPanel } from '@/ui/blueprint-panel';
 import { Button } from '@/ui/button';
+import { Icon, type IconName } from '@/ui/icon';
+import { Segmented } from '@/ui/segmented';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
+import { radius, useColors } from '@/ui/theme';
 import { Text } from '@/ui/text';
 
 const METHODS = ['phone', 'apple', 'google', 'email'] as const;
@@ -24,7 +27,20 @@ function isMethod(value: unknown): value is Method {
   return typeof value === 'string' && (METHODS as readonly string[]).includes(value);
 }
 
-/** Signed out: a way in. Signed in: name, phone status (needed to publish) and sign-out. */
+/** Up to two initials from a name ("Бат Дорж" → "БД"). */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+/**
+ * Signed out: a way in. Signed in: who you are (name, phone, needed to publish), the agent page,
+ * app settings, and at the bottom sign-out and account deletion.
+ */
 export default function AccountScreen() {
   const { t } = useI18n();
   const colors = useColors();
@@ -64,9 +80,6 @@ export default function AccountScreen() {
     );
   }
 
-  const text = { color: colors.text };
-  const muted = { color: colors.textMuted };
-
   if (!user) {
     return (
       <ScrollView
@@ -74,8 +87,13 @@ export default function AccountScreen() {
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Text style={[styles.body, muted]}>{t('account.signedOut')}</Text>
-        <Button title={t('account.signIn')} onPress={() => router.push('/sign-in')} />
+        <BlueprintPanel
+          icon="person"
+          title={t('seller.account.signedOutTitle')}
+          body={t('account.signedOut')}
+        >
+          <Button title={t('account.signIn')} paper onPress={() => router.push('/sign-in')} />
+        </BlueprintPanel>
         <AppSettings />
       </ScrollView>
     );
@@ -84,6 +102,7 @@ export default function AccountScreen() {
   const phoneVerified = Boolean(user.phone && user.phone_confirmed_at);
   const provider = user.app_metadata.provider;
   const trimmed = name.trim();
+  const initials = initialsOf(savedName);
 
   const saveName = async () => {
     setBusy(true);
@@ -145,62 +164,96 @@ export default function AccountScreen() {
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.heading, text]}>{t('account.phone')}</Text>
-        {phoneVerified ? (
-          <View style={styles.line}>
-            <Text style={[styles.body, text]}>{formatMongolianPhone(user.phone ?? '')}</Text>
-            <Text style={[styles.body, { color: colors.success }]}>
-              {t('account.phoneVerified')}
-            </Text>
-          </View>
-        ) : (
-          <>
-            <Text style={[styles.body, muted]}>{t('account.noPhone')}</Text>
-            <Text style={[styles.body, { color: colors.warning }]}>{t('account.phoneNeeded')}</Text>
-            <Button
-              title={t('account.addPhone')}
-              onPress={() => router.push({ pathname: '/sign-in', params: { mode: 'add-phone' } })}
-            />
-          </>
-        )}
-        {isMethod(provider) && (
-          <Text style={[styles.small, muted]}>
-            {t('account.method', { method: t(`account.methods.${provider}`) })}
+      <View style={[styles.card, styles.profile, { backgroundColor: colors.surface }]}>
+        <View style={[styles.avatar, { backgroundColor: colors.ink }]}>
+          {initials ? (
+            <Text style={[styles.avatarText, { color: colors.onInk }]}>{initials}</Text>
+          ) : (
+            <Icon name="person" size={24} color={colors.onInk} />
+          )}
+        </View>
+        <View style={styles.grow}>
+          <Text
+            style={[styles.name, { color: savedName ? colors.text : colors.textMuted }]}
+            numberOfLines={1}
+          >
+            {savedName || t('seller.account.noName')}
           </Text>
-        )}
+          {phoneVerified ? (
+            <View style={styles.phoneRow}>
+              <Text style={[styles.body, { color: colors.textSecondary }]}>
+                {formatMongolianPhone(user.phone ?? '')}
+              </Text>
+              <View style={[styles.verified, { backgroundColor: colors.successSoft }]}>
+                <Icon name="verified" size={12} color={colors.success} />
+                <Text style={[styles.verifiedText, { color: colors.onSuccessSoft }]}>
+                  {t('account.phoneVerified')}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={[styles.small, { color: colors.textMuted }]}>{t('account.noPhone')}</Text>
+          )}
+          {isMethod(provider) && (
+            <Text style={[styles.small, { color: colors.textSubtle }]}>
+              {t('account.method', { method: t(`account.methods.${provider}`) })}
+            </Text>
+          )}
+        </View>
       </View>
 
-      <TextField
-        label={t('account.displayName')}
-        value={name}
-        onChangeText={(value) => {
-          setName(value);
-          setMessage(null);
-        }}
-        placeholder={t('account.displayNamePlaceholder')}
-        maxLength={80}
-        textContentType="name"
-        autoComplete="name"
-      />
-      <Button
-        title={t('account.save')}
-        variant="secondary"
-        onPress={() => void saveName()}
-        disabled={busy || trimmed === savedName}
-      />
-      {message && (
-        <Text style={[styles.body, { color: message.error ? colors.danger : colors.success }]}>
-          {message.text}
-        </Text>
+      {!phoneVerified && (
+        <View style={[styles.card, styles.notice, { backgroundColor: colors.warningSoft }]}>
+          <View style={styles.noticeHead}>
+            <Icon name="warning" size={16} color={colors.warning} />
+            <Text style={[styles.body, styles.grow, { color: colors.onWarningSoft }]}>
+              {t('account.phoneNeeded')}
+            </Text>
+          </View>
+          <Button
+            title={t('account.addPhone')}
+            icon="phone"
+            onPress={() => router.push({ pathname: '/sign-in', params: { mode: 'add-phone' } })}
+          />
+        </View>
       )}
+
+      <Group title={t('seller.account.profile')}>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <TextField
+            label={t('account.displayName')}
+            value={name}
+            onChangeText={(value) => {
+              setName(value);
+              setMessage(null);
+            }}
+            placeholder={t('account.displayNamePlaceholder')}
+            maxLength={80}
+            textContentType="name"
+            autoComplete="name"
+          />
+          <Button
+            title={t('account.save')}
+            variant="secondary"
+            onPress={() => void saveName()}
+            disabled={busy || trimmed === savedName}
+          />
+          {message && (
+            <Text style={[styles.body, { color: message.error ? colors.danger : colors.success }]}>
+              {message.text}
+            </Text>
+          )}
+        </View>
+      </Group>
 
       <AgentSection userId={user.id} />
 
       <AppSettings />
+
       {/* Account actions last, sign-out right above deletion. */}
       <Button
         title={t('account.signOut')}
+        icon="logout"
         variant="outline"
         onPress={confirmSignOut}
         disabled={deleting}
@@ -212,7 +265,7 @@ export default function AccountScreen() {
         disabled={deleting}
         style={({ pressed }) => [styles.deleteRow, { opacity: pressed || deleting ? 0.6 : 1 }]}
       >
-        {deleting && <ActivityIndicator />}
+        {deleting ? <ActivityIndicator /> : <Icon name="trash" size={16} color={colors.danger} />}
         <Text style={[styles.body, { color: colors.danger }]}>
           {deleting ? t('account.deleting') : t('account.deleteAccount')}
         </Text>
@@ -221,7 +274,41 @@ export default function AccountScreen() {
   );
 }
 
-/** The app language, light/dark mode and the RoomPlan test screen, signed in or not. */
+/** A labelled group of cards ("ПРОФАЙЛ", "ТОХИРГОО"). */
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  const colors = useColors();
+  return (
+    <View style={styles.group}>
+      <Text style={[styles.eyebrow, { color: colors.textMuted }]} accessibilityRole="header">
+        {title.toUpperCase()}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
+function SettingRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: IconName;
+  label: string;
+  children: ReactNode;
+}) {
+  const colors = useColors();
+  return (
+    <View style={styles.setting}>
+      <View style={styles.settingHead}>
+        <Icon name={icon} size={16} color={colors.brand} />
+        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+/** Light/dark mode, the app language and the RoomPlan test screen, signed in or not. */
 function AppSettings() {
   const { t, locale, setLocale } = useI18n();
   const colors = useColors();
@@ -229,44 +316,51 @@ function AppSettings() {
   const theme = useThemePreference();
   return (
     <>
-      <View style={styles.setting}>
-        <Text style={[styles.small, { color: colors.textMuted }]}>{t('theme.label')}</Text>
-        <View style={styles.languages} accessibilityRole="radiogroup">
-          {THEME_PREFERENCES.map((option) => (
-            <Button
-              key={option}
-              title={t(`theme.${option}`)}
-              size="small"
-              variant={option === theme ? 'primary' : 'secondary'}
-              onPress={() => setThemePreference(option)}
-              style={styles.grow}
+      <Group title={t('seller.account.settings')}>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <SettingRow icon="contrast" label={t('theme.label')}>
+            <Segmented
+              accessibilityLabel={t('theme.label')}
+              segments={THEME_PREFERENCES.map((option) => ({
+                value: option,
+                label: t(`theme.${option}`),
+              }))}
+              value={theme}
+              onChange={setThemePreference}
             />
-          ))}
+          </SettingRow>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <SettingRow icon="globe" label={t('language.label')}>
+            <Segmented
+              accessibilityLabel={t('language.label')}
+              segments={LOCALES.map((option) => ({
+                value: option,
+                label: t(`language.${option}`),
+              }))}
+              value={locale}
+              onChange={setLocale}
+            />
+          </SettingRow>
         </View>
-      </View>
-      <View style={styles.languages}>
-        {LOCALES.map((option) => (
-          <Button
-            key={option}
-            title={t(`language.${option}`)}
-            variant={option === locale ? 'primary' : 'secondary'}
-            onPress={() => setLocale(option)}
-            style={styles.grow}
-          />
-        ))}
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/scan-test')}
-        style={({ pressed }) => [
-          styles.row,
-          { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
-        ]}
-      >
-        <Text style={[styles.body, { color: colors.text }]}>{t('listings.scanTest')}</Text>
-        <Text style={[styles.body, { color: colors.textMuted }]}>›</Text>
-      </Pressable>
-      <VersionLine />
+      </Group>
+      <Group title={t('seller.account.testing')}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/scan-test')}
+          style={({ pressed }) => [
+            styles.card,
+            styles.row,
+            { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Icon name="wrench" size={16} color={colors.brand} />
+          <Text style={[styles.body, styles.grow, { color: colors.text }]}>
+            {t('listings.scanTest')}
+          </Text>
+          <Icon name="chevron" size={14} color={colors.textSubtle} />
+        </Pressable>
+        <VersionLine />
+      </Group>
     </>
   );
 }
@@ -298,30 +392,48 @@ function formatStamp(date: Date): string {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 16, gap: 16 },
+  content: { padding: 16, gap: 20, paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  card: { borderRadius: 12, padding: 16, gap: 10 },
-  heading: { fontSize: 18, fontWeight: '700' },
+  card: { borderRadius: radius.lg, padding: 16, gap: 12 },
+  profile: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { fontSize: 20, fontWeight: '700' },
+  name: { fontSize: 20, lineHeight: 25, fontWeight: '800', letterSpacing: -0.3 },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  verified: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
+  verifiedText: { fontSize: 12, fontWeight: '700' },
+  notice: { gap: 12 },
+  noticeHead: { flexDirection: 'row', gap: 8 },
+  group: { gap: 8 },
+  eyebrow: { fontSize: 12, lineHeight: 16, fontWeight: '700', letterSpacing: 1.1, marginLeft: 4 },
+  setting: { gap: 10 },
+  settingHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  label: { fontSize: 15, fontWeight: '600' },
+  divider: { height: StyleSheet.hairlineWidth },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   body: { fontSize: 16, lineHeight: 22 },
   small: { fontSize: 14, lineHeight: 20 },
-  line: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  languages: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  setting: { gap: 2 },
-  signOut: { marginTop: 8 },
   grow: { flex: 1 },
-  version: { textAlign: 'center' },
+  signOut: { marginTop: 8 },
+  version: { textAlign: 'center', marginTop: 4 },
   deleteRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 12,
-  },
-  row: {
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
 });

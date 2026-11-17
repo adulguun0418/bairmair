@@ -2,7 +2,7 @@ import { DISTRICTS, LISTING_LIMITS } from '@bairmair/db';
 import { formatMoney, formatMoneyCompact } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -13,10 +13,18 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  type LayoutChangeEvent,
   type TextInputProps,
 } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
 import { formToFields, parseNumberInput, type FormField, type ListingForm } from '@bairmair/browse';
+import { StepCard, StepMarker } from '@/listings/editor-step';
+import {
+  editorProgress,
+  editorSteps,
+  type EditorStep,
+  type EditorStepId,
+} from '@/listings/editor-steps';
 import {
   addPickedPhotos,
   deleteListing,
@@ -29,6 +37,7 @@ import {
 } from '@/listings/listings';
 import { locateHere, type LocateResult } from '@/listings/location';
 import {
+  isLive,
   movePhoto,
   photoSlotsLeft,
   setLocation,
@@ -38,14 +47,16 @@ import {
 } from '@/listings/model';
 import { pickFromLibrary, takePhoto } from '@/listings/photos';
 import { ScanSection } from '@/listings/scan-section';
+import { StatusPill } from '@/listings/status-pill';
 import { StatusSection } from '@/listings/status-section';
 import { SyncStatusLine } from '@/listings/sync-status-line';
 import { Button } from '@/ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
+import { Icon } from '@/ui/icon';
+import { ProgressBar } from '@/ui/progress-bar';
 import { ScrollLockHost } from '@/ui/scroll-lock';
-import { Section } from '@/ui/section';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
+import { radius, useColors } from '@/ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
 import { Text } from '@/ui/text';
 
@@ -91,6 +102,10 @@ export default function ListingEditScreen() {
   return <Editor listing={listing} />;
 }
 
+/**
+ * The listing as steps (basics, price, apartment, location, photos, optional 3D scan, publish),
+ * under a header with the status, progress towards publishing and a row of steps to jump to.
+ */
 function Editor({ listing }: { listing: LocalListing }) {
   const { t, locale } = useI18n();
   const colors = useColors();
@@ -100,6 +115,26 @@ function Editor({ listing }: { listing: LocalListing }) {
   const { errors } = formToFields(form);
   const sale = form.type === 'sale';
   const currency = sale ? 'MNT' : form.currency;
+
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  /** Where each step starts in the scroll content, for the header's step row. */
+  const offsets = useRef<Partial<Record<EditorStepId, number>>>({});
+  const steps = editorSteps(listing);
+  const stepOf = (stepId: EditorStepId) => steps.find((step) => step.id === stepId)!;
+  const numberOf = (stepId: EditorStepId) => steps.findIndex((step) => step.id === stepId) + 1;
+  const place = (stepId: EditorStepId) => (event: LayoutChangeEvent) => {
+    offsets.current[stepId] = event.nativeEvent.layout.y;
+  };
+  const jump = (stepId: EditorStepId) =>
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, (offsets.current[stepId] ?? 0) - 12),
+      animated: true,
+    });
+  const stepProps = (stepId: EditorStepId) => ({
+    number: numberOf(stepId),
+    step: stepOf(stepId),
+    onLayout: place(stepId),
+  });
 
   const set = (patch: Partial<ListingForm>) =>
     editListing(id, (current, now) => updateForm(current, patch, now));
@@ -152,6 +187,7 @@ function Editor({ listing }: { listing: LocalListing }) {
     <ScrollLockHost>
       {(scrollEnabled) => (
         <ScrollView
+          ref={scrollRef}
           scrollEnabled={scrollEnabled}
           style={{ backgroundColor: colors.background }}
           contentContainerStyle={styles.content}
@@ -167,16 +203,11 @@ function Editor({ listing }: { listing: LocalListing }) {
                 : t('listingForm.newTitle'),
             }}
           />
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.small, { color: colors.textMuted }]}>
-              {t(`listings.statuses.${listing.serverStatus}`)}
-              {listing.scan?.processing === 'ready' ? ` · ${t('listings.badge3d')}` : ''}
-            </Text>
-            <SyncStatusLine listing={listing} />
-          </View>
+          <EditorHeader listing={listing} steps={steps} onJump={jump} />
 
-          <Section title={t('listingForm.sections.type')}>
+          <StepCard {...stepProps('basics')}>
             <ChoiceChips
+              label={t('listingForm.sections.type')}
               choices={[
                 { value: 'sale' as const, label: t('listingForm.types.sale') },
                 { value: 'rent' as const, label: t('listingForm.types.rent') },
@@ -187,9 +218,6 @@ function Editor({ listing }: { listing: LocalListing }) {
               }}
               allowClear={false}
             />
-          </Section>
-
-          <Section title={t('listingForm.sections.basics')}>
             {field('title', t('listingForm.title'), {
               placeholder: t('listingForm.titlePlaceholder'),
               maxLength: LISTING_LIMITS.title.max,
@@ -201,9 +229,9 @@ function Editor({ listing }: { listing: LocalListing }) {
               multiline: true,
               style: styles.multiline,
             })}
-          </Section>
+          </StepCard>
 
-          <Section title={t('listingForm.sections.price')}>
+          <StepCard {...stepProps('price')}>
             {!sale && (
               <ChoiceChips
                 label={t('listingForm.currency')}
@@ -261,9 +289,9 @@ function Editor({ listing }: { listing: LocalListing }) {
                 />
               </>
             )}
-          </Section>
+          </StepCard>
 
-          <Section title={t('listingForm.sections.property')}>
+          <StepCard {...stepProps('property')}>
             {field('rooms', t('listingForm.rooms'), {
               keyboardType: 'number-pad',
               maxLength: 2,
@@ -288,10 +316,20 @@ function Editor({ listing }: { listing: LocalListing }) {
                 })}
               </View>
             </View>
-            {field('buildingYear', t('listingForm.buildingYear'), {
-              keyboardType: 'number-pad',
-              maxLength: 4,
-            })}
+            <View style={styles.pair}>
+              <View style={styles.grow}>
+                {field('buildingYear', t('listingForm.buildingYear'), {
+                  keyboardType: 'number-pad',
+                  maxLength: 4,
+                })}
+              </View>
+              <View style={styles.grow}>
+                {field('balconies', t('listingForm.balconies'), {
+                  keyboardType: 'number-pad',
+                  maxLength: 2,
+                })}
+              </View>
+            </View>
             <ChoiceChips
               label={t('listingForm.material')}
               choices={(['panel', 'brick', 'monolithic', 'other'] as const).map((value) => ({
@@ -315,10 +353,6 @@ function Editor({ listing }: { listing: LocalListing }) {
               value={form.heating}
               onChange={(heating) => set({ heating })}
             />
-            {field('balconies', t('listingForm.balconies'), {
-              keyboardType: 'number-pad',
-              maxLength: 2,
-            })}
             <ChoiceChips
               label={t('listingForm.parking')}
               choices={(['none', 'outdoor', 'garage', 'underground'] as const).map((value) => ({
@@ -337,9 +371,9 @@ function Editor({ listing }: { listing: LocalListing }) {
               value={form.furnishing}
               onChange={(furnishing) => set({ furnishing })}
             />
-          </Section>
+          </StepCard>
 
-          <Section title={t('listingForm.sections.location')}>
+          <StepCard {...stepProps('location')}>
             <ChoiceChips
               label={t('listingForm.district')}
               choices={DISTRICTS.map((district) => ({
@@ -349,11 +383,20 @@ function Editor({ listing }: { listing: LocalListing }) {
               value={form.districtId}
               onChange={(districtId) => set({ districtId })}
             />
-            {field('khoroo', t('listingForm.khoroo'), { keyboardType: 'number-pad', maxLength: 2 })}
-            {field('complexName', t('listingForm.complexName'), {
-              placeholder: t('listingForm.complexPlaceholder'),
-              maxLength: LISTING_LIMITS.complexName.max,
-            })}
+            <View style={styles.pair}>
+              <View style={styles.narrow}>
+                {field('khoroo', t('listingForm.khoroo'), {
+                  keyboardType: 'number-pad',
+                  maxLength: 2,
+                })}
+              </View>
+              <View style={styles.grow}>
+                {field('complexName', t('listingForm.complexName'), {
+                  placeholder: t('listingForm.complexPlaceholder'),
+                  maxLength: LISTING_LIMITS.complexName.max,
+                })}
+              </View>
+            </View>
             {field('addressText', t('listingForm.addressText'), {
               placeholder: t('listingForm.addressPlaceholder'),
               maxLength: LISTING_LIMITS.addressText.max,
@@ -371,24 +414,108 @@ function Editor({ listing }: { listing: LocalListing }) {
               maxLength: LISTING_LIMITS.unitNumber.max,
               hint: t('listingForm.unitHint'),
             })}
-          </Section>
+          </StepCard>
 
-          <Section title={t('listingForm.sections.photos')}>
+          <StepCard {...stepProps('photos')}>
             <Photos listing={listing} />
-          </Section>
+          </StepCard>
 
-          <Section title={t('listingForm.sections.scan')}>
+          <StepCard {...stepProps('scan')}>
             <ScanSection listing={listing} />
-          </Section>
+          </StepCard>
 
-          <Section title={t('listingForm.sections.publish')}>
+          <StepCard {...stepProps('publish')}>
             <StatusSection listing={listing} />
-          </Section>
+          </StepCard>
 
-          <Button title={t('listingForm.delete')} variant="danger" onPress={confirmDelete} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={confirmDelete}
+            style={({ pressed }) => [styles.deleteRow, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Icon name="trash" size={16} color={colors.danger} />
+            <Text style={[styles.body, { color: colors.danger }]}>{t('listingForm.delete')}</Text>
+          </Pressable>
         </ScrollView>
       )}
     </ScrollLockHost>
+  );
+}
+
+/**
+ * Where the listing stands: status (and 3D) as the server has it, progress towards publishing
+ * (not once live), the steps as a row to jump to, and whether the phone's copy is sent.
+ */
+function EditorHeader({
+  listing,
+  steps,
+  onJump,
+}: {
+  listing: LocalListing;
+  steps: EditorStep[];
+  onJump: (step: EditorStepId) => void;
+}) {
+  const { t } = useI18n();
+  const colors = useColors();
+  const live = isLive(listing.serverStatus);
+  const progress = editorProgress(steps);
+  const ready = progress.done === progress.total;
+
+  return (
+    <View
+      style={[
+        styles.header,
+        { backgroundColor: colors.surface, boxShadow: `0 2px 10px ${colors.shadow}` },
+      ]}
+    >
+      <View style={styles.headerTop}>
+        <StatusPill status={listing.serverStatus} />
+        {listing.scan?.processing === 'ready' && (
+          <View style={[styles.badge3d, { backgroundColor: colors.ink }]}>
+            <Icon name="cube" size={12} color={colors.onInk} weight="semibold" />
+            <Text style={[styles.badge3dText, { color: colors.onInk }]}>
+              {t('listings.badge3d')}
+            </Text>
+          </View>
+        )}
+      </View>
+      {!live && (
+        <View style={styles.progress}>
+          <Text style={[styles.progressText, { color: ready ? colors.success : colors.text }]}>
+            {ready ? t('seller.editor.progressReady') : t('seller.editor.progress', progress)}
+          </Text>
+          <ProgressBar
+            value={progress.done / progress.total}
+            color={ready ? colors.success : undefined}
+          />
+        </View>
+      )}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.stepRow}
+      >
+        {steps.map((step, index) => {
+          const label = t(`seller.editor.steps.${step.id}`);
+          return (
+            <Pressable
+              key={step.id}
+              accessibilityRole="button"
+              accessibilityLabel={t('seller.editor.jump', { step: label })}
+              onPress={() => onJump(step.id)}
+              style={({ pressed }) => [
+                styles.stepChip,
+                { backgroundColor: colors.surface2, opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <StepMarker number={index + 1} state={step.state} size={20} />
+              <Text style={[styles.stepChipText, { color: colors.textSecondary }]}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      <SyncStatusLine listing={listing} />
+    </View>
   );
 }
 
@@ -419,9 +546,12 @@ function LocationPin({ listing }: { listing: LocalListing }) {
     failure?.reason === 'reduced' || (failure?.reason === 'denied' && !failure.canAskAgain);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface }]}>
-      <Text style={[styles.label, { color: colors.textMuted }]}>{t('listingForm.pin')}</Text>
-      <Text style={[styles.body, { color: location ? colors.success : colors.text }]}>
+    <View style={[styles.subPanel, { backgroundColor: colors.surface2 }]}>
+      <View style={styles.inlineHead}>
+        <Icon name="pin" size={16} color={location ? colors.success : colors.brand} />
+        <Text style={[styles.label, { color: colors.text }]}>{t('listingForm.pin')}</Text>
+      </View>
+      <Text style={[styles.body, { color: location ? colors.success : colors.textSecondary }]}>
         {location
           ? location.accuracyM !== null
             ? t('listingForm.pinned', { meters: location.accuracyM })
@@ -436,7 +566,8 @@ function LocationPin({ listing }: { listing: LocalListing }) {
       <Text style={[styles.small, { color: colors.textMuted }]}>{t('listingForm.pinHint')}</Text>
       <Button
         title={location ? t('listingForm.moveOnMap') : t('listingForm.pickOnMap')}
-        variant="secondary"
+        icon="map"
+        variant={location ? 'outline' : 'primary'}
         onPress={() => router.push({ pathname: '/listings/[id]/pin', params: { id: listing.id } })}
       />
       {locating ? (
@@ -447,7 +578,8 @@ function LocationPin({ listing }: { listing: LocalListing }) {
       ) : (
         <Button
           title={t('listingForm.useCurrentLocation')}
-          variant="secondary"
+          icon="pin"
+          variant="outline"
           onPress={() => void locate()}
         />
       )}
@@ -564,10 +696,17 @@ function Photos({ listing }: { listing: LocalListing }) {
             >
               <Image
                 source={{ uri: photoUri(listing.id, photo) }}
-                style={[styles.thumb, { backgroundColor: colors.surface }]}
+                style={[styles.thumb, { backgroundColor: colors.surface2 }]}
                 contentFit="cover"
                 transition={150}
               />
+              {index === 0 && (
+                <View style={[styles.coverTag, { backgroundColor: colors.ink }]}>
+                  <Text style={[styles.badgeText, { color: colors.onInk }]}>
+                    {t('listingForm.photoActions.cover')}
+                  </Text>
+                </View>
+              )}
               {photo.state !== 'saved' && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{t('listingForm.notUploaded')}</Text>
@@ -586,13 +725,15 @@ function Photos({ listing }: { listing: LocalListing }) {
         <View style={styles.pair}>
           <Button
             title={t('listingForm.addFromLibrary')}
-            variant="secondary"
+            icon="photos"
+            variant={listing.photos.length === 0 ? 'primary' : 'secondary'}
             disabled={slots === 0}
             onPress={() => void add('library')}
             style={styles.grow}
           />
           <Button
             title={t('listingForm.takePhoto')}
+            icon="camera"
             variant="secondary"
             disabled={slots === 0}
             onPress={() => void add('camera')}
@@ -608,17 +749,51 @@ function Photos({ listing }: { listing: LocalListing }) {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 28, paddingBottom: 48 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  card: { borderRadius: 12, padding: 14, gap: 8 },
-  label: { fontSize: 14, fontWeight: '600' },
+  header: { borderRadius: radius.lg, padding: 16, gap: 14 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  badge3d: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  badge3dText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.3 },
+  progress: { gap: 8 },
+  progressText: { fontSize: 17, lineHeight: 22, fontWeight: '700', letterSpacing: -0.2 },
+  stepRow: { gap: 8 },
+  stepChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingLeft: 5,
+    paddingRight: 12,
+    height: 32,
+    borderRadius: radius.pill,
+  },
+  stepChipText: { fontSize: 13, fontWeight: '600' },
+  subPanel: { borderRadius: radius.md, padding: 14, gap: 10 },
+  inlineHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  label: { fontSize: 15, fontWeight: '700' },
   body: { fontSize: 16, lineHeight: 22 },
-  small: { fontSize: 14, lineHeight: 20 },
+  small: { fontSize: 13, lineHeight: 18 },
   multiline: { minHeight: 96, textAlignVertical: 'top' },
   pair: { flexDirection: 'row', gap: 12 },
   grow: { flex: 1 },
+  narrow: { width: 96 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   thumbBox: { width: '31.5%', aspectRatio: 1 },
-  thumb: { width: '100%', height: '100%', borderRadius: 8 },
+  thumb: { width: '100%', height: '100%', borderRadius: radius.sm },
+  coverTag: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
   badge: {
     position: 'absolute',
     left: 4,
@@ -629,4 +804,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '600' },
+  deleteRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
 });

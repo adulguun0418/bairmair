@@ -3,7 +3,8 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
+import { Icon } from '@/ui/icon';
+import { radius, useColors } from '@/ui/theme';
 import type { ListingStatus } from '@bairmair/browse';
 import { FreshnessSection } from './freshness-section';
 import { changeListingStatus, retryRefusedSync, useSyncStatus } from './listings';
@@ -83,14 +84,24 @@ export function StatusSection({ listing }: { listing: LocalListing }) {
 
   const checklist =
     missing.length === 0 ? (
-      <Text style={[styles.body, { color: colors.success }]}>{t('listingForm.publishReady')}</Text>
-    ) : (
-      <View style={styles.list}>
-        <Text style={[styles.body, muted]}>{t('listingForm.publishMissing')}</Text>
-        {missing.map((requirement) => (
-          <Text key={requirement} style={[styles.body, text]}>
-            • {t(`listingForm.requirements.${requirement}`)}
+      <View style={[styles.checklist, { backgroundColor: colors.successSoft }]}>
+        <View style={styles.item}>
+          <Icon name="check" size={18} color={colors.success} />
+          <Text style={[styles.body, styles.grow, { color: colors.onSuccessSoft }]}>
+            {t('listingForm.publishReady')}
           </Text>
+        </View>
+      </View>
+    ) : (
+      <View style={[styles.checklist, { backgroundColor: colors.surface2 }]}>
+        <Text style={[styles.small, styles.strong, muted]}>{t('listingForm.publishMissing')}</Text>
+        {missing.map((requirement) => (
+          <View key={requirement} style={styles.item}>
+            <View style={[styles.open, { borderColor: colors.borderStrong }]} />
+            <Text style={[styles.body, styles.grow, text]}>
+              {t(`listingForm.requirements.${requirement}`)}
+            </Text>
+          </View>
         ))}
       </View>
     );
@@ -172,7 +183,11 @@ export function StatusSection({ listing }: { listing: LocalListing }) {
 
 const styles = StyleSheet.create({
   column: { gap: 12 },
-  list: { gap: 4 },
+  checklist: { borderRadius: radius.md, padding: 14, gap: 10 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  open: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5 },
+  strong: { fontWeight: '600' },
+  grow: { flex: 1 },
   body: { fontSize: 16, lineHeight: 22 },
   small: { fontSize: 14, lineHeight: 20 },
 });
