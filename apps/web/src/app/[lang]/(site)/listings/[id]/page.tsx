@@ -372,7 +372,8 @@ async function ListingContent({ params }: Pick<PageProps<'/[lang]/listings/[id]'
                   : listingSummary(listing, locale, t)}
               </p>
             </div>
-            <div className="w-[min(55%,15rem)]">
+            {/* At least this wide; grows to fit a revealed number (the price truncates instead). */}
+            <div className="min-w-[min(55%,15rem)] shrink-0">
               <ContactButtons listingId={listing.id} locale={locale} variant="bar" />
             </div>
           </div>

@@ -13,10 +13,10 @@ type State =
   | { kind: 'shown'; phone: string }
   | { kind: 'error'; message: 'rateLimited' | 'unavailable' | 'notAvailable' | 'failed' };
 
-/** `+97699112233` → `+976 9911 2233`; other numbers as they are. */
-export function formatPhone(e164: string): string {
+/** `+97699112233` → `{ prefix: '+976', local: '9911 2233' }`; other numbers whole in `local`. */
+export function formatPhone(e164: string): { prefix: string | null; local: string } {
   const match = /^\+976(\d{4})(\d{4})$/.exec(e164);
-  return match ? `+976 ${match[1]} ${match[2]}` : e164;
+  return match ? { prefix: '+976', local: `${match[1]} ${match[2]}` } : { prefix: null, local: e164 };
 }
 
 /**
@@ -129,16 +129,22 @@ export function ContactButtons({
         setCopied(false);
       }
     };
+    const phone = formatPhone(state.phone);
     return (
       <div className={row}>
+        {/* The +976 prefix is left out where space is short (the bottom bar, the card on the
+            narrowest phones); the link still calls the full number. */}
         <a
           href={`tel:${state.phone}`}
           onClick={() => track('contact_call', placement)}
           title={`${t('listingPage.contact.call')} · ${t('listingPage.contact.mention')}`}
-          className={`${primary} whitespace-nowrap px-3 font-semibold tabular-nums sm:text-[17px]`}
+          className={`${primary} min-w-0 whitespace-nowrap px-3 font-semibold ${bar ? '' : 'sm:text-[17px]'}`}
         >
           <PhoneIcon className="size-[18px] shrink-0" />
-          {formatPhone(state.phone)}
+          <span>
+            {phone.prefix && !bar && <span className="max-[359px]:hidden">{phone.prefix} </span>}
+            {phone.local}
+          </span>
           <span className="sr-only">
             {t('listingPage.contact.call')}. {t('listingPage.contact.mention')}
           </span>
