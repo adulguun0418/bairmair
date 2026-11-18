@@ -18,6 +18,7 @@ import { signOut } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
+import { openSitePage } from '@/lib/site-pages';
 import { supabase } from '@/lib/supabase';
 import { setThemePreference, THEME_PREFERENCES, useThemePreference } from '@/ui/appearance';
 import { BlueprintPanel } from '@/ui/blueprint-panel';
@@ -337,7 +338,23 @@ function SettingRow({
   );
 }
 
-/** Light/dark mode, the app language and the RoomPlan test screen, signed in or not. */
+/** A row that opens a page (icon, label, chevron). */
+function LinkRow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, styles.linkRow, { opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Icon name={icon} size={16} color={colors.brand} />
+      <Text style={[styles.body, styles.grow, { color: colors.text }]}>{label}</Text>
+      <Icon name="chevron" size={14} color={colors.textSubtle} />
+    </Pressable>
+  );
+}
+
+/** Light/dark mode, the app language, the legal pages and the RoomPlan test screen. */
 function AppSettings() {
   const { t, locale, setLocale } = useI18n();
   const colors = useColors();
@@ -370,6 +387,21 @@ function AppSettings() {
               onChange={setLocale}
             />
           </SettingRow>
+        </View>
+      </Group>
+      <Group title={t('footer.legal')}>
+        <View style={[styles.card, styles.linkCard, { backgroundColor: colors.surface }]}>
+          <LinkRow
+            icon="document"
+            label={t('footer.terms')}
+            onPress={() => openSitePage('terms', locale)}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <LinkRow
+            icon="privacy"
+            label={t('footer.privacy')}
+            onPress={() => openSitePage('privacy', locale)}
+          />
         </View>
       </Group>
       <Group title={t('seller.account.testing')}>
@@ -453,6 +485,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 15, fontWeight: '600' },
   divider: { height: StyleSheet.hairlineWidth },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  linkCard: { paddingVertical: 4, gap: 0 },
+  linkRow: { paddingVertical: 12 },
   body: { fontSize: 16, lineHeight: 22 },
   small: { fontSize: 14, lineHeight: 20 },
   grow: { flex: 1 },

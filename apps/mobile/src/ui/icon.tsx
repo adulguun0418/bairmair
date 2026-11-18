@@ -53,6 +53,8 @@ const ICONS = {
   trash: { ios: 'trash', android: 'delete' },
   sparkle: { ios: 'sparkles', android: 'auto_awesome' },
   publish: { ios: 'paperplane', android: 'send' },
+  document: { ios: 'doc.text', android: 'description' },
+  privacy: { ios: 'hand.raised', android: 'privacy_tip' },
 } as const satisfies Record<string, { ios: SFSymbol; android: AndroidSymbol }>;
 
 export type IconName = keyof typeof ICONS;
