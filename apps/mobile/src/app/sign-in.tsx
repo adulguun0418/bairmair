@@ -11,7 +11,7 @@ import {
   type SignInResult,
 } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
-import { CaptchaView } from '@/auth/captcha-view';
+import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
 import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { openSitePage } from '@/lib/site-pages';
@@ -39,7 +39,10 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
   const captcha = needsCaptcha(mode);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
+  const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
+  /** Waiting for the check (it gives up by itself; then the code goes without a token). */
+  const captchaPending = captcha && captchaState.status === 'checking';
   /** Remounts the captcha after each attempt: a token is single use. */
   const [captchaKey, setCaptchaKey] = useState(0);
 
@@ -54,7 +57,7 @@ export default function SignInScreen() {
       setInputError(t('auth.invalidPhone'));
       return;
     }
-    if (captcha && !captchaToken) return;
+    if (captchaPending) return;
     setInputError(null);
     setError(null);
     setBusy(true);
@@ -114,11 +117,11 @@ export default function SignInScreen() {
         error={inputError}
         autoFocus
       />
-      {captcha && <CaptchaView key={captchaKey} onToken={setCaptchaToken} />}
+      {captcha && <CaptchaView key={captchaKey} onChange={setCaptchaState} />}
       <Button
         title={t('auth.sendCode')}
         onPress={() => void submitPhone()}
-        disabled={busy || (captcha && !captchaToken)}
+        disabled={busy || captchaPending}
       />
 
       {error && <Text style={[styles.body, { color: colors.danger }]}>{error}</Text>}

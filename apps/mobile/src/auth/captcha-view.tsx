@@ -4,81 +4,129 @@ import { Linking, StyleSheet, useColorScheme, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useI18n } from '@/i18n/i18n';
 import { env } from '@/lib/env';
+import { captureError } from '@/lib/error-tracking';
 import { Button } from '@/ui/button';
 import { useColors } from '@/ui/theme';
 import { Text } from '@/ui/text';
 
-type Status = 'checking' | 'ready' | 'failed';
+export type CaptchaState =
+  /** Waiting for Turnstile (at most `GIVE_UP_MS` while it stays invisible). */
+  | { status: 'checking' }
+  | { status: 'ready'; token: string }
+  /** No token: the screen sends without one and Supabase decides (`captcha_failed` when
+   * captcha is on). */
+  | { status: 'failed' };
+
+/** How long an invisible check may take before the screen stops waiting for it. */
+const GIVE_UP_MS = 15_000;
+/** The WebView's size while Turnstile is invisible: a real size, since iOS may not load or run a
+ * page in a WebView squeezed to a pixel; transparent and out of the layout. */
+const HIDDEN_HEIGHT = 80;
+
+class CaptchaError extends Error {
+  override name = 'CaptchaError';
+}
 
 /**
  * Cloudflare Turnstile for phone sign-in: the website's `/embed/captcha` page in a WebView (see
  * `@bairmair/browse` `captcha.ts`). Supabase Auth refuses to text a code without a token.
  *
  * Usually invisible: it reports a token within a second or two. When Cloudflare wants a click,
- * the page grows and the WebView follows its height. A token is single use: remount this
+ * the page grows and the WebView shows at its height. A token is single use: remount this
  * component (change its `key`) after each attempt to get a new one.
+ *
+ * It never blocks sign-in for long: after an error, or `GIVE_UP_MS` without a token, it reports
+ * `failed` and shows how far the page got (for diagnosis), and the screen sends without a token.
  */
-export function CaptchaView({ onToken }: { onToken: (token: string | null) => void }) {
+export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => void }) {
   const { t, locale } = useI18n();
   const colors = useColors();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const pageUrl = `${env.siteUrl}${captchaPath(locale)}`;
-  const [status, setStatus] = useState<Status>('checking');
+  const [status, setStatus] = useState<CaptchaState['status']>('checking');
   const [height, setHeight] = useState(0);
+  /** How far the page got, e.g. `load › hydrated › script › rendered`; shown when it fails. */
+  const [trail, setTrail] = useState<string[]>([]);
   /** Bumped to load the page again (retry, or iOS ended the WebView's process). */
   const [attempt, setAttempt] = useState(0);
 
-  const callback = useRef(onToken);
+  const callback = useRef(onChange);
   useEffect(() => {
-    callback.current = onToken;
+    callback.current = onChange;
   });
   // A token from a page that is gone (unmounted, reloaded) must not linger in the screen.
-  useEffect(() => () => callback.current(null), []);
+  useEffect(() => () => callback.current({ status: 'checking' }), []);
+
+  const trailRef = useRef<string[]>([]);
+  const note = (step: string) => {
+    trailRef.current = [...trailRef.current, step].slice(-8);
+    setTrail(trailRef.current);
+  };
+
+  const fail = (reason: string) => {
+    note(reason);
+    setStatus('failed');
+    callback.current({ status: 'failed' });
+    captureError(new CaptchaError(`captcha ${reason}`), { trail: trailRef.current.join(' > ') });
+  };
+
+  // Give up on an invisible check that never ends; a visible one waits for the person.
+  useEffect(() => {
+    if (status !== 'checking' || height > 0) return;
+    const timer = setTimeout(() => fail('timeout'), GIVE_UP_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `fail` only sets state
+  }, [status, height, attempt]);
 
   const reload = () => {
-    callback.current(null);
     setStatus('checking');
+    callback.current({ status: 'checking' });
     setHeight(0);
+    trailRef.current = [];
+    setTrail([]);
     setAttempt((n) => n + 1);
   };
-  const fail = () => {
-    callback.current(null);
-    setStatus('failed');
-  };
+
+  const visible = status !== 'failed' && height > 0;
 
   return (
     <View style={styles.box}>
-      <View style={{ height: status === 'failed' ? 0 : Math.max(height, 1) }}>
+      <View pointerEvents={visible ? 'auto' : 'none'} style={visible ? { height } : styles.hidden}>
         <WebView
           key={attempt}
           source={{ uri: `${pageUrl}?theme=${scheme}` }}
           style={styles.webview}
           containerStyle={styles.webview}
+          onLoadEnd={() => note('load')}
           onMessage={(event) => {
             // Only the captcha page speaks; Turnstile's frames post nothing we read.
-            if (!isCaptchaNavigation(event.nativeEvent.url, pageUrl, true)) return;
+            const url = event.nativeEvent.url ?? '';
+            if (url && !isCaptchaNavigation(url, pageUrl, true)) return;
             const message = parseCaptchaMessage(event.nativeEvent.data);
             if (!message) return;
             switch (message.type) {
               case 'token':
                 setStatus('ready');
-                callback.current(message.token);
+                callback.current({ status: 'ready', token: message.token });
                 break;
               case 'expired':
                 // Turnstile fetches a new token by itself.
                 setStatus('checking');
-                callback.current(null);
+                callback.current({ status: 'checking' });
                 break;
               case 'error':
-                fail();
+                fail(`error-${message.code ?? 'unknown'}`);
                 break;
               case 'size':
                 setHeight(message.height);
                 break;
+              case 'status':
+                note(message.status);
+                break;
             }
           }}
-          onError={fail}
-          onHttpError={fail}
+          onError={(event) => fail(`load-error-${event.nativeEvent.code}`)}
+          onHttpError={(event) => fail(`http-${event.nativeEvent.statusCode}`)}
           onContentProcessDidTerminate={reload}
           onShouldStartLoadWithRequest={(request) => {
             if (isCaptchaNavigation(request.url, pageUrl, request.isTopFrame)) return true;
@@ -86,6 +134,8 @@ export function CaptchaView({ onToken }: { onToken: (token: string | null) => vo
             if (request.url.startsWith('https://')) void Linking.openURL(request.url);
             return false;
           }}
+          javaScriptEnabled
+          domStorageEnabled
           scrollEnabled={false}
           bounces={false}
           overScrollMode="never"
@@ -94,12 +144,15 @@ export function CaptchaView({ onToken }: { onToken: (token: string | null) => vo
           webviewDebuggingEnabled={__DEV__}
         />
       </View>
-      {status === 'checking' && height === 0 && (
+      {status === 'checking' && !visible && (
         <Text style={[styles.note, { color: colors.textMuted }]}>{t('auth.captchaChecking')}</Text>
       )}
       {status === 'failed' && (
         <View style={styles.failed}>
-          <Text style={[styles.note, { color: colors.danger }]}>{t('auth.captchaFailed')}</Text>
+          <Text style={[styles.note, { color: colors.textMuted }]}>{t('auth.captchaFailed')}</Text>
+          {trail.length > 0 && (
+            <Text style={[styles.trail, { color: colors.textMuted }]}>{trail.join(' › ')}</Text>
+          )}
           <Button
             title={t('auth.captchaRetry')}
             variant="secondary"
@@ -114,7 +167,16 @@ export function CaptchaView({ onToken }: { onToken: (token: string | null) => vo
 
 const styles = StyleSheet.create({
   box: { gap: 8 },
+  hidden: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: HIDDEN_HEIGHT,
+    opacity: 0,
+  },
   webview: { flex: 1, backgroundColor: 'transparent' },
   note: { fontSize: 14, lineHeight: 20 },
+  trail: { fontSize: 12, lineHeight: 16 },
   failed: { gap: 8, alignItems: 'flex-start' },
 });

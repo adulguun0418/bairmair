@@ -252,7 +252,7 @@ export const en: Messages = {
     signedIn: 'Signed in.',
     resendIn: 'You can resend in {{seconds}} s',
     captchaChecking: 'Checking that you are not a robot…',
-    captchaFailed: 'The robot check did not load. Check your internet connection and try again.',
+    captchaFailed: 'The robot check did not work. Check again, or send the code anyway.',
     captchaRetry: 'Check again',
     errors: {
       invalidCode: 'The code is wrong or has expired.',
