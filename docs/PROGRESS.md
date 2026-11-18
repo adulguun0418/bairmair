@@ -293,6 +293,11 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - App: "Орох хаалга" card in the room review (marked / guessed / unknown) → `/listings/[id]/entrance`: tap the door on the plan; "Автоматаар таамаглах" clears the choice. Website: the same card under the plan in "3D скан" (click mode).
   - Plain view (`RoomViewer3D`): "Цэвэр харагдац" next to "Анхны харагдац" hides room names, areas, photo buttons and the door label (the navy door stays); navy while on; an eye icon only on views narrower than 520 px (the embed's 3D/plan switch shares the top row). Everywhere the full viewer is used (listing page, embed / app 3D screen). Analytics: `listing_3d_plain_view` (`on`).
   - Verified: typecheck, lint, tests; integration tests on the dev project (db: owner writes, anyone reads, others cannot, length check, clear; app: the sync remote writes the door; website: a real processed scan with a marked door, `findEntrance` follows it); headless Chrome: plain view on and off at 1280 and 390 px, the plan with the sky-blue door and arrow; `expo export` for iOS. Not verified: the pickers by hand (website editor needs a signed-in seller; the app screen needs the phone).
+- Walls between rooms stay visible (your report: the bedroom/living-room wall vanished from the entrance view; web only):
+  - Why: a wall faded to 12% whenever the camera was on its outer side (the side away from its own room), whether or not it blocked anything. Right for outer walls, wrong for a wall between rooms.
+  - Inner walls (scanned floor 0.15–0.6 m behind the outer face along at least half the wall, ends excluded) fade only to 45% (`WallMesh.inner`, `FADED_INNER_WALL_OPACITY`). Outer walls still fade to 12%.
+  - Every wall's top is a solid dark 2 cm slab (`SceneData.caps`, one opaque mesh), so a faded wall still shows its line, like the floor plan.
+  - Verified: typecheck, lint; headless Chrome on the friend's apartment from the entrance view and turned around (the partition and all wall lines visible). No unit test: the viewer package has none (geometry checked visually).
 - Tests: 575 unit (room-model 232, browse 122, mobile 109, web 56, i18n 29, send-sms 18, db 7) + 86 integration tests against the dev project (db 63, mobile 12, web 11).
 
 ## Commands
@@ -431,7 +436,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 
 ## Next
 - You, 3D doors and windows (after Vercel deploys `main`): open your friend's listing (web or the app's "3D-ээр үзэх"): the navy front door with "Орох хаалга" sits at the front; "Анхны харагдац" returns there; windows have dark frames and sills; interior doors are wood, open ones swung into the room.
-- You, front door and plain view (after Vercel deploys `main`, then `pnpm update:preview -m "Seller marks the front door (0.1.15)"` in `apps/mobile` from a clean, up-to-date `main`):
+- You, front door and plain view (after Vercel deploys `main`; app 0.1.15 published as an OTA update on 2026-11-18):
   - Website: `/my-listings` → your friend's listing → "3D скан": the "Орох хаалга" card says it was guessed; "Орох хаалга сонгох" → click another door on the plan: it turns sky blue with an arrow, "Орох хаалгыг хадгаллаа."; the public page's 3D now opens looking in through that door. "Автоматаар таамаглах" brings back the guess.
   - App (close and reopen twice; Бүртгэл shows 0.1.15): Миний зарууд → the listing → "3D скан" → rooms → "Орох хаалга" card → tap a door. A choice made on the website shows up after pulling down.
   - Any 3D view: "Цэвэр харагдац" (an eye on phones) hides names, areas and photo buttons; tap again to bring them back.

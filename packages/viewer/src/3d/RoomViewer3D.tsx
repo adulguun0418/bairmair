@@ -69,6 +69,8 @@ const SHOWCASE_RESUME_MS = 4000;
 
 /** Opacity of a wall between the camera and its room. */
 const FADED_WALL_OPACITY = 0.12;
+/** A wall between two rooms fades only this far, so the rooms stay visibly apart. */
+const FADED_INNER_WALL_OPACITY = 0.45;
 /** A drag longer than this many pixels is a camera move, not a tap on a room. */
 const TAP_TOLERANCE_PX = 6;
 
@@ -141,6 +143,12 @@ export function RoomViewer3D({
           {scene.thresholds && (
             <mesh geometry={scene.thresholds}>
               <meshStandardMaterial color={COLORS.threshold} roughness={0.95} />
+            </mesh>
+          )}
+          {scene.caps && (
+            // Opaque, apart from the walls: a faded wall still shows its line from above.
+            <mesh geometry={scene.caps}>
+              <meshBasicMaterial color={COLORS.wallCap} />
             </mesh>
           )}
           {scene.dividers && (
@@ -438,7 +446,7 @@ function Walls({ walls }: { walls: WallMesh[] }) {
         // Camera on the outer side of the wall: the wall is between the camera and its room.
         const side =
           (x - wall.center[0]) * wall.outward[0] + (z - wall.center[1]) * wall.outward[1];
-        if (side > 0.05) target = FADED_WALL_OPACITY;
+        if (side > 0.05) target = wall.inner ? FADED_INNER_WALL_OPACITY : FADED_WALL_OPACITY;
       }
       const material = wall.material;
       const next = material.opacity + (target - material.opacity) * step;

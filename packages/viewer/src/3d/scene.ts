@@ -41,6 +41,17 @@ const DIVIDER_DASH_M = 0.15;
 const DIVIDER_GAP_M = 0.1;
 /** A door whose bottom is this close to the floor gets a threshold. */
 const THRESHOLD_SNAP_M = 0.05;
+/** Height of the dark slab on top of each wall (the "dollhouse" cut line). */
+const CAP_M = 0.02;
+/**
+ * A wall is "inner" (between rooms) when scanned floor lies within these distances behind its
+ * outer face (past a wall scanned from both sides), along at least `INNER_WALL_SHARE` of it.
+ */
+const INNER_WALL_PROBES_M = [0.15, 0.3, 0.45, 0.6];
+const INNER_WALL_SHARE = 0.5;
+/** Probes run along the wall at this spacing, keeping clear of its ends (corners). */
+const INNER_WALL_STEP_M = 0.25;
+const INNER_WALL_END_M = 0.2;
 
 /** Door and window trim, in meters. */
 const CASING_M = 0.07;
@@ -105,6 +116,11 @@ export interface WallMesh {
   center: Vec2;
   /** Plan-view normal pointing out of the wall's room; `null` when the wall has no room. */
   outward: Vec2 | null;
+  /**
+   * A wall between rooms: scanned floor right behind its outer face. It only half fades, so the
+   * rooms stay apart; outer walls fade almost fully to show the inside.
+   */
+  inner: boolean;
 }
 
 export interface FloorMesh {
@@ -130,6 +146,11 @@ export interface SceneData {
   dividers: BufferGeometry | null;
   /** The front door, drawn apart so it stays solid when its wall fades; `null` when unknown. */
   entrance: EntranceMesh | null;
+  /**
+   * Thin dark slabs on top of every wall, in model coordinates. Never faded: a faded wall still
+   * shows where it runs, like a line on the floor plan.
+   */
+  caps: BufferGeometry | null;
   bounds: { min: Vec2; max: Vec2; floorY: number; top: number };
   dispose(): void;
 }
@@ -307,6 +328,11 @@ function toModel(geometry: BufferGeometry, wall: Wall): BufferGeometry {
   return geometry;
 }
 
+/** The dark slab on top of a wall piece, in wall-local coordinates (`top`: the wall's top). */
+function capSlab(width: number, u: number, top: number, offset: number): BufferGeometry {
+  return coloredBox(width, CAP_M, WALL_THICKNESS_M, [u, top + CAP_M / 2, offset], COLORS.wallCap);
+}
+
 function merge(geometries: BufferGeometry[]): BufferGeometry {
   const merged = geometries.length > 0 ? mergeGeometries(geometries) : null;
   for (const geometry of geometries) geometry.dispose();
@@ -368,6 +394,31 @@ export function buildScene(model: RoomModelV1): SceneData {
   }
 
   const thresholdPieces: BufferGeometry[] = [];
+  const capPieces: BufferGeometry[] = [];
+
+  /** Whether scanned floor lies right behind the outer face of a wall, along most of it. */
+  const hasFloorBehind = (wall: Wall, outward: Vec2): boolean => {
+    const story = wall.roomId === null ? undefined : rooms.get(wall.roomId)?.story;
+    const others = model.rooms.filter((room) => story === undefined || room.story === story);
+    const [x, , z] = wall.transform.position;
+    const along = directionFromYaw(wall.transform.yaw);
+    const half = Math.max(0, wall.dimensions.width / 2 - INNER_WALL_END_M);
+    const count = Math.max(1, Math.round((2 * half) / INNER_WALL_STEP_M) + 1);
+    let behind = 0;
+    for (let i = 0; i < count; i++) {
+      const u = count === 1 ? 0 : -half + (2 * half * i) / (count - 1);
+      const hit = INNER_WALL_PROBES_M.some((distance) =>
+        others.some((room) =>
+          pointInPolygon(
+            [x + along[0] * u + outward[0] * distance, z + along[1] * u + outward[1] * distance],
+            room.floor.polygon,
+          ),
+        ),
+      );
+      if (hit) behind++;
+    }
+    return behind / count >= INNER_WALL_SHARE;
+  };
 
   const drafts = model.walls.map((wall: Wall) => {
     const [x, y, z] = wall.transform.position;
@@ -384,11 +435,12 @@ export function buildScene(model: RoomModelV1): SceneData {
       aperture,
       cutout: apertureCutout(aperture, wall),
     }));
-    const pieces = wallSegments(
+    const segments = wallSegments(
       width,
       height,
       cutouts.map(({ cutout }) => cutout),
-    ).map((s) =>
+    );
+    const pieces = segments.map((s) =>
       wallBox(
         s.u1 - s.u0,
         s.v1 - s.v0,
@@ -397,6 +449,10 @@ export function buildScene(model: RoomModelV1): SceneData {
         s.v1 >= height / 2 - 0.001,
       ),
     );
+    for (const s of segments) {
+      if (s.v1 < height / 2 - 0.001) continue;
+      capPieces.push(toModel(capSlab(s.u1 - s.u0, (s.u0 + s.u1) / 2, height / 2, offset), wall));
+    }
 
     const panes: WindowPane[] = [];
     for (const { aperture, cutout } of cutouts) {
@@ -446,7 +502,8 @@ export function buildScene(model: RoomModelV1): SceneData {
       }
     }
 
-    return { wall, outward, pieces, panes, center: [x, z] as Vec2 };
+    const inner = outward !== null && hasFloorBehind(wall, outward);
+    return { wall, outward, inner, pieces, panes, center: [x, z] as Vec2 };
   });
 
   // Fill the square gap at the outside of each convex corner, where two walls that only got
@@ -477,9 +534,9 @@ export function buildScene(model: RoomModelV1): SceneData {
         const dz = post[1] - a.center[1];
         const u = dx * dir[0] + dz * dir[1];
         if (Math.abs(u) < a.wall.dimensions.width / 2) continue; // inner corner: covered
-        a.pieces.push(
-          wallBox(T, a.wall.dimensions.height, T, [u, 0, dx * zAxis[0] + dz * zAxis[1]], true),
-        );
+        const postZ = dx * zAxis[0] + dz * zAxis[1];
+        a.pieces.push(wallBox(T, a.wall.dimensions.height, T, [u, 0, postZ], true));
+        capPieces.push(toModel(capSlab(T, u, a.wall.dimensions.height / 2, postZ), a.wall));
       }
     }
   }
@@ -510,7 +567,9 @@ export function buildScene(model: RoomModelV1): SceneData {
     yaw: draft.wall.transform.yaw,
     center: draft.center,
     outward: draft.outward,
+    inner: draft.inner,
   }));
+  const caps = capPieces.length > 0 ? merge(capPieces) : null;
 
   const floors: FloorMesh[] = model.rooms.map((room) => {
     // Shape space is (x, -z); rotating it onto the ground maps it back to (x, z).
@@ -577,6 +636,7 @@ export function buildScene(model: RoomModelV1): SceneData {
     thresholds,
     dividers,
     entrance,
+    caps,
     bounds: { min: plan.min, max: plan.max, floorY, top },
     dispose() {
       for (const wall of walls) {
@@ -588,6 +648,7 @@ export function buildScene(model: RoomModelV1): SceneData {
       thresholds?.dispose();
       dividers?.dispose();
       entrance?.geometry.dispose();
+      caps?.dispose();
     },
   };
 }
