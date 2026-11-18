@@ -2,22 +2,17 @@ import type { Locale } from '@bairmair/i18n';
 
 /**
  * Who runs bairmair and how to reach them: shown on the about, help, terms and privacy pages.
- *
- * TODO before the store review: replace every value in [brackets] with the real details
- * (registered company name and number, address, support e-mail and phone).
+ * Bump `legalUpdated` whenever these details change (the terms and privacy pages quote them).
  */
 export const SITE_INFO = {
-  operator: { mn: '[Компанийн нэр] ХХК', en: '[Company name] LLC' } satisfies Record<
-    Locale,
-    string
-  >,
-  registrationNumber: '[Регистрийн дугаар]',
+  operator: { mn: 'НЕКСУС КАЙРОС ХХК', en: 'NEXUS KAIROS LLC' } satisfies Record<Locale, string>,
+  registrationNumber: '7203201',
   address: {
-    mn: '[Хаяг], Улаанбаатар, Монгол Улс',
-    en: '[Address], Ulaanbaatar, Mongolia',
+    mn: 'Монгол Улс, Улаанбаатар хот, Баянгол дүүрэг, 6-р хороо, 43-4',
+    en: '43-4, Khoroo 6, Bayangol District, Ulaanbaatar, Mongolia',
   } satisfies Record<Locale, string>,
-  email: 'support@[domain]',
-  phone: '[+976 0000 0000]',
+  email: 'founder@nexuskairos.com',
+  phone: '+976 8611 0935',
   /** When the legal pages last changed (shown on them as "last updated"). */
-  legalUpdated: '2026-11-16',
+  legalUpdated: '2026-11-18',
 };
