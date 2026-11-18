@@ -9,7 +9,14 @@ interface TurnstileApi {
       sitekey: string;
       callback: (token: string) => void;
       'expired-callback': () => void;
-      'error-callback': () => void;
+      /** Receives Turnstile's error code (e.g. 110200: hostname not allowed). */
+      'error-callback': (code?: string) => void;
+      /** The browser cannot run Turnstile. No other callback follows. */
+      'unsupported-callback': () => void;
+      /** An interactive challenge was not completed in time. */
+      'timeout-callback': () => void;
+      'before-interactive-callback': () => void;
+      'after-interactive-callback': () => void;
       appearance: 'always' | 'execute' | 'interaction-only';
       size: 'normal' | 'flexible' | 'compact';
       language: string;
@@ -59,45 +66,57 @@ export function Turnstile({
   onToken,
   theme = 'auto',
   onError,
+  onStatus,
 }: {
   siteKey: string;
   language: string;
   resetKey: number;
   onToken: (token: string | null) => void;
   theme?: 'auto' | 'light' | 'dark';
-  /** Turnstile failed (script blocked or a failed challenge); `onToken(null)` follows too. */
-  onError?: () => void;
+  /** Turnstile failed (script blocked, a failed challenge, unsupported browser), with its error
+   * code or our reason (`script`, `unsupported`, `timeout`); `onToken(null)` follows too. */
+  onError?: (code: string | undefined) => void;
+  /** Progress, for diagnosis: `script`, `rendered`, `interactive`, `interacted`. */
+  onStatus?: (status: string) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const widget = useRef<string | null>(null);
   const callback = useRef(onToken);
   const errorCallback = useRef(onError);
+  const statusCallback = useRef(onStatus);
   useEffect(() => {
     callback.current = onToken;
     errorCallback.current = onError;
+    statusCallback.current = onStatus;
   });
 
   useEffect(() => {
     let cancelled = false;
-    const failed = () => {
+    const failed = (code?: string) => {
       callback.current(null);
-      errorCallback.current?.();
+      errorCallback.current?.(code);
     };
     loadTurnstile()
       .then((api) => {
         if (cancelled || !container.current) return;
+        statusCallback.current?.('script');
         widget.current = api.render(container.current, {
           sitekey: siteKey,
           callback: (token) => callback.current(token),
           'expired-callback': () => callback.current(null),
-          'error-callback': failed,
+          'error-callback': (code) => failed(code ? String(code) : undefined),
+          'unsupported-callback': () => failed('unsupported'),
+          'timeout-callback': () => failed('timeout'),
+          'before-interactive-callback': () => statusCallback.current?.('interactive'),
+          'after-interactive-callback': () => statusCallback.current?.('interacted'),
           appearance: 'interaction-only',
           size: 'flexible',
           language,
           theme,
         });
+        statusCallback.current?.('rendered');
       })
-      .catch(failed);
+      .catch(() => failed('script'));
     return () => {
       cancelled = true;
       if (widget.current) window.turnstile?.remove(widget.current);

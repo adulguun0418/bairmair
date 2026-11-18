@@ -25,10 +25,17 @@ export type CaptchaEvent =
   | { type: 'token'; token: string }
   /** The last token expired; a new one follows by itself. */
   | { type: 'expired' }
-  /** Turnstile failed (script blocked, network, challenge failed). The app reloads the page. */
-  | { type: 'error' }
+  /** Turnstile failed (script blocked, network, challenge failed, browser unsupported), with
+   * Turnstile's error code or our own reason when there is one. */
+  | { type: 'error'; code?: string }
   /** The widget's height in CSS pixels: 0 while invisible, about 65 when it asks for a click. */
-  | { type: 'size'; height: number };
+  | { type: 'size'; height: number }
+  /** How far the page got (`hydrated`, `script`, `rendered`, `interactive`, ...), for diagnosing a
+   * check that never finishes. */
+  | { type: 'status'; status: string };
+
+/** Error codes and statuses: short words, digits and dashes only. */
+const SHORT_WORD = /^[a-z0-9-]{1,40}$/i;
 
 interface Envelope {
   source: 'bairmair-captcha';
@@ -50,7 +57,7 @@ export function parseCaptchaMessage(data: string): CaptchaEvent | null {
     return null;
   }
   if (typeof value !== 'object' || value === null) return null;
-  const { source, version, type, token, height } = value as Record<string, unknown>;
+  const { source, version, type, token, height, code, status } = value as Record<string, unknown>;
   if (source !== 'bairmair-captcha' || version !== 1) return null;
   switch (type) {
     case 'token':
@@ -58,8 +65,11 @@ export function parseCaptchaMessage(data: string): CaptchaEvent | null {
         ? { type, token }
         : null;
     case 'expired':
-    case 'error':
       return { type };
+    case 'error':
+      return typeof code === 'string' && SHORT_WORD.test(code) ? { type, code } : { type };
+    case 'status':
+      return typeof status === 'string' && SHORT_WORD.test(status) ? { type, status } : null;
     case 'size':
       return typeof height === 'number' && Number.isFinite(height)
         ? { type, height: Math.min(Math.max(Math.ceil(height), 0), 400) }

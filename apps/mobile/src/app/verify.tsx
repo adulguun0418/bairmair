@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { needsCaptcha, sendPhoneCode, verifyPhoneCode, type PhoneMode } from '@/auth/actions';
-import { CaptchaView } from '@/auth/captcha-view';
+import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
@@ -29,7 +29,10 @@ export default function VerifyScreen() {
   const [resendAt, setResendAt] = useState(() => Date.now() + RESEND_SECONDS * 1000);
   const [now, setNow] = useState(() => Date.now());
   const captcha = needsCaptcha(mode);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
+  const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
+  /** Waiting for the check (it gives up by itself; then the code goes without a token). */
+  const captchaPending = captcha && captchaState.status === 'checking';
   /** Remounts the captcha after each resend: a token is single use. */
   const [captchaKey, setCaptchaKey] = useState(0);
 
@@ -62,7 +65,7 @@ export default function VerifyScreen() {
   };
 
   const resend = async () => {
-    if (captcha && !captchaToken) return;
+    if (captchaPending) return;
     setError(null);
     setBusy(true);
     try {
@@ -108,10 +111,10 @@ export default function VerifyScreen() {
         title={secondsLeft > 0 ? t('auth.resendIn', { seconds: secondsLeft }) : t('auth.resend')}
         variant="secondary"
         onPress={() => void resend()}
-        disabled={busy || secondsLeft > 0 || (captcha && !captchaToken)}
+        disabled={busy || secondsLeft > 0 || captchaPending}
       />
       {/* A token ready for "send again". */}
-      {captcha && <CaptchaView key={captchaKey} onToken={setCaptchaToken} />}
+      {captcha && <CaptchaView key={captchaKey} onChange={setCaptchaState} />}
     </ScrollView>
   );
 }

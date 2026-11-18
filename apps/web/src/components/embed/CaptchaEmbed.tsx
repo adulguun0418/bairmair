@@ -31,6 +31,9 @@ export function CaptchaEmbed({ siteKey, locale }: { siteKey: string; locale: Loc
     () => null,
   );
 
+  // React is running: the app knows the page itself loaded.
+  useEffect(() => post({ type: 'status', status: 'hydrated' }), []);
+
   // Turnstile shows a checkbox only when it is unsure; the app sizes the WebView to it.
   useEffect(() => {
     const element = box.current;
@@ -53,7 +56,8 @@ export function CaptchaEmbed({ siteKey, locale }: { siteKey: string; locale: Loc
           theme={theme}
           resetKey={0}
           onToken={(token) => post(token ? { type: 'token', token } : { type: 'expired' })}
-          onError={() => post({ type: 'error' })}
+          onError={(code) => post(code ? { type: 'error', code } : { type: 'error' })}
+          onStatus={(status) => post({ type: 'status', status })}
         />
       )}
     </div>

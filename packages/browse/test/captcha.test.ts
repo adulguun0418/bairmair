@@ -28,6 +28,8 @@ describe('captcha messages', () => {
       { type: 'expired' },
       { type: 'error' },
       { type: 'size', height: 65 },
+      { type: 'error', code: '600010' },
+      { type: 'status', status: 'rendered' },
     ] as const) {
       expect(parseCaptchaMessage(captchaMessage(event))).toEqual(event);
     }
@@ -46,6 +48,16 @@ describe('captcha messages', () => {
       type: 'size',
       height: 400,
     });
+  });
+
+  it('drops odd codes and statuses', () => {
+    const raw = (fields: object) =>
+      JSON.stringify({ source: 'bairmair-captcha', version: 1, ...fields });
+    expect(parseCaptchaMessage(raw({ type: 'error', code: '<script>' }))).toEqual({
+      type: 'error',
+    });
+    expect(parseCaptchaMessage(raw({ type: 'status', status: 'a b' }))).toBeNull();
+    expect(parseCaptchaMessage(raw({ type: 'status', status: 'x'.repeat(41) }))).toBeNull();
   });
 
   it('ignores anything else', () => {
