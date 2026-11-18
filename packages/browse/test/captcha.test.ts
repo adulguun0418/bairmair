@@ -2,10 +2,34 @@ import { describe, expect, it } from 'vitest';
 import {
   captchaMessage,
   captchaPath,
+  captchaReturnUrl,
   isCaptchaNavigation,
+  isCaptchaReturnMode,
   parseCaptchaMessage,
+  parseCaptchaReturn,
   parseCaptchaTheme,
 } from '../src/captcha';
+
+describe('captcha in the system browser (iOS)', () => {
+  it('round-trips a token through the return address', () => {
+    const token = '0.abc+/=_-XYZ';
+    expect(captchaReturnUrl(token).startsWith('bairmair://captcha#token=')).toBe(true);
+    expect(parseCaptchaReturn(captchaReturnUrl(token))).toBe(token);
+  });
+
+  it('refuses other addresses and empty tokens', () => {
+    expect(parseCaptchaReturn('bairmair://auth/callback#token=x')).toBeNull();
+    expect(parseCaptchaReturn('https://example.com/#token=x')).toBeNull();
+    expect(parseCaptchaReturn('bairmair://captcha#token=')).toBeNull();
+    expect(parseCaptchaReturn('bairmair://captcha')).toBeNull();
+  });
+
+  it('knows return mode', () => {
+    expect(isCaptchaReturnMode('app')).toBe(true);
+    expect(isCaptchaReturnMode(null)).toBe(false);
+    expect(isCaptchaReturnMode('https://evil.example')).toBe(false);
+  });
+});
 
 describe('captcha page', () => {
   it('has a path per language', () => {

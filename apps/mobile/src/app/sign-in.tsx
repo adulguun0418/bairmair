@@ -11,6 +11,7 @@ import {
   type SignInResult,
 } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
+import { CAPTCHA_IN_BROWSER, captchaTokenFromBrowser } from '@/auth/captcha-browser';
 import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
 import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
@@ -38,7 +39,9 @@ export default function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
-  const captcha = needsCaptcha(mode);
+  /** Android: Turnstile inline in a WebView. iOS: in the system browser sheet, on tap. */
+  const captcha = needsCaptcha(mode) && !CAPTCHA_IN_BROWSER;
+  const browserCaptcha = needsCaptcha(mode) && CAPTCHA_IN_BROWSER;
   const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
   const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
   /** Waiting for the check (it gives up by itself; then the code goes without a token). */
@@ -62,7 +65,13 @@ export default function SignInScreen() {
     setError(null);
     setBusy(true);
     try {
-      await sendPhoneCode(phone, mode, captchaToken);
+      let token = captchaToken;
+      if (browserCaptcha) {
+        token = await captchaTokenFromBrowser(locale, scheme === 'dark' ? 'dark' : 'light');
+        // The person closed the sheet: nothing sent, nothing to say.
+        if (!token) return;
+      }
+      await sendPhoneCode(phone, mode, token);
       router.push({ pathname: '/verify', params: { phone, mode } });
     } catch (cause) {
       setError(t(`auth.errors.${authErrorKey(cause)}`));
