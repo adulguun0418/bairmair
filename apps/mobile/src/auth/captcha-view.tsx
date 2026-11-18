@@ -17,11 +17,12 @@ export type CaptchaState =
    * captcha is on). */
   | { status: 'failed' };
 
-/** How long an invisible check may take before the screen stops waiting for it. */
-const GIVE_UP_MS = 15_000;
-/** The WebView's size while Turnstile is invisible: a real size, since iOS may not load or run a
- * page in a WebView squeezed to a pixel; transparent and out of the layout. */
-const HIDDEN_HEIGHT = 80;
+/** How long the check may take before the screen stops waiting for it (not counting time
+ * Cloudflare waits for a click). */
+const GIVE_UP_MS = 30_000;
+/** Turnstile's widget height, kept free while the page loads so nothing jumps. The widget is
+ * always on screen: in an iOS WebView a hidden or tiny one never finished (error 300031). */
+const WIDGET_HEIGHT = 72;
 
 class CaptchaError extends Error {
   override name = 'CaptchaError';
@@ -31,9 +32,9 @@ class CaptchaError extends Error {
  * Cloudflare Turnstile for phone sign-in: the website's `/embed/captcha` page in a WebView (see
  * `@bairmair/browse` `captcha.ts`). Supabase Auth refuses to text a code without a token.
  *
- * Usually invisible: it reports a token within a second or two. When Cloudflare wants a click,
- * the page grows and the WebView shows at its height. A token is single use: remount this
- * component (change its `key`) after each attempt to get a new one.
+ * The widget is on screen ("Verifying…", then "Success!"; a checkbox when Cloudflare wants a
+ * click) and the WebView follows its height. A token is single use: remount this component
+ * (change its `key`) after each attempt to get a new one.
  *
  * It never blocks sign-in for long: after an error, or `GIVE_UP_MS` without a token, it reports
  * `failed` and shows how far the page got (for diagnosis), and the screen sends without a token.
@@ -45,6 +46,8 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
   const pageUrl = `${env.siteUrl}${captchaPath(locale)}`;
   const [status, setStatus] = useState<CaptchaState['status']>('checking');
   const [height, setHeight] = useState(0);
+  /** Cloudflare is waiting for a click: no time limit meanwhile. */
+  const [waitingForPerson, setWaitingForPerson] = useState(false);
   /** How far the page got, e.g. `load › hydrated › script › rendered`; shown when it fails. */
   const [trail, setTrail] = useState<string[]>([]);
   /** Bumped to load the page again (retry, or iOS ended the WebView's process). */
@@ -70,28 +73,29 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
     captureError(new CaptchaError(`captcha ${reason}`), { trail: trailRef.current.join(' > ') });
   };
 
-  // Give up on an invisible check that never ends; a visible one waits for the person.
+  // Give up on a check that never ends, unless Cloudflare is waiting for the person.
   useEffect(() => {
-    if (status !== 'checking' || height > 0) return;
-    const timer = setTimeout(() => fail('timeout'), GIVE_UP_MS);
+    if (status !== 'checking' || waitingForPerson) return;
+    const timer = setTimeout(() => fail('gave-up'), GIVE_UP_MS);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `fail` only sets state
-  }, [status, height, attempt]);
+  }, [status, waitingForPerson, attempt]);
 
   const reload = () => {
     setStatus('checking');
     callback.current({ status: 'checking' });
     setHeight(0);
+    setWaitingForPerson(false);
     trailRef.current = [];
     setTrail([]);
     setAttempt((n) => n + 1);
   };
 
-  const visible = status !== 'failed' && height > 0;
+  const shown = status !== 'failed';
 
   return (
     <View style={styles.box}>
-      <View pointerEvents={visible ? 'auto' : 'none'} style={visible ? { height } : styles.hidden}>
+      <View style={{ height: shown ? height || WIDGET_HEIGHT : 0 }}>
         <WebView
           key={attempt}
           source={{ uri: `${pageUrl}?theme=${scheme}` }}
@@ -122,6 +126,8 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
                 break;
               case 'status':
                 note(message.status);
+                if (message.status === 'interactive') setWaitingForPerson(true);
+                if (message.status === 'interacted') setWaitingForPerson(false);
                 break;
             }
           }}
@@ -134,8 +140,11 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
             if (request.url.startsWith('https://')) void Linking.openURL(request.url);
             return false;
           }}
+          // Cloudflare's React Native example for Turnstile.
           javaScriptEnabled
           domStorageEnabled
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
           scrollEnabled={false}
           bounces={false}
           overScrollMode="never"
@@ -144,7 +153,7 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
           webviewDebuggingEnabled={__DEV__}
         />
       </View>
-      {status === 'checking' && !visible && (
+      {status === 'checking' && height === 0 && (
         <Text style={[styles.note, { color: colors.textMuted }]}>{t('auth.captchaChecking')}</Text>
       )}
       {status === 'failed' && (
@@ -167,14 +176,6 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
 
 const styles = StyleSheet.create({
   box: { gap: 8 },
-  hidden: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: HIDDEN_HEIGHT,
-    opacity: 0,
-  },
   webview: { flex: 1, backgroundColor: 'transparent' },
   note: { fontSize: 14, lineHeight: 20 },
   trail: { fontSize: 12, lineHeight: 16 },

@@ -31,10 +31,17 @@ export function CaptchaEmbed({ siteKey, locale }: { siteKey: string; locale: Loc
     () => null,
   );
 
-  // React is running: the app knows the page itself loaded.
-  useEffect(() => post({ type: 'status', status: 'hydrated' }), []);
+  // React is running: the app knows the page itself loaded. Whether the browser counts the page
+  // as visible matters: Turnstile may not finish on a page it considers hidden.
+  useEffect(() => {
+    post({ type: 'status', status: 'hydrated' });
+    const visibility = () => post({ type: 'status', status: `page-${document.visibilityState}` });
+    visibility();
+    document.addEventListener('visibilitychange', visibility);
+    return () => document.removeEventListener('visibilitychange', visibility);
+  }, []);
 
-  // Turnstile shows a checkbox only when it is unsure; the app sizes the WebView to it.
+  // The app sizes the WebView to the widget.
   useEffect(() => {
     const element = box.current;
     if (!element) return;
@@ -54,6 +61,8 @@ export function CaptchaEmbed({ siteKey, locale }: { siteKey: string; locale: Loc
           siteKey={siteKey}
           language={locale}
           theme={theme}
+          // Always on screen: in an iOS WebView an invisible widget never finished (300031).
+          appearance="always"
           resetKey={0}
           onToken={(token) => post(token ? { type: 'token', token } : { type: 'expired' })}
           onError={(code) => post(code ? { type: 'error', code } : { type: 'error' })}
