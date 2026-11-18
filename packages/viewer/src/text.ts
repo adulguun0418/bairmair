@@ -8,6 +8,8 @@ export interface ViewerText extends FloorPlanText {
   /** Accessible name of a photo marker, for example "Photo 2: Kitchen". */
   photo(index: number, room: Room): string;
   resetView: string;
+  /** Label over the apartment's front door in the 3D view. */
+  entrance: string;
   /** Short usage hint shown over the 3D view. */
   hint: string;
   /** Shown instead of the 3D view when the device cannot run WebGL. */

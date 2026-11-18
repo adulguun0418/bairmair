@@ -13,6 +13,7 @@ export function useViewerText(locale: Locale) {
       area: (squareMeters) => formatArea(squareMeters, locale),
       photo: (index, room) => t('viewer.photoInRoom', { index, room: roomDisplayName(t, room) }),
       resetView: t('viewer.resetView'),
+      entrance: t('viewer.entrance'),
       hint: t('viewer.hint'),
       webglUnavailable: t('viewer.webglUnavailable'),
     }),

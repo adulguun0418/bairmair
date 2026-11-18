@@ -278,7 +278,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - `changedFields` lives in `@bairmair/browse` (used by both). Photos, pin, unit number, status, room labels were already separate writes.
   - Still not merged: the same column changed in both places (the later write wins), and the phone keeps its unsent edits over a refresh.
   - Verified: unit tests (browse 3, mobile 10: diff, type switch, web price kept when the phone sends a title, changed back, baseline moving, old listings, refresh baseline), integration tests on the dev project (mobile sync remote; web: an app-side description kept when the page saves a new price, unchanged save writes nothing).
-- Tests: 555 unit (room-model 217, browse 121, mobile 107, web 56, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
+- 3D model closer to real life: doors, windows, the front door (your request; web only, so the app's 3D screen gets it with the Vercel deploy):
+  - Doors: a wood frame and leaf. A closed door fills its opening; an open one stands at 90° into its room, hinged on the side the floor plan draws (RoomPlan reports no hinge). A door scanned from both rooms gets one leaf.
+  - Windows: dark frame (`#3d4654`), mullions about every 0.8 m, a white sill on the inside, bluer glass (opacity 0.5, slight glow). Frames and leaves are merged into each wall's geometry, so they fade with it.
+  - Front door: `findEntrance` in `@bairmair/room-model` (`geometry/doors.ts`, with `isSameDoor`/`doorHinge`, now also used by the floor plan): a door with no scanned floor 0.3–0.9 m behind it, not in a bedroom/bathroom/toilet/balcony/storage, not scanned from both sides. Several such doors: a hallway (+2) or "other" room (+1) and ≥ 0.78 m width (+1) decide; a tie gives no entrance rather than a wrong one. Drawn navy with a brass handle, apart from the walls, so it stays solid when its wall fades; label "Орох хаалга" on the floor just outside it.
+  - "Анхны харагдац" (and the first view) looks in through the front door, 0.3 rad to the right; without an entrance, the old view from the plan's bottom edge.
+  - Results on the real scans: the friend's apartment → its closed 0.86 m door (correct); kitchen-living → its only outside door; corridor scan (3 doors into unscanned rooms) and the L-room (2 wide doors) → no entrance. All 3 hand-made samples → their `entrance` door.
+  - Verified: typecheck, lint, tests (8 new); headless Chrome on the dev server: friend's listing embed and the two-room sample (navy door in front, label clear of the room markers), turned view (open wood doors, frames).
+- Tests: 563 unit (room-model 225, browse 121, mobile 107, web 56, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -411,8 +418,10 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Whole-apartment scan copy (`scan.introTitle`, `step1`–`step3`, `discardBody` in `mn.ts`), e.g. "Байраа бүтнээр нь нэг дор скан хийнэ"; sample name "Бодит скан: зочны өрөө ба коридор (нэг сканаар)".
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 - Divider copy (`roomDivide`, `viewer.dividerNote` in `mn.ts`) and rules: lines straightened within 8°, parts at least 0.5 m², at most 20 lines.
+- Front door label `viewer.entrance` "Орох хаалга" (not "Орц", which reads as the building entrance) and the entrance rules above.
 
 ## Next
+- You, 3D doors and windows (after Vercel deploys `main`): open your friend's listing (web or the app's "3D-ээр үзэх"): the navy front door with "Орох хаалга" sits at the front; "Анхны харагдац" returns there; windows have dark frames and sills; interior doors are wood, open ones swung into the room. Later, if the guess is wrong or missing on real listings: let the seller mark the front door in the room review (a `room_scans` column like the dividers, app + web).
 - You, error tracking (after merge; Vercel deploys `main`): in PostHog open **Error tracking**. Errors on the live site show up there as issues (message, page, count). Nothing to set up: the key is already in Vercel. To see one, open the browser console on the live site and run `setTimeout(() => { throw new Error('bairmair test') })`; within a minute the issue appears. Then mark it resolved. Optional: Error tracking → set up an alert (e-mail or Slack) for new issues.
 - You, app error tracking (0.1.9, OTA):
   1. PostHog → Settings → Error tracking → turn on **Exception autocapture** (without it the app reports only what its error screen catches).
