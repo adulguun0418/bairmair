@@ -1,6 +1,6 @@
 import { captchaPath, isCaptchaNavigation, parseCaptchaMessage } from '@bairmair/browse';
 import { useEffect, useRef, useState } from 'react';
-import { Linking, StyleSheet, useColorScheme, View } from 'react-native';
+import { Linking, Platform, StyleSheet, useColorScheme, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useI18n } from '@/i18n/i18n';
 import { env } from '@/lib/env';
@@ -19,10 +19,21 @@ export type CaptchaState =
 
 /** How long the check may take before the screen stops waiting for it (not counting time
  * Cloudflare waits for a click). */
-const GIVE_UP_MS = 30_000;
+const GIVE_UP_MS = 20_000;
 /** Turnstile's widget height, kept free while the page loads so nothing jumps. The widget is
  * always on screen: in an iOS WebView a hidden or tiny one never finished (error 300031). */
 const WIDGET_HEIGHT = 72;
+
+/**
+ * iOS: the end of the WebView's user agent, so it reads exactly like Safari's ("… Version/26.1
+ * Mobile/15E148 Safari/604.1"). A WKWebView's own ends at "Mobile/15E148", without Safari's
+ * version and name, and Turnstile stayed on "Verifying…" with it while Safari passes. Set once,
+ * when the WebView is made (Cloudflare: never change the agent during a session).
+ */
+const SAFARI_APPLICATION_NAME =
+  Platform.OS === 'ios'
+    ? `Version/${String(Platform.Version).split('.').slice(0, 2).join('.')} Mobile/15E148 Safari/604.1`
+    : undefined;
 
 class CaptchaError extends Error {
   override name = 'CaptchaError';
@@ -140,6 +151,7 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
             if (request.url.startsWith('https://')) void Linking.openURL(request.url);
             return false;
           }}
+          applicationNameForUserAgent={SAFARI_APPLICATION_NAME}
           // Cloudflare's React Native example for Turnstile.
           javaScriptEnabled
           domStorageEnabled

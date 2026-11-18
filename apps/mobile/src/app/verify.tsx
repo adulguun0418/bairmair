@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, useColorScheme } from 'react-native';
 import { needsCaptcha, sendPhoneCode, verifyPhoneCode, type PhoneMode } from '@/auth/actions';
-import { CAPTCHA_IN_BROWSER, captchaTokenFromBrowser } from '@/auth/captcha-browser';
+import { CAPTCHA_BROWSER_FALLBACK, captchaTokenFromBrowser } from '@/auth/captcha-browser';
 import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
@@ -30,9 +30,8 @@ export default function VerifyScreen() {
   const [busy, setBusy] = useState(false);
   const [resendAt, setResendAt] = useState(() => Date.now() + RESEND_SECONDS * 1000);
   const [now, setNow] = useState(() => Date.now());
-  /** Android: Turnstile inline in a WebView. iOS: in the system browser sheet, on tap. */
-  const captcha = needsCaptcha(mode) && !CAPTCHA_IN_BROWSER;
-  const browserCaptcha = needsCaptcha(mode) && CAPTCHA_IN_BROWSER;
+  /** Turnstile inline in a WebView; on iOS, if it fails there, the system browser sheet. */
+  const captcha = needsCaptcha(mode);
   const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
   const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
   /** Waiting for the check (it gives up by itself; then the code goes without a token). */
@@ -74,7 +73,7 @@ export default function VerifyScreen() {
     setBusy(true);
     try {
       let token = captchaToken;
-      if (browserCaptcha) {
+      if (captcha && !token && captchaState.status === 'failed' && CAPTCHA_BROWSER_FALLBACK) {
         token = await captchaTokenFromBrowser(locale, scheme === 'dark' ? 'dark' : 'light');
         // The person closed the sheet: nothing sent, nothing to say.
         if (!token) return;

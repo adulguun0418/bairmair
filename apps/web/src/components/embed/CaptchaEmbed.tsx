@@ -46,6 +46,12 @@ export function CaptchaEmbed({ siteKey, locale }: { siteKey: string; locale: Loc
   // as visible matters: Turnstile may not finish on a page it considers hidden.
   useEffect(() => {
     post({ type: 'status', status: 'hydrated' });
+    // Whether the WebView introduces itself as Safari (the iPhone app sets it; Turnstile did not
+    // finish without it).
+    post({
+      type: 'status',
+      status: /Safari\//.test(navigator.userAgent) ? 'ua-safari' : 'ua-plain',
+    });
     const visibility = () => post({ type: 'status', status: `page-${document.visibilityState}` });
     visibility();
     document.addEventListener('visibilitychange', visibility);

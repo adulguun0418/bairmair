@@ -11,7 +11,7 @@ import {
   type SignInResult,
 } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
-import { CAPTCHA_IN_BROWSER, captchaTokenFromBrowser } from '@/auth/captcha-browser';
+import { CAPTCHA_BROWSER_FALLBACK, captchaTokenFromBrowser } from '@/auth/captcha-browser';
 import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
 import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
@@ -39,9 +39,8 @@ export default function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
-  /** Android: Turnstile inline in a WebView. iOS: in the system browser sheet, on tap. */
-  const captcha = needsCaptcha(mode) && !CAPTCHA_IN_BROWSER;
-  const browserCaptcha = needsCaptcha(mode) && CAPTCHA_IN_BROWSER;
+  /** Turnstile inline in a WebView; on iOS, if it fails there, the system browser sheet. */
+  const captcha = needsCaptcha(mode);
   const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
   const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
   /** Waiting for the check (it gives up by itself; then the code goes without a token). */
@@ -66,7 +65,7 @@ export default function SignInScreen() {
     setBusy(true);
     try {
       let token = captchaToken;
-      if (browserCaptcha) {
+      if (captcha && !token && captchaState.status === 'failed' && CAPTCHA_BROWSER_FALLBACK) {
         token = await captchaTokenFromBrowser(locale, scheme === 'dark' ? 'dark' : 'light');
         // The person closed the sheet: nothing sent, nothing to say.
         if (!token) return;
