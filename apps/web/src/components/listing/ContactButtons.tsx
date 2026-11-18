@@ -16,7 +16,9 @@ type State =
 /** `+97699112233` → `{ prefix: '+976', local: '9911 2233' }`; other numbers whole in `local`. */
 export function formatPhone(e164: string): { prefix: string | null; local: string } {
   const match = /^\+976(\d{4})(\d{4})$/.exec(e164);
-  return match ? { prefix: '+976', local: `${match[1]} ${match[2]}` } : { prefix: null, local: e164 };
+  return match
+    ? { prefix: '+976', local: `${match[1]} ${match[2]}` }
+    : { prefix: null, local: e164 };
 }
 
 /**

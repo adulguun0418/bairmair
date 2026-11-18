@@ -64,7 +64,7 @@ describe('renderFloorPlanSvg', () => {
     const model = buildSample(SAMPLE_SPECS['two-room']);
     // 7 door surfaces: the entrance, and 3 interior doors seen from both sides.
     expect(model.doors).toHaveLength(7);
-    expect(count(renderFloorPlanSvg(model), /class="fp-door"/g)).toBe(4);
+    expect(count(renderFloorPlanSvg(model), /class="fp-door[" ]/g)).toBe(4);
   });
 
   it('fits the view box around the plan, in centimeters', () => {
@@ -221,5 +221,24 @@ describe('renderFloorPlanSvg', () => {
       expect(Math.max(y1!, y2!)).toBeGreaterThan(140);
       expect(Math.max(y1!, y2!)).toBeLessThan(160);
     });
+  });
+});
+
+describe('renderFloorPlanSvg: front door', () => {
+  const twoRoom = () => buildSample(SAMPLE_SPECS['two-room']);
+
+  it('draws the guessed front door in the entrance color, with an arrow', () => {
+    const svg = renderFloorPlanSvg(twoRoom(), { theme: { entrance: '#123456' } });
+    expect(count(svg, /fp-entrance-door/g)).toBe(1);
+    expect(count(svg, /class="fp-entrance"/g)).toBe(1);
+    expect(svg).toContain('stroke="#123456"');
+  });
+
+  it('follows the seller’s choice, and can be left out', () => {
+    const model = { ...twoRoom(), entranceDoorId: 'living-door-hallway' };
+    const svg = renderFloorPlanSvg(model);
+    expect(svg).toMatch(/class="fp-door fp-entrance-door"/);
+    expect(svg).not.toBe(renderFloorPlanSvg(twoRoom()));
+    expect(renderFloorPlanSvg(twoRoom(), { showEntrance: false })).not.toContain('fp-entrance');
   });
 });

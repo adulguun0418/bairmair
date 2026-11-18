@@ -32,6 +32,7 @@ import {
   setLocation,
   setRoomLabel,
   addRoomDivider,
+  setEntranceDoor,
   setStatus,
   updateForm,
   type LocalListing,
@@ -50,6 +51,9 @@ const DIVIDER = {
   a: [0.5, -1] as [number, number],
   b: [0.5, 1] as [number, number],
 };
+
+/** The seller's front door: a door id, stored as sent (the viewers check it against the model). */
+const ENTRANCE_DOOR = 'REMOTE-DOOR-0001';
 
 // The sync engine with the real Supabase remote: the payloads it sends must pass RLS, the
 // column grants and the table constraints. The native upload is replaced by fetch.
@@ -298,12 +302,13 @@ describe('listing sync against the dev project', () => {
     await expect(update).rejects.toMatchObject({ kind: 'permanent', key: 'rejected' });
   });
 
-  it('sends a scan with room labels, dividers and photo rooms; the server makes it current', async () => {
+  it('sends a scan with room labels, dividers, front door and photo rooms; the server makes it current', async () => {
     edit((listing) => attachScan(listing, scanFiles(firstScan), NOW));
     edit((listing) =>
       setRoomLabel(listing, fixtureRoomId, { label: 'livingRoom', name: 'Том өрөө ' }, NOW),
     );
     edit((listing) => addRoomDivider(listing, DIVIDER, NOW));
+    edit((listing) => setEntranceDoor(listing, ENTRANCE_DOOR, NOW));
     edit((listing) => assignPhotoRoom(listing, second.id, fixtureRoomId, NOW));
 
     await engine.run();
@@ -315,7 +320,7 @@ describe('listing sync against the dev project', () => {
     const scan = await admin
       .from('room_scans')
       .select(
-        'status, is_current, room_labels, room_dividers, scan_lat, scan_lng, scan_accuracy_m, device_model',
+        'status, is_current, room_labels, room_dividers, entrance_door_id, scan_lat, scan_lng, scan_accuracy_m, device_model',
       )
       .eq('id', firstScan)
       .single();
@@ -324,6 +329,7 @@ describe('listing sync against the dev project', () => {
       is_current: true,
       room_labels: { [fixtureRoomId]: { label: 'livingRoom', name: 'Том өрөө ' } },
       room_dividers: [DIVIDER],
+      entrance_door_id: ENTRANCE_DOOR,
       scan_lat: ZAISAN.lat,
       scan_lng: ZAISAN.lng,
       scan_accuracy_m: 8,

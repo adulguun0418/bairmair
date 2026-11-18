@@ -15,7 +15,7 @@ import {
   type ListingSeller,
 } from '@bairmair/browse';
 import { districtById, LISTING_FRESHNESS } from '@bairmair/db';
-import { computeMetrics, type RoomModelV1 } from '@bairmair/room-model';
+import { computeMetrics, findEntrance, type RoomModelV1 } from '@bairmair/room-model';
 import {
   formatArea,
   formatListingPrice,
@@ -92,7 +92,11 @@ export async function generateMetadata({
     district_id: listing.district_id,
     complex_name: listing.complex_name,
     coverPhotoId: page.photos[0]?.id ?? null,
-    scan: metrics && { rooms: metrics.rooms.length, totalAreaM2: metrics.totalAreaM2 },
+    scan: metrics && {
+      rooms: metrics.rooms.length,
+      totalAreaM2: metrics.totalAreaM2,
+      entranceDoorId: page.model ? (findEntrance(page.model)?.door.id ?? null) : null,
+    },
   });
   const image = {
     url: `/api/og/listings/${id}?v=${version}${locale === 'mn' ? '' : `&lang=${locale}`}`,

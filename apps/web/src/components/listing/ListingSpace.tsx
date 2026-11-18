@@ -180,6 +180,7 @@ function Scene({
                 onSelectRoom={toggleRoom}
                 onSelectPhoto={openHotspot}
                 onInteract={onInteract}
+                onPlainView={(on) => track('listing_3d_plain_view', { listing_id: listingId, on })}
                 pageScroll
                 introSpin
               />

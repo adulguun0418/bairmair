@@ -179,6 +179,11 @@ export const RoomModelV1Schema = z
     sections: z.array(SectionSchema).max(LIMITS.sections).optional(),
     /** Seller dividers applied to this model (never in a converted file; see `applyAnnotations`). */
     dividers: z.array(DividerLineSchema).max(LIMITS.dividers).optional(),
+    /**
+     * The seller's front door, a door id (never in a converted file; see `applyAnnotations`).
+     * Without it, viewers guess the entrance (`findEntrance`).
+     */
+    entranceDoorId: IdSchema.optional(),
   })
   .superRefine((model, ctx) => {
     const issue = (message: string, path: (string | number)[]) =>
@@ -217,6 +222,13 @@ export const RoomModelV1Schema = z
           issue(`Unknown wallId "${aperture.wallId}"`, [group, index, 'wallId']);
         }
       });
+    }
+
+    if (
+      model.entranceDoorId !== undefined &&
+      !model.doors.some((door) => door.id === model.entranceDoorId)
+    ) {
+      issue(`Unknown entrance door "${model.entranceDoorId}"`, ['entranceDoorId']);
     }
 
     const photoIds = new Set<string>();

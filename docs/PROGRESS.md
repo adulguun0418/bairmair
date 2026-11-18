@@ -285,7 +285,15 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - "Анхны харагдац" (and the first view) looks in through the front door, 0.3 rad to the right; without an entrance, the old view from the plan's bottom edge.
   - Results on the real scans: the friend's apartment → its closed 0.86 m door (correct); kitchen-living → its only outside door; corridor scan (3 doors into unscanned rooms) and the L-room (2 wide doors) → no entrance. All 3 hand-made samples → their `entrance` door.
   - Verified: typecheck, lint, tests (8 new); headless Chrome on the dev server: friend's listing embed and the two-room sample (navy door in front, label clear of the room markers), turned view (open wood doors, frames).
-- Tests: 563 unit (room-model 225, browse 121, mobile 107, web 56, i18n 29, send-sms 18, db 7) + 85 integration tests against the dev project (db 62, mobile 12, web 11).
+- Seller marks the front door, and plain view (your request; migration + website + app 0.1.15 OTA):
+  - Data: migration 15 (`20261120100000_entrance_door.sql`, pushed with your OK): `room_scans.entrance_door_id` (text, 1–64 chars, null = guess), owner update + public select column grants. A RoomPlan door identifier, so it survives re-conversion and dividers. Written in the same update as labels and dividers (app sync op `saveRoomLabels`, website `saveScanAnnotations`), read by the shared listing loader and the app's server copies/refresh; a rescan starts without one.
+  - `@bairmair/room-model`: optional `entranceDoorId` on the model (must name a door), set by `applyAnnotations({ entranceDoorId })` only when the door exists; `parseEntranceDoorId`. `findEntrance` returns the seller's door (`source: 'seller'`) before the guess (`'guess'`); `doorOutward` (away from the door's room, else towards the side without floor); `doorNear(model, point)` picks the door within 0.6 m of a tap.
+  - Floor plan: the front door's swing and a short arrow pointing in, in sky blue (`theme.entrance` `#199ed6`; walls are dark in every theme, navy did not stand out); the arrow stays inside `paddingM`. `showEntrance: false` leaves it out. Facebook image design version 3, and its hash includes the front door.
+  - 3D: the front door is drawn even when it is the second side of a door scanned twice, or has no room.
+  - App: "Орох хаалга" card in the room review (marked / guessed / unknown) → `/listings/[id]/entrance`: tap the door on the plan; "Автоматаар таамаглах" clears the choice. Website: the same card under the plan in "3D скан" (click mode).
+  - Plain view (`RoomViewer3D`): "Цэвэр харагдац" next to "Анхны харагдац" hides room names, areas, photo buttons and the door label (the navy door stays); navy while on; an eye icon only on views narrower than 520 px (the embed's 3D/plan switch shares the top row). Everywhere the full viewer is used (listing page, embed / app 3D screen). Analytics: `listing_3d_plain_view` (`on`).
+  - Verified: typecheck, lint, tests; integration tests on the dev project (db: owner writes, anyone reads, others cannot, length check, clear; app: the sync remote writes the door; website: a real processed scan with a marked door, `findEntrance` follows it); headless Chrome: plain view on and off at 1280 and 390 px, the plan with the sky-blue door and arrow; `expo export` for iOS. Not verified: the pickers by hand (website editor needs a signed-in seller; the app screen needs the phone).
+- Tests: 575 unit (room-model 232, browse 122, mobile 109, web 56, i18n 29, send-sms 18, db 7) + 86 integration tests against the dev project (db 63, mobile 12, web 11).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -419,9 +427,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Room splitting thresholds: rooms under 1 m² ignored, coverage within 5%, wall gaps up to 15 cm closed.
 - Divider copy (`roomDivide`, `viewer.dividerNote` in `mn.ts`) and rules: lines straightened within 8°, parts at least 0.5 m², at most 20 lines.
 - Front door label `viewer.entrance` "Орох хаалга" (not "Орц", which reads as the building entrance) and the entrance rules above.
+- Front-door picker copy (`entrance` in `mn.ts`), e.g. "Автоматаар таамаглах", and `viewer.plainView` "Цэвэр харагдац".
 
 ## Next
-- You, 3D doors and windows (after Vercel deploys `main`): open your friend's listing (web or the app's "3D-ээр үзэх"): the navy front door with "Орох хаалга" sits at the front; "Анхны харагдац" returns there; windows have dark frames and sills; interior doors are wood, open ones swung into the room. Later, if the guess is wrong or missing on real listings: let the seller mark the front door in the room review (a `room_scans` column like the dividers, app + web).
+- You, 3D doors and windows (after Vercel deploys `main`): open your friend's listing (web or the app's "3D-ээр үзэх"): the navy front door with "Орох хаалга" sits at the front; "Анхны харагдац" returns there; windows have dark frames and sills; interior doors are wood, open ones swung into the room.
+- You, front door and plain view (after Vercel deploys `main`, then `pnpm update:preview -m "Seller marks the front door (0.1.15)"` in `apps/mobile` from a clean, up-to-date `main`):
+  - Website: `/my-listings` → your friend's listing → "3D скан": the "Орох хаалга" card says it was guessed; "Орох хаалга сонгох" → click another door on the plan: it turns sky blue with an arrow, "Орох хаалгыг хадгаллаа."; the public page's 3D now opens looking in through that door. "Автоматаар таамаглах" brings back the guess.
+  - App (close and reopen twice; Бүртгэл shows 0.1.15): Миний зарууд → the listing → "3D скан" → rooms → "Орох хаалга" card → tap a door. A choice made on the website shows up after pulling down.
+  - Any 3D view: "Цэвэр харагдац" (an eye on phones) hides names, areas and photo buttons; tap again to bring them back.
 - You, error tracking (after merge; Vercel deploys `main`): in PostHog open **Error tracking**. Errors on the live site show up there as issues (message, page, count). Nothing to set up: the key is already in Vercel. To see one, open the browser console on the live site and run `setTimeout(() => { throw new Error('bairmair test') })`; within a minute the issue appears. Then mark it resolved. Optional: Error tracking → set up an alert (e-mail or Slack) for new issues.
 - You, app error tracking (0.1.9, OTA):
   1. PostHog → Settings → Error tracking → turn on **Exception autocapture** (without it the app reports only what its error screen catches).

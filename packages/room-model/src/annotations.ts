@@ -39,6 +39,16 @@ export interface Annotations {
   dividers?: readonly RoomDivider[];
   roomLabels?: Readonly<Record<string, RoomLabelOverride>>;
   photos?: readonly PhotoAssignment[];
+  /**
+   * The seller's front door (`room_scans.entrance_door_id`). Ignored when the model has no such
+   * door; `null` or omitted keeps the model as it is (viewers then guess the entrance).
+   */
+  entranceDoorId?: string | null;
+}
+
+/** Reads `room_scans.entrance_door_id`: a door id, or null for anything else. */
+export function parseEntranceDoorId(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 && value.length <= 64 ? value : null;
 }
 
 /**
@@ -53,7 +63,7 @@ export interface Annotations {
  * Omitting `photos` keeps the model's existing hotspots; omitting `roomLabels` keeps its labels.
  */
 export function applyAnnotations(converted: RoomModelV1, annotations: Annotations): RoomModelV1 {
-  const { roomLabels, photos, dividers } = annotations;
+  const { roomLabels, photos, dividers, entranceDoorId } = annotations;
   const model =
     dividers && dividers.length > 0 ? applyRoomDividers(converted, dividers).model : converted;
 
@@ -80,7 +90,12 @@ export function applyAnnotations(converted: RoomModelV1, annotations: Annotation
     }
   }
 
-  return { ...model, rooms, hotspots };
+  // Door ids are RoomPlan's own, so a choice survives re-conversion and dividers.
+  const entrance =
+    entranceDoorId && model.doors.some((door) => door.id === entranceDoorId)
+      ? { entranceDoorId }
+      : {};
+  return { ...model, rooms, hotspots, ...entrance };
 }
 
 /**

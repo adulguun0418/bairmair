@@ -97,6 +97,15 @@ describe('buildListingPage', () => {
     expect(photos[0]!.roomId).toBe('living');
   });
 
+  it("applies the seller's front door, ignoring an unknown one", () => {
+    const page = (entrance_door_id: string | null) =>
+      buildListingPage(input({ scan: { id: SCAN_ID, room_labels: {}, entrance_door_id } }));
+    const doorId = page(null).model!.doors[0]!.id;
+    expect(page(doorId).model?.entranceDoorId).toBe(doorId);
+    expect(page('not-a-door').model?.entranceDoorId).toBeUndefined();
+    expect(page(null).model?.entranceDoorId).toBeUndefined();
+  });
+
   it('shows no model when the file is missing or invalid, and then no photo rooms', () => {
     for (const modelJson of [null, { schemaVersion: 1, rooms: 'no' }]) {
       const page = buildListingPage(input({ modelJson }));

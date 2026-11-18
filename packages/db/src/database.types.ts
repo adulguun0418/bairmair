@@ -521,6 +521,7 @@ export type Database = {
           converter_version: string | null;
           created_at: string;
           device_model: string | null;
+          entrance_door_id: string | null;
           floor_plan_path: string | null;
           id: string;
           ios_version: string | null;
@@ -545,6 +546,7 @@ export type Database = {
           converter_version?: string | null;
           created_at?: string;
           device_model?: string | null;
+          entrance_door_id?: string | null;
           floor_plan_path?: string | null;
           id?: string;
           ios_version?: string | null;
@@ -569,6 +571,7 @@ export type Database = {
           converter_version?: string | null;
           created_at?: string;
           device_model?: string | null;
+          entrance_door_id?: string | null;
           floor_plan_path?: string | null;
           id?: string;
           ios_version?: string | null;

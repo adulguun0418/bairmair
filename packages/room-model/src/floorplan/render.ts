@@ -1,4 +1,4 @@
-import { doorHinge, isSameDoor } from '../geometry/doors';
+import { doorHinge, findEntrance, isSameDoor } from '../geometry/doors';
 import { inwardNormal, layoutHotspots, visualCenter } from '../geometry/layout';
 import { boundsOf, pointInPolygon, polygonArea } from '../geometry/polygon';
 import { directionFromYaw, wallEndpoints } from '../geometry/wall';
@@ -13,6 +13,8 @@ export interface FloorPlanTheme {
   wall: string;
   windowFill: string;
   door: string;
+  /** The front door's swing and arrow: an accent, since walls are dark in every theme. */
+  entrance: string;
   objectFill: string;
   objectStroke: string;
   text: string;
@@ -29,6 +31,7 @@ export const DEFAULT_FLOOR_PLAN_THEME: FloorPlanTheme = {
   wall: '#2f3437',
   windowFill: '#d8ecf7',
   door: '#8a8f93',
+  entrance: '#199ed6',
   objectFill: '#e3dccd',
   objectStroke: '#b7ad98',
   text: '#23272a',
@@ -57,6 +60,8 @@ export interface FloorPlanOptions {
   title?: string;
   showObjects?: boolean;
   showHotspots?: boolean;
+  /** Mark the front door (`findEntrance`): its swing in the entrance color, and an arrow in. */
+  showEntrance?: boolean;
   /** Makes rooms and photo markers focusable, for use in an interactive page. */
   interactive?: boolean;
   /** Fixed pixel size, for rasterizing. Without it the drawing scales to its container. */
@@ -346,8 +351,14 @@ export function renderFloorPlanSvg(model: RoomModelV1, options: FloorPlanOptions
 
   for (const opening of openings) out.push(gap(opening));
 
+  const entrance = options.showEntrance === false ? null : findEntrance(model);
+  const entranceId = entrance && doors.includes(entrance.door) ? entrance.door.id : null;
   const drawnDoors: Aperture[] = [];
-  for (const door of doors) {
+  // The front door first, so its swing is the one drawn when it was scanned from both sides.
+  const doorOrder = entranceId
+    ? [...doors].sort((a, b) => Number(b.id === entranceId) - Number(a.id === entranceId))
+    : doors;
+  for (const door of doorOrder) {
     out.push(gap(door));
     const [x, , z] = door.transform.position;
     const [dx, dz] = directionFromYaw(door.transform.yaw);
@@ -365,10 +376,32 @@ export function renderFloorPlanSvg(model: RoomModelV1, options: FloorPlanOptions
     const latch: Vec2 = [x + (dx * w) / 2, z + (dz * w) / 2];
     const open: Vec2 = [hinge[0] + inward[0] * w, hinge[1] + inward[1] * w];
     const sweep = dx * inward[1] - dz * inward[0] > 0 ? 0 : 1;
+    const isEntrance = door.id === entranceId;
     out.push(
-      `<path class="fp-door" d="M${unit(hinge[0])} ${unit(hinge[1])} L${unit(open[0])} ${unit(open[1])}` +
+      `<path class="${isEntrance ? 'fp-door fp-entrance-door' : 'fp-door'}" d="M${unit(hinge[0])} ${unit(hinge[1])} L${unit(open[0])} ${unit(open[1])}` +
         ` A${unit(w)} ${unit(w)} 0 0 ${sweep} ${unit(latch[0])} ${unit(latch[1])}"` +
-        ` fill="none" stroke="${theme.door}" stroke-width="2"/>`,
+        ` fill="none" stroke="${isEntrance ? theme.entrance : theme.door}" stroke-width="${isEntrance ? 3 : 2}"/>`,
+    );
+  }
+
+  // The front door: an arrow outside the wall pointing in. It stays within the plan's padding.
+  if (entrance && entranceId) {
+    const [x, , z] = entrance.door.transform.position;
+    const [ox, oz] = entrance.outward;
+    // From just outside the wall band to just inside the plan's edge (`paddingM`).
+    const reach = Math.max(0.15, (options.paddingM ?? 0.4) - 0.03);
+    const tip: Vec2 = [x + ox * (thickness + 0.05), z + oz * (thickness + 0.05)];
+    const tail: Vec2 = [x + ox * (thickness + reach), z + oz * (thickness + reach)];
+    const head = Math.min(0.12, reach * 0.45);
+    const wing = (sign: number): Vec2 => [
+      tip[0] + (ox * Math.cos(0.6) - sign * oz * Math.sin(0.6)) * head,
+      tip[1] + (oz * Math.cos(0.6) + sign * ox * Math.sin(0.6)) * head,
+    ];
+    const [left, right] = [wing(1), wing(-1)];
+    out.push(
+      `<path class="fp-entrance" d="M${unit(tail[0])} ${unit(tail[1])} L${unit(tip[0])} ${unit(tip[1])}` +
+        ` M${unit(left[0])} ${unit(left[1])} L${unit(tip[0])} ${unit(tip[1])} L${unit(right[0])} ${unit(right[1])}"` +
+        ` fill="none" stroke="${theme.entrance}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
     );
   }
 

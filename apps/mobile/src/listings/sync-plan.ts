@@ -38,6 +38,7 @@ export type SyncOp =
       rev: number;
       labels: Record<string, RoomLabelOverride>;
       dividers: RoomDivider[];
+      entranceDoorId: string | null;
     }
   | { kind: 'assignPhotoRoom'; photoId: string; room: PhotoRoom | null }
   | { kind: 'uploadScanFile'; scanId: string; file: 'json' | 'usdz'; name: string }
@@ -205,6 +206,7 @@ export function planSync(listing: LocalListing): SyncPlan {
         rev: scan.labelsRev,
         labels: scan.roomLabels,
         dividers: scan.roomDividers,
+        entranceDoorId: scan.entranceDoorId,
       },
       block: null,
     };

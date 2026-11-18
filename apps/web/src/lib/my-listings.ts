@@ -12,6 +12,7 @@ import {
   type Tables,
 } from '@bairmair/db';
 import {
+  parseEntranceDoorId,
   parseRoomDividers,
   parseRoomLabelOverrides,
   parseRoomModel,
@@ -278,13 +279,15 @@ export interface MyScan {
   status: Tables<'room_scans'>['status'];
   roomLabels: Record<string, RoomLabelOverride>;
   dividers: RoomDivider[];
+  /** The seller's front door (a door id), or null: the viewers guess it. */
+  entranceDoorId: string | null;
 }
 
 /** The listing's current scan (the newest one if none is current yet), or null. */
 export async function loadMyScan(listingId: string): Promise<MyScan | null> {
   const { data, error } = await browserClient()
     .from('room_scans')
-    .select('id, status, is_current, room_labels, room_dividers, created_at')
+    .select('id, status, is_current, room_labels, room_dividers, entrance_door_id, created_at')
     .eq('listing_id', listingId)
     .order('is_current', { ascending: false })
     .order('created_at', { ascending: false })
@@ -297,6 +300,7 @@ export async function loadMyScan(listingId: string): Promise<MyScan | null> {
     status: data.status,
     roomLabels: parseRoomLabelOverrides(data.room_labels),
     dividers: parseRoomDividers(data.room_dividers),
+    entranceDoorId: parseEntranceDoorId(data.entrance_door_id),
   };
 }
 
@@ -313,15 +317,25 @@ export async function loadScanModel(listingId: string, scanId: string): Promise<
   return parseRoomModel(await response.json());
 }
 
-/** Writes the room labels and dividers together, as the app does. */
+/** The seller's input on a scan, written together as the app does. */
+export interface ScanAnnotations {
+  labels: Record<string, RoomLabelOverride>;
+  dividers: readonly RoomDivider[];
+  entranceDoorId: string | null;
+}
+
+/** Writes the room labels, dividers and front door together, as the app does. */
 export async function saveScanAnnotations(
   scanId: string,
-  labels: Record<string, RoomLabelOverride>,
-  dividers: readonly RoomDivider[],
+  { labels, dividers, entranceDoorId }: ScanAnnotations,
 ): Promise<void> {
   const { data, error } = await browserClient()
     .from('room_scans')
-    .update({ room_labels: labels as Json, room_dividers: dividers as unknown as Json })
+    .update({
+      room_labels: labels as Json,
+      room_dividers: dividers as unknown as Json,
+      entrance_door_id: entranceDoorId,
+    })
     .eq('id', scanId)
     .select('id');
   fail(error);

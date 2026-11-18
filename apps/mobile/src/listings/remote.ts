@@ -220,12 +220,13 @@ export function createSupabaseRemote(client: TypedSupabaseClient, options: Optio
       );
     },
 
-    async saveRoomLabels(scanId, labels, dividers) {
+    async saveRoomLabels(scanId, labels, dividers, entranceDoorId) {
       const result = await client
         .from('room_scans')
         .update({
           room_labels: labels as unknown as Json,
           room_dividers: dividers as unknown as Json,
+          entrance_door_id: entranceDoorId,
         })
         .eq('id', scanId)
         .select('id');

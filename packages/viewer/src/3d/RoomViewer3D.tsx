@@ -33,6 +33,8 @@ export interface RoomViewer3DProps {
   onSelectPhoto?: (photoId: string) => void;
   /** Called when the visitor starts a camera move (drag, pinch, wheel); for analytics. */
   onInteract?: () => void;
+  /** Called when the visitor turns plain view on or off; for analytics. */
+  onPlainView?: (on: boolean) => void;
   showObjects?: boolean;
   /** Show room names and areas on the floors. */
   showLabels?: boolean;
@@ -84,6 +86,7 @@ export function RoomViewer3D({
   onSelectRoom,
   onSelectPhoto,
   onInteract,
+  onPlainView,
   showObjects = true,
   showLabels = true,
   mode = 'full',
@@ -105,6 +108,11 @@ export function RoomViewer3D({
   // The usage hint stays until the visitor has moved the model once.
   const [touched, setTouched] = useState(false);
   const turning = rotating.active || intro.active;
+  // Plain view: the model alone, without room names, areas, photo buttons or the door label.
+  const [plain, setPlain] = useState(false);
+  const labels = showLabels && !plain;
+  // On a narrow view the plain-view button is an icon, leaving room for the page's own controls.
+  const narrow = useNarrow(overlay, NARROW_VIEW_PX);
 
   return (
     <div
@@ -146,7 +154,7 @@ export function RoomViewer3D({
               <meshStandardMaterial vertexColors roughness={0.6} metalness={0.1} />
             </mesh>
           )}
-          {scene.entrance && showLabels && (
+          {scene.entrance && labels && (
             <Html
               position={scene.entrance.labelPosition}
               portal={overlay}
@@ -161,13 +169,16 @@ export function RoomViewer3D({
             </Html>
           )}
           {showObjects && <Objects objects={model.objects} />}
-          <RoomMarkers
-            model={model}
-            text={text}
-            portal={overlay}
-            showLabels={showLabels}
-            onSelectPhoto={onSelectPhoto}
-          />
+          {!plain && (
+            <RoomMarkers
+              model={model}
+              text={text}
+              portal={overlay}
+              showLabels={showLabels}
+              onSelectPhoto={onSelectPhoto}
+            />
+          )}
+          <RedrawOn value={plain} />
           <OrbitControls
             makeDefault
             enableDamping
@@ -194,13 +205,29 @@ export function RoomViewer3D({
       </ViewerErrorBoundary>
       {!showcase && (
         <>
-          <button
-            type="button"
-            style={styles.resetButton}
-            onClick={() => setResetCount((n) => n + 1)}
-          >
-            {text.resetView}
-          </button>
+          <div style={styles.buttons}>
+            <button
+              type="button"
+              aria-pressed={plain}
+              aria-label={text.plainView}
+              title={text.plainView}
+              style={{
+                ...styles.button,
+                ...(plain ? styles.buttonOn : null),
+                ...(narrow ? styles.iconButton : null),
+              }}
+              onClick={() => {
+                setPlain(!plain);
+                onPlainView?.(!plain);
+              }}
+            >
+              <PlainIcon on={plain} />
+              {!narrow && text.plainView}
+            </button>
+            <button type="button" style={styles.button} onClick={() => setResetCount((n) => n + 1)}>
+              {text.resetView}
+            </button>
+          </div>
           <p style={{ ...styles.hint, opacity: touched ? 0 : 1 }} aria-hidden="true">
             {text.hint}
           </p>
@@ -594,6 +621,50 @@ function CameraIcon() {
   );
 }
 
+/** Below this width (in CSS pixels) the plain-view button shows only its icon. */
+const NARROW_VIEW_PX = 520;
+
+/** Whether the element is narrower than `width`, following resizes. */
+function useNarrow(element: RefObject<HTMLElement>, width: number) {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const target = element.current;
+    if (!target) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setNarrow(entry.contentRect.width < width);
+    });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [element, width]);
+  return narrow;
+}
+
+/**
+ * Asks for one new frame whenever `value` changes. The canvas draws on demand, and labels that
+ * come back after plain view need a frame to find their place on screen.
+ */
+function RedrawOn({ value }: { value: unknown }) {
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => invalidate(), [value, invalidate]);
+  return null;
+}
+
+/** An eye, crossed out while plain view is on (labels hidden). */
+function PlainIcon({ on }: { on: boolean }) {
+  const stroke = on ? '#ffffff' : '#23272a';
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path
+        d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+        stroke={stroke}
+        strokeWidth="1.8"
+      />
+      <circle cx="12" cy="12" r="3" stroke={stroke} strokeWidth="1.8" />
+      {on && <path d="M4 20 20 4" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />}
+    </svg>
+  );
+}
+
 function DoorIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="none">
@@ -626,10 +697,17 @@ const styles = {
     textAlign: 'center',
     color: '#5d656b',
   },
-  resetButton: {
+  buttons: {
     position: 'absolute',
     top: 12,
     right: 12,
+    display: 'flex',
+    gap: 8,
+  },
+  button: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
     padding: '6px 12px',
     border: 'none',
     borderRadius: 999,
@@ -638,8 +716,12 @@ const styles = {
     font: 'inherit',
     fontSize: 13,
     color: '#23272a',
+    whiteSpace: 'nowrap',
     cursor: 'pointer',
   },
+  // Navy while on, like the selected chips elsewhere.
+  buttonOn: { background: '#1a2b60', color: '#ffffff' },
+  iconButton: { padding: 0, width: 31, height: 31, justifyContent: 'center' },
   // A pill at the bottom centre until the first touch, then it fades away.
   hint: {
     position: 'absolute',

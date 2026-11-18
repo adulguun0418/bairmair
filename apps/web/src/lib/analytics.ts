@@ -52,6 +52,8 @@ export interface AnalyticsEvents {
   listing_photos_swiped: { listing_id: string };
   /** The first drag, pinch or wheel on the 3D model, once per page. */
   listing_3d_interacted: { listing_id: string };
+  /** Plain view (no room names, areas or photo buttons) turned on or off in the 3D model. */
+  listing_3d_plain_view: { listing_id: string; on: boolean };
   listing_photo_opened: { listing_id: string; from: 'gallery' | 'hotspot' };
   phone_revealed: { listing_id: string; placement: Placement };
   contact_call: { listing_id: string; placement: Placement };

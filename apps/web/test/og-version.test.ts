@@ -11,7 +11,7 @@ const content: OgImageContent = {
   district_id: 2,
   complex_name: null,
   coverPhotoId: 'photo-1',
-  scan: { rooms: 6, totalAreaM2: 58.85 },
+  scan: { rooms: 6, totalAreaM2: 58.85, entranceDoorId: 'door-1' },
 };
 
 describe('ogImageVersion', () => {
@@ -25,9 +25,10 @@ describe('ogImageVersion', () => {
     const version = ogImageVersion(content);
     expect(ogImageVersion({ ...content, price: 340_000_000 })).not.toBe(version);
     expect(ogImageVersion({ ...content, coverPhotoId: 'photo-2' })).not.toBe(version);
-    expect(ogImageVersion({ ...content, scan: { rooms: 7, totalAreaM2: 58.84 } })).not.toBe(
-      version,
-    );
+    expect(ogImageVersion({ ...content, scan: { ...content.scan!, rooms: 7 } })).not.toBe(version);
+    expect(
+      ogImageVersion({ ...content, scan: { ...content.scan!, entranceDoorId: 'door-2' } }),
+    ).not.toBe(version);
     expect(ogImageVersion({ ...content, scan: null })).not.toBe(version);
   });
 });

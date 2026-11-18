@@ -15,6 +15,7 @@ import {
   removeScan,
   revertStatus,
   setLocation,
+  setEntranceDoor,
   setRoomLabel,
   setStatus,
   touch,
@@ -114,6 +115,24 @@ describe('model: scans', () => {
     expect(setRoomLabel(listing, 'r1', { label: 'bedroom' }, NOW)).toBe(listing);
   });
 
+  it('marks the front door as a label change, sent with the labels', () => {
+    let listing = attachScan(synced(), newScan(SCAN_A), NOW);
+    expect(listing.scan!.entranceDoorId).toBeNull();
+    listing = setEntranceDoor(listing, 'DOOR-1', NOW);
+    expect(listing.scan).toMatchObject({ entranceDoorId: 'DOOR-1', labelsRev: 1 });
+    expect(setEntranceDoor(listing, 'DOOR-1', NOW)).toBe(listing);
+    listing = { ...listing, scan: { ...listing.scan!, row: 'created' } };
+    expect(planSync(listing).op).toMatchObject({
+      kind: 'saveRoomLabels',
+      rev: 1,
+      entranceDoorId: 'DOOR-1',
+    });
+    listing = setEntranceDoor(listing, null, NOW);
+    expect(listing.scan).toMatchObject({ entranceDoorId: null, labelsRev: 2 });
+    // A rescan forgets it: door ids belong to one scan.
+    expect(attachScan(listing, newScan(SCAN_B), NOW).scan!.entranceDoorId).toBeNull();
+  });
+
   it('adds dividers once, counts them as label changes, and keeps to the limit', () => {
     let listing = attachScan(synced(), newScan(SCAN_A), NOW);
     expect(listing.scan!.roomDividers).toEqual([]);
@@ -202,6 +221,7 @@ describe('planSync: scans', () => {
       rev: 1,
       labels: { r1: { label: 'kitchen' } },
       dividers: [],
+      entranceDoorId: null,
     });
     listing = { ...listing, scan: { ...listing.scan!, labelsSyncedRev: 1 } };
     expect(planSync(listing).op).toEqual({
@@ -377,6 +397,7 @@ describe('SyncEngine: scans and publishing', () => {
         metrics: null,
         room_labels: {},
         room_dividers: [],
+        entrance_door_id: null,
         created_at: NOW,
         device_model: null,
         ios_version: null,
@@ -445,6 +466,7 @@ describe('server data', () => {
         metrics: { totalAreaM2: 64.2 },
         room_labels: { r1: { label: 'bedroom' } },
         room_dividers: [],
+        entrance_door_id: null,
         created_at: NOW,
         device_model: 'iPhone16,2',
         ios_version: '26.1',

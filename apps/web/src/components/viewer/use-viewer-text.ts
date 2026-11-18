@@ -14,6 +14,7 @@ export function useViewerText(locale: Locale) {
       photo: (index, room) => t('viewer.photoInRoom', { index, room: roomDisplayName(t, room) }),
       resetView: t('viewer.resetView'),
       entrance: t('viewer.entrance'),
+      plainView: t('viewer.plainView'),
       hint: t('viewer.hint'),
       webglUnavailable: t('viewer.webglUnavailable'),
     }),
