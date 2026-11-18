@@ -6,8 +6,10 @@ import {
   maskPhone,
   otpMessage,
   parseOtpRequest,
+  SMS_RATE_LIMITED,
   type SmsGateway,
 } from './handler.ts';
+import type { SmsLimiter } from './limits.ts';
 
 // The same verification index.ts uses, with a test secret.
 const SECRET = Buffer.from('bairmair-test-secret-0123456789ab').toString('base64');
@@ -30,7 +32,7 @@ function signedRequest(payload: unknown, opts: { secret?: Webhook; at?: Date } =
   });
 }
 
-function setup(gateway?: SmsGateway) {
+function setup(gateway?: SmsGateway, limiter?: SmsLimiter) {
   const sent: { to: string; text: string }[] = [];
   const logs: { event: string; fields?: Record<string, unknown> }[] = [];
   const handler = createSendSmsHandler({
@@ -40,6 +42,7 @@ function setup(gateway?: SmsGateway) {
         sent.push({ to, text });
       },
     },
+    limiter,
     log: (event, fields) => logs.push({ event, fields }),
   });
   return { handler, sent, logs };
@@ -114,6 +117,41 @@ describe('send-sms hook', () => {
     const signal = send.mock.calls[0]?.[2];
     expect(signal).toBeInstanceOf(AbortSignal);
     expect(signal?.aborted).toBe(false);
+  });
+
+  it('refuses a number over its limit, without sending', async () => {
+    const claim = vi.fn<SmsLimiter['claim']>(async () => false);
+    const { handler, sent, logs } = setup(undefined, { claim });
+    const res = await handler(signedRequest(payload));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ error: { http_code: 429, message: SMS_RATE_LIMITED } });
+    expect(sent).toEqual([]);
+    expect(claim).toHaveBeenCalledWith('+97699112233', expect.any(AbortSignal));
+    expect(logs.map((l) => l.event)).toEqual(['sms_rate_limited']);
+    expect(JSON.stringify(logs)).not.toContain('97699112233');
+  });
+
+  it('texts a number under its limit', async () => {
+    const { handler, sent } = setup(undefined, { claim: async () => true });
+    await handler(signedRequest(payload));
+    expect(sent).toHaveLength(1);
+  });
+
+  it('still texts when the limit check fails (fail open), and logs it', async () => {
+    const { handler, sent, logs } = setup(undefined, {
+      claim: () => Promise.reject(new Error('claim_sms_send 503')),
+    });
+    const res = await handler(signedRequest(payload));
+    expect(await res.json()).toEqual({});
+    expect(sent).toHaveLength(1);
+    expect(logs.map((l) => l.event)).toEqual(['sms_limit_check_failed', 'sms_sent']);
+  });
+
+  it('does not count numbers it refuses anyway', async () => {
+    const claim = vi.fn<SmsLimiter['claim']>(async () => true);
+    const { handler } = setup(undefined, { claim });
+    await handler(signedRequest({ ...payload, user: { phone: '14155550100' } }));
+    expect(claim).not.toHaveBeenCalled();
   });
 
   it('answers 405 to anything but POST', async () => {

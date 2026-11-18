@@ -280,12 +280,12 @@ max_frequency = "60s"
 # Use pre-defined map of phone number to OTP for testing.
 # Keys are the phone number with country code and without the + prefix.
 # Test numbers skip the send-sms hook entirely, so they work without an SMS gateway.
-# +976 0xxxxxxx is not a real Mongolian number. Dev project only: remove before production.
-# Real phones used as test numbers stay out of this public repo: list them in DEV_TEST_OTP
-# (supabase/.env) and push with `pnpm auth:push`, which adds them to this table.
-# A plain `supabase config push` sends only the entries below and removes the others.
+# Never list a number here: the repo is public, and a number with a fixed code in it lets anyone
+# sign in as that number (with a verified phone, so they can publish listings). Test numbers,
+# real or fake (+976 0xxxxxxx is not a real Mongolian number), go in DEV_TEST_OTP
+# (supabase/.env) and are pushed with `pnpm auth:push`, which adds them to this table.
+# A push with entries replaces the remote list; with none, the remote list stays as it is.
 [auth.sms.test_otp]
-97600000001 = "123456"
 
 # Supabase Auth calls this Edge Function instead of a built-in SMS provider.
 # Values come from supabase/.env (see supabase/.env.example).

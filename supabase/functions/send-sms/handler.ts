@@ -6,6 +6,8 @@
  * No Deno APIs here, so Vitest can run it; index.ts wires it to Deno.serve.
  */
 
+import type { SmsLimiter } from './limits.ts';
+
 export interface SmsGateway {
   /** Sends `text` to `to` (E.164, e.g. "+97699112233"). Throws on failure. */
   send(to: string, text: string, signal: AbortSignal): Promise<void>;
@@ -15,7 +17,11 @@ export interface SendSmsDeps {
   /** Verifies the Standard Webhooks signature and returns the parsed payload. Throws if invalid. */
   verify(body: string, headers: Record<string, string>): unknown;
   gateway: SmsGateway;
-  /** Auth waits 5 s for the hook in total, so the gateway call must finish sooner. */
+  /** The per-number limit. Without one, every valid request is texted. */
+  limiter?: SmsLimiter | null;
+  /** Auth waits 5 s for the hook in total, so the limit check and the gateway call together
+   * must finish sooner. */
+  limiterTimeoutMs?: number;
   gatewayTimeoutMs?: number;
   log?: (event: string, fields?: Record<string, unknown>) => void;
 }
@@ -45,6 +51,9 @@ export function parseOtpRequest(payload: unknown): OtpRequest | null {
   if (digits.length < 8) return null;
   return { phone: `+${digits}`, otp };
 }
+
+/** The hook's message when a number has had too many codes; Auth passes it on to the apps. */
+export const SMS_RATE_LIMITED = 'sms_rate_limited';
 
 /** Mongolian numbers: +976 and 8 digits. The local gateway reaches only these. */
 export function isMongolianNumber(e164: string): boolean {
@@ -81,7 +90,8 @@ function reject(status: number, message: string): Response {
 
 export function createSendSmsHandler(deps: SendSmsDeps): (req: Request) => Promise<Response> {
   const log = deps.log ?? (() => {});
-  const timeoutMs = deps.gatewayTimeoutMs ?? 4000;
+  const limiterTimeoutMs = deps.limiterTimeoutMs ?? 1000;
+  const timeoutMs = deps.gatewayTimeoutMs ?? 3500;
 
   return async (req) => {
     if (req.method !== 'POST') return reject(405, 'method_not_allowed');
@@ -103,6 +113,24 @@ export function createSendSmsHandler(deps: SendSmsDeps): (req: Request) => Promi
     if (!isMongolianNumber(request.phone)) {
       log('unsupported_phone_number', { phone: maskPhone(request.phone) });
       return hookError(400, 'unsupported_phone_number');
+    }
+
+    if (deps.limiter) {
+      let allowed = true;
+      try {
+        allowed = await deps.limiter.claim(request.phone, AbortSignal.timeout(limiterTimeoutMs));
+      } catch (error) {
+        // Fail open: a database hiccup must not stop people from signing in. Auth's own limits
+        // (one code per number per minute, the project's hourly cap) still apply.
+        log('sms_limit_check_failed', {
+          phone: maskPhone(request.phone),
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      }
+      if (!allowed) {
+        log('sms_rate_limited', { phone: maskPhone(request.phone) });
+        return hookError(429, SMS_RATE_LIMITED);
+      }
     }
 
     try {

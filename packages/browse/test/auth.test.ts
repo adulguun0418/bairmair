@@ -44,6 +44,8 @@ describe('authErrorKey', () => {
     [{ code: 'hook_timeout' }, 'smsFailed'],
     [{ code: 'phone_exists' }, 'phoneTaken'],
     [{ code: 'captcha_failed' }, 'captcha'],
+    [{ code: 'unexpected_failure', message: 'sms_rate_limited' }, 'tooManyRequests'],
+    [{ code: 'sms_rate_limited' }, 'tooManyRequests'],
     [{ name: 'AuthRetryableFetchError' }, 'network'],
     [{ name: 'TypeError', message: 'Network request failed' }, 'network'],
     [{ code: 'something_new' }, 'generic'],
