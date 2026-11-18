@@ -25,10 +25,8 @@ import {
   ExtrudeGeometry,
   Float32BufferAttribute,
   MeshStandardMaterial,
-  Plane,
   Shape,
   Vector2,
-  Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -43,13 +41,6 @@ const DIVIDER_DASH_M = 0.15;
 const DIVIDER_GAP_M = 0.1;
 /** A door whose bottom is this close to the floor gets a threshold. */
 const THRESHOLD_SNAP_M = 0.05;
-/** Height of the dark slab on top of each wall (the "dollhouse" cut line). */
-const CAP_M = 0.02;
-/**
- * A wall between the camera and its room is cut down to this height above its bottom (a
- * cutaway): still a solid wall, but no longer in the way.
- */
-export const CUT_WALL_M = 0.45;
 
 /** Door and window trim, in meters. */
 const CASING_M = 0.07;
@@ -105,18 +96,8 @@ export interface WallMesh {
   id: string;
   /** All solid parts of the wall, in wall-local coordinates. */
   geometry: BufferGeometry;
-  /** The dark slab on its top, in wall-local coordinates; moved down with the cut. */
-  cap: BufferGeometry;
   material: MeshStandardMaterial;
   glassMaterial: MeshStandardMaterial;
-  /**
-   * Cuts the wall (and its glass) above `clip.constant`, in model Y. Between `top` (whole wall)
-   * and `bottom + CUT_WALL_M` (cut away).
-   */
-  clip: Plane;
-  /** Model Y of the wall's top and bottom. */
-  top: number;
-  bottom: number;
   panes: WindowPane[];
   position: [number, number, number];
   yaw: number;
@@ -147,7 +128,7 @@ export interface SceneData {
   thresholds: BufferGeometry | null;
   /** Seller dividers as dashes lying on the floor, merged into one geometry. */
   dividers: BufferGeometry | null;
-  /** The front door, drawn apart so it stays whole when its wall is cut down; `null` when unknown. */
+  /** The front door, drawn apart so it stays solid when its wall fades; `null` when unknown. */
   entrance: EntranceMesh | null;
   bounds: { min: Vec2; max: Vec2; floorY: number; top: number };
   dispose(): void;
@@ -326,11 +307,6 @@ function toModel(geometry: BufferGeometry, wall: Wall): BufferGeometry {
   return geometry;
 }
 
-/** The dark slab on top of a wall piece, in wall-local coordinates (`top`: the wall's top). */
-function capSlab(width: number, u: number, top: number, offset: number): BufferGeometry {
-  return coloredBox(width, CAP_M, WALL_THICKNESS_M, [u, top + CAP_M / 2, offset], COLORS.wallCap);
-}
-
 function merge(geometries: BufferGeometry[]): BufferGeometry {
   const merged = geometries.length > 0 ? mergeGeometries(geometries) : null;
   for (const geometry of geometries) geometry.dispose();
@@ -408,12 +384,11 @@ export function buildScene(model: RoomModelV1): SceneData {
       aperture,
       cutout: apertureCutout(aperture, wall),
     }));
-    const segments = wallSegments(
+    const pieces = wallSegments(
       width,
       height,
       cutouts.map(({ cutout }) => cutout),
-    );
-    const pieces = segments.map((s) =>
+    ).map((s) =>
       wallBox(
         s.u1 - s.u0,
         s.v1 - s.v0,
@@ -422,11 +397,6 @@ export function buildScene(model: RoomModelV1): SceneData {
         s.v1 >= height / 2 - 0.001,
       ),
     );
-    const caps: BufferGeometry[] = [];
-    for (const s of segments) {
-      if (s.v1 < height / 2 - 0.001) continue;
-      caps.push(capSlab(s.u1 - s.u0, (s.u0 + s.u1) / 2, height / 2, offset));
-    }
 
     const panes: WindowPane[] = [];
     for (const { aperture, cutout } of cutouts) {
@@ -476,7 +446,7 @@ export function buildScene(model: RoomModelV1): SceneData {
       }
     }
 
-    return { wall, outward, pieces, caps, panes, center: [x, z] as Vec2 };
+    return { wall, outward, pieces, panes, center: [x, z] as Vec2 };
   });
 
   // Fill the square gap at the outside of each convex corner, where two walls that only got
@@ -507,54 +477,40 @@ export function buildScene(model: RoomModelV1): SceneData {
         const dz = post[1] - a.center[1];
         const u = dx * dir[0] + dz * dir[1];
         if (Math.abs(u) < a.wall.dimensions.width / 2) continue; // inner corner: covered
-        const postZ = dx * zAxis[0] + dz * zAxis[1];
-        a.pieces.push(wallBox(T, a.wall.dimensions.height, T, [u, 0, postZ], true));
-        a.caps.push(capSlab(T, u, a.wall.dimensions.height / 2, postZ));
+        a.pieces.push(
+          wallBox(T, a.wall.dimensions.height, T, [u, 0, dx * zAxis[0] + dz * zAxis[1]], true),
+        );
       }
     }
   }
 
-  const walls: WallMesh[] = drafts.map((draft) => {
-    const { position, yaw } = draft.wall.transform;
-    const top = position[1] + draft.wall.dimensions.height / 2;
-    const bottom = position[1] - draft.wall.dimensions.height / 2;
-    // Keeps what lies below `constant` (model Y); starts with the whole wall.
-    const clip = new Plane(new Vector3(0, -1, 0), top);
-    return {
-      id: draft.wall.id,
-      geometry: merge(draft.pieces),
-      cap: merge(draft.caps),
-      material: new MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.92,
-        metalness: 0,
-        clippingPlanes: [clip],
-        // A cut wall shows its inside faces through the cut, in the wall color, so it looks
-        // solid; the cap then covers the cut.
-        side: DoubleSide,
-      }),
-      glassMaterial: new MeshStandardMaterial({
-        color: COLORS.glass,
-        emissive: COLORS.glassGlow,
-        emissiveIntensity: 0.25,
-        roughness: 0.1,
-        metalness: 0,
-        transparent: true,
-        opacity: GLASS_OPACITY,
-        depthWrite: false,
-        side: DoubleSide,
-        clippingPlanes: [clip],
-      }),
-      clip,
-      top,
-      bottom,
-      panes: draft.panes,
-      position,
-      yaw,
-      center: draft.center,
-      outward: draft.outward,
-    };
-  });
+  const walls: WallMesh[] = drafts.map((draft) => ({
+    id: draft.wall.id,
+    geometry: merge(draft.pieces),
+    material: new MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.92,
+      metalness: 0,
+      // Always transparent so walls can fade without recompiling shaders.
+      transparent: true,
+    }),
+    glassMaterial: new MeshStandardMaterial({
+      color: COLORS.glass,
+      emissive: COLORS.glassGlow,
+      emissiveIntensity: 0.25,
+      roughness: 0.1,
+      metalness: 0,
+      transparent: true,
+      opacity: GLASS_OPACITY,
+      depthWrite: false,
+      side: DoubleSide,
+    }),
+    panes: draft.panes,
+    position: draft.wall.transform.position,
+    yaw: draft.wall.transform.yaw,
+    center: draft.center,
+    outward: draft.outward,
+  }));
 
   const floors: FloorMesh[] = model.rooms.map((room) => {
     // Shape space is (x, -z); rotating it onto the ground maps it back to (x, z).
@@ -627,7 +583,6 @@ export function buildScene(model: RoomModelV1): SceneData {
         wall.geometry.dispose();
         wall.material.dispose();
         wall.glassMaterial.dispose();
-        wall.cap.dispose();
       }
       for (const floor of floors) floor.geometry.dispose();
       thresholds?.dispose();
