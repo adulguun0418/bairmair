@@ -7,6 +7,7 @@ import {
   type ObjectCategory,
   type RoomModelV1,
   type RoomObject,
+  type Vec2,
 } from '@bairmair/room-model';
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
@@ -139,6 +140,26 @@ export function RoomViewer3D({
               <meshBasicMaterial color={COLORS.divider} />
             </mesh>
           )}
+          {scene.entrance && (
+            // Opaque, apart from the walls: the front door stays visible when its wall fades.
+            <mesh geometry={scene.entrance.geometry}>
+              <meshStandardMaterial vertexColors roughness={0.6} metalness={0.1} />
+            </mesh>
+          )}
+          {scene.entrance && showLabels && (
+            <Html
+              position={scene.entrance.labelPosition}
+              portal={overlay}
+              center
+              zIndexRange={[10, 0]}
+              style={{ pointerEvents: 'none' }}
+            >
+              <div style={styles.entrance}>
+                <DoorIcon />
+                {text.entrance}
+              </div>
+            </Html>
+          )}
           {showObjects && <Objects objects={model.objects} />}
           <RoomMarkers
             model={model}
@@ -164,7 +185,11 @@ export function RoomViewer3D({
             }}
             onEnd={rotating.resumeLater}
           />
-          <CameraRig bounds={scene.bounds} resetCount={resetCount} />
+          <CameraRig
+            bounds={scene.bounds}
+            front={scene.entrance?.outward ?? null}
+            resetCount={resetCount}
+          />
         </Canvas>
       </ViewerErrorBoundary>
       {!showcase && (
@@ -280,8 +305,23 @@ function Lights() {
   );
 }
 
-/** Frames the whole model on first render and whenever "reset view" is pressed. */
-function CameraRig({ bounds, resetCount }: { bounds: SceneData['bounds']; resetCount: number }) {
+/** Seen from the entrance, the camera stands this far (radians) to the right of straight on. */
+const ENTRANCE_VIEW_SKEW = 0.3;
+
+/**
+ * Frames the whole model on first render and whenever "reset view" is pressed: from outside the
+ * front door, looking in, when the entrance is known; otherwise from the plan's bottom edge.
+ */
+function CameraRig({
+  bounds,
+  front,
+  resetCount,
+}: {
+  bounds: SceneData['bounds'];
+  /** Plan-view direction from the model towards the camera's side. */
+  front: Vec2 | null;
+  resetCount: number;
+}) {
   const camera = useThree((state) => state.camera) as PerspectiveCamera;
   const controls = useThree((state) => state.controls) as unknown as {
     target: Vector3;
@@ -305,8 +345,9 @@ function CameraRig({ bounds, resetCount }: { bounds: SceneData['bounds']; resetC
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect);
     const distance = radius / Math.sin(Math.min(verticalFov, horizontalFov) / 2);
 
-    // From the front (+Z, the bottom of the floor plan), slightly to the right, looking down.
-    const azimuth = 0.45;
+    // Slightly to the right of the front, looking down. Azimuth 0 looks from +Z (the bottom of
+    // the floor plan) towards -Z.
+    const azimuth = front ? Math.atan2(front[0], front[1]) + ENTRANCE_VIEW_SKEW : 0.45;
     const elevation = 0.95;
     const targetY = bounds.floorY + 0.4;
     camera.position.set(
@@ -319,7 +360,7 @@ function CameraRig({ bounds, resetCount }: { bounds: SceneData['bounds']; resetC
     controls.maxDistance = distance * 2.2;
     controls.update();
     invalidate();
-  }, [camera, controls, bounds, resetCount, invalidate, getState]);
+  }, [camera, controls, bounds, front, resetCount, invalidate, getState]);
 
   return null;
 }
@@ -553,6 +594,16 @@ function CameraIcon() {
   );
 }
 
+function DoorIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17" stroke="#fff" strokeWidth="2" />
+      <path d="M3 21h18" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="14.5" cy="12.5" r="1.3" fill="#d6a640" />
+    </svg>
+  );
+}
+
 class ViewerErrorBoundary extends Component<
   { fallback: ReactNode; children: ReactNode },
   { failed: boolean }
@@ -624,6 +675,20 @@ const styles = {
     textAlign: 'center',
     whiteSpace: 'nowrap',
     lineHeight: 1.25,
+  },
+  // Same navy as the front door it names.
+  entrance: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '3px 9px 3px 7px',
+    borderRadius: 999,
+    background: '#1a2b60',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
   },
   labelName: { fontSize: 12, fontWeight: 600, color: '#23272a' },
   labelArea: { fontSize: 11, color: '#5d656b' },

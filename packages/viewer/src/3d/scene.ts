@@ -2,14 +2,19 @@ import {
   apertureCutout,
   boundsOf,
   directionFromYaw,
+  doorHinge,
+  findEntrance,
   inwardNormal,
+  isSameDoor,
   pointInPolygon,
   wallEndpoints,
   wallSegments,
   type Aperture,
+  type ApertureCutout,
   type Room,
   type RoomModelV1,
   type Vec2,
+  type Vec3,
   type Wall,
 } from '@bairmair/room-model';
 import {
@@ -37,7 +42,25 @@ const DIVIDER_GAP_M = 0.1;
 /** A door whose bottom is this close to the floor gets a threshold. */
 const THRESHOLD_SNAP_M = 0.05;
 
-export const GLASS_OPACITY = 0.35;
+/** Door and window trim, in meters. */
+const CASING_M = 0.07;
+const CASING_PROUD_M = 0.015;
+const LEAF_THICKNESS_M = 0.045;
+const HANDLE_HEIGHT_M = 1.0;
+const WINDOW_FRAME_M = 0.06;
+const WINDOW_FRAME_DEPTH_M = 0.08;
+const MULLION_M = 0.045;
+/** Windows are split into panes about this wide. */
+const PANE_WIDTH_M = 0.8;
+const SILL_DEPTH_M = 0.14;
+const SILL_THICKNESS_M = 0.03;
+/**
+ * The entrance label lies on the floor this far outside its door: outside the apartment, where
+ * no room label or photo marker can be (above the door it collided with the hallway's markers).
+ */
+const ENTRANCE_LABEL_OUT_M = 0.55;
+
+export const GLASS_OPACITY = 0.5;
 
 export const COLORS = {
   wall: new Color('#f3efe8'),
@@ -46,7 +69,18 @@ export const COLORS = {
   floor: '#ddcfb5',
   floorSelected: '#f6cf7e',
   threshold: '#d9ccb4',
-  glass: '#bcdff1',
+  glass: '#8ecdee',
+  glassGlow: '#cfeefc',
+  /** Window frames: dark, so a window reads as a window against the light wall. */
+  windowFrame: new Color('#3d4654'),
+  windowSill: new Color('#ffffff'),
+  doorLeaf: new Color('#c49a6c'),
+  doorCasing: new Color('#9c7651'),
+  doorHandle: new Color('#5c636a'),
+  /** The front door: brand navy with a brass handle, unlike every other door. */
+  entranceLeaf: new Color('#1a2b60'),
+  entranceCasing: new Color('#0e1733'),
+  entranceHandle: new Color('#d6a640'),
   /** Seller dividers: dashes on the floor, so they never pass for a scanned wall. */
   divider: '#3a3f44',
 } as const;
@@ -78,6 +112,15 @@ export interface FloorMesh {
   geometry: BufferGeometry;
 }
 
+export interface EntranceMesh {
+  /** The front door's frame, leaf and handle, in model coordinates. */
+  geometry: BufferGeometry;
+  /** Where its label goes: on the floor just outside the door. */
+  labelPosition: Vec3;
+  /** Plan-view unit vector pointing out of the apartment through the door. */
+  outward: Vec2;
+}
+
 export interface SceneData {
   walls: WallMesh[];
   floors: FloorMesh[];
@@ -85,6 +128,8 @@ export interface SceneData {
   thresholds: BufferGeometry | null;
   /** Seller dividers as dashes lying on the floor, merged into one geometry. */
   dividers: BufferGeometry | null;
+  /** The front door, drawn apart so it stays solid when its wall fades; `null` when unknown. */
+  entrance: EntranceMesh | null;
   bounds: { min: Vec2; max: Vec2; floorY: number; top: number };
   dispose(): void;
 }
@@ -106,6 +151,159 @@ function wallBox(
   }
   geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
   geometry.translate(...center);
+  return geometry;
+}
+
+/** A box in one color (vertex colors, like the walls, so it merges into the wall geometry). */
+function coloredBox(
+  width: number,
+  height: number,
+  depth: number,
+  center: [number, number, number],
+  color: Color,
+): BufferGeometry {
+  const geometry = new BoxGeometry(width, height, depth);
+  const count = geometry.getAttribute('position').count;
+  const colors = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) colors.set([color.r, color.g, color.b], i * 3);
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
+  geometry.translate(...center);
+  return geometry;
+}
+
+interface DoorPalette {
+  leaf: Color;
+  casing: Color;
+  handle: Color;
+}
+
+/**
+ * A door's frame and leaf, in wall-local coordinates. A closed door fills its opening; an open
+ * one stands at 90 degrees into its room, hinged on the side the floor plan draws.
+ */
+function doorParts(
+  cutout: ApertureCutout,
+  wallHeight: number,
+  offset: number,
+  hingeAtStart: boolean,
+  /** Sign of wall-local Z on the side the door opens to. */
+  swing: number,
+  open: boolean,
+  palette: DoorPalette,
+): BufferGeometry[] {
+  const parts: BufferGeometry[] = [];
+  const u0 = cutout.u - cutout.width / 2;
+  const u1 = cutout.u + cutout.width / 2;
+  const v0 = Math.max(-wallHeight / 2, cutout.v - cutout.height / 2);
+  const v1 = Math.min(wallHeight / 2 - CASING_M / 2, cutout.v + cutout.height / 2);
+  if (u1 - u0 < 3 * CASING_M || v1 - v0 < 3 * CASING_M) return parts;
+  const depth = 2 * Math.abs(offset) + 2 * CASING_PROUD_M;
+  const jambHeight = v1 - v0 + CASING_M / 2;
+
+  // Frame: two jambs and a head, half over the wall and half in the opening.
+  for (const u of [u0, u1]) {
+    parts.push(
+      coloredBox(CASING_M, jambHeight, depth, [u, v0 + jambHeight / 2, offset], palette.casing),
+    );
+  }
+  parts.push(
+    coloredBox(u1 - u0 + CASING_M, CASING_M, depth, [cutout.u, v1, offset], palette.casing),
+  );
+
+  const leafWidth = u1 - u0 - CASING_M;
+  const leafHeight = v1 - v0 - CASING_M / 2;
+  const leafV = v0 + leafHeight / 2;
+  const hingeU = hingeAtStart ? u0 + CASING_M / 2 : u1 - CASING_M / 2;
+  const toLatch = hingeAtStart ? 1 : -1;
+  const handleV = v0 + Math.min(HANDLE_HEIGHT_M, leafHeight * 0.5);
+  const handle = (size: [number, number, number], at: [number, number, number]) =>
+    coloredBox(...size, at, palette.handle);
+
+  if (!open) {
+    parts.push(
+      coloredBox(leafWidth, leafHeight, LEAF_THICKNESS_M, [cutout.u, leafV, offset], palette.leaf),
+    );
+    // A lever through the leaf, near the latch side.
+    parts.push(
+      handle(
+        [0.12, 0.025, LEAF_THICKNESS_M + 0.07],
+        [hingeU + toLatch * (leafWidth - 0.1), handleV, offset],
+      ),
+    );
+    return parts;
+  }
+
+  // Open: the leaf swings from the hinge into the room, starting at the wall face on that side.
+  const face = swing > 0 ? Math.max(0, 2 * offset) : Math.min(0, 2 * offset);
+  const leafU = hingeU + (toLatch * LEAF_THICKNESS_M) / 2;
+  parts.push(
+    coloredBox(
+      LEAF_THICKNESS_M,
+      leafHeight,
+      leafWidth,
+      [leafU, leafV, face + (swing * leafWidth) / 2],
+      palette.leaf,
+    ),
+  );
+  parts.push(
+    handle(
+      [LEAF_THICKNESS_M + 0.07, 0.025, 0.12],
+      [leafU, handleV, face + swing * (leafWidth - 0.1)],
+    ),
+  );
+  return parts;
+}
+
+/**
+ * A window's frame, mullions and inside sill, in wall-local coordinates. The dark frame and the
+ * panes it divides are what make a hole in a wall read as a window.
+ */
+function windowParts(
+  cutout: ApertureCutout,
+  wallWidth: number,
+  wallHeight: number,
+  offset: number,
+): BufferGeometry[] {
+  const parts: BufferGeometry[] = [];
+  const u0 = Math.max(-wallWidth / 2, cutout.u - cutout.width / 2);
+  const u1 = Math.min(wallWidth / 2, cutout.u + cutout.width / 2);
+  const v0 = Math.max(-wallHeight / 2, cutout.v - cutout.height / 2);
+  const v1 = Math.min(wallHeight / 2, cutout.v + cutout.height / 2);
+  const width = u1 - u0;
+  const height = v1 - v0;
+  if (width < 3 * WINDOW_FRAME_M || height < 3 * WINDOW_FRAME_M) return parts;
+  const F = WINDOW_FRAME_M;
+  const D = WINDOW_FRAME_DEPTH_M;
+  const frame = (w: number, h: number, u: number, v: number) =>
+    coloredBox(w, h, D, [u, v, offset], COLORS.windowFrame);
+  const u = (u0 + u1) / 2;
+  const v = (v0 + v1) / 2;
+
+  parts.push(frame(F, height, u0 + F / 2, v), frame(F, height, u1 - F / 2, v));
+  parts.push(frame(width, F, u, v0 + F / 2), frame(width, F, u, v1 - F / 2));
+  const panes = Math.min(6, Math.max(1, Math.round(width / PANE_WIDTH_M)));
+  for (let i = 1; i < panes; i++) parts.push(frame(MULLION_M, height, u0 + (width * i) / panes, v));
+
+  // The sill sticks out into the room. A wall without a room has no inside.
+  if (offset !== 0) {
+    const inside = -Math.sign(offset) * SILL_DEPTH_M;
+    parts.push(
+      coloredBox(
+        width + 0.1,
+        SILL_THICKNESS_M,
+        Math.abs(offset - inside),
+        [u, v0 - SILL_THICKNESS_M / 2, (offset + inside) / 2],
+        COLORS.windowSill,
+      ),
+    );
+  }
+  return parts;
+}
+
+/** Moves wall-local geometry into model coordinates. */
+function toModel(geometry: BufferGeometry, wall: Wall): BufferGeometry {
+  geometry.rotateY(wall.transform.yaw);
+  geometry.translate(...wall.transform.position);
   return geometry;
 }
 
@@ -139,6 +337,21 @@ export function buildScene(model: RoomModelV1): SceneData {
   const T = WALL_THICKNESS_M;
   const rooms = new Map(model.rooms.map((room) => [room.id, room]));
   const windowIds = new Set(model.windows.map((window) => window.id));
+  const doorsById = new Map(model.doors.map((door) => [door.id, door]));
+  const doorInward = (door: Aperture): Vec2 | null => {
+    const room = door.roomId === null ? undefined : rooms.get(door.roomId);
+    const [x, , z] = door.transform.position;
+    return room ? inwardNormal([x, z], door.transform.yaw, room.floor.polygon) : null;
+  };
+  // A door scanned from both rooms gets one leaf, like its single swing on the floor plan.
+  const leafDoors: Aperture[] = [];
+  for (const door of model.doors) {
+    if (!doorInward(door) || leafDoors.some((other) => isSameDoor(other, door))) continue;
+    leafDoors.push(door);
+  }
+  const leafDoorIds = new Set(leafDoors.map((door) => door.id));
+  const foundEntrance = findEntrance(model);
+  const entrancePieces: BufferGeometry[] = [];
 
   const aperturesByWall = new Map<string, Aperture[]>();
   for (const aperture of [...model.doors, ...model.windows, ...model.openings]) {
@@ -188,7 +401,35 @@ export function buildScene(model: RoomModelV1): SceneData {
           width: Math.min(cutout.width, width),
           height: Math.min(cutout.height, height),
         });
-      } else if (cutout.v - cutout.height / 2 <= -height / 2 + THRESHOLD_SNAP_M) {
+        pieces.push(...windowParts(cutout, width, height, offset));
+        continue;
+      }
+      const door = doorsById.get(aperture.id);
+      if (door && leafDoorIds.has(door.id)) {
+        const inward = doorInward(door)!;
+        const hinge = doorHinge(door);
+        const along = directionFromYaw(yaw);
+        const hingeU = (hinge[0] - x) * along[0] + (hinge[1] - z) * along[1];
+        const isEntrance = door.id === foundEntrance?.door.id;
+        const parts = doorParts(
+          cutout,
+          height,
+          offset,
+          hingeU < cutout.u,
+          Math.sign(inward[0] * zAxis[0] + inward[1] * zAxis[1]) || 1,
+          door.isOpen === true,
+          isEntrance
+            ? {
+                leaf: COLORS.entranceLeaf,
+                casing: COLORS.entranceCasing,
+                handle: COLORS.entranceHandle,
+              }
+            : { leaf: COLORS.doorLeaf, casing: COLORS.doorCasing, handle: COLORS.doorHandle },
+        );
+        if (isEntrance) entrancePieces.push(...parts.map((part) => toModel(part, wall)));
+        else pieces.push(...parts);
+      }
+      if (cutout.v - cutout.height / 2 <= -height / 2 + THRESHOLD_SNAP_M) {
         // Fill the floor under a door or opening, across the wall's thickness.
         const threshold = new BoxGeometry(cutout.width, FLOOR_SLAB_M, T);
         threshold.translate(cutout.u, -height / 2 - FLOOR_SLAB_M / 2, offset);
@@ -248,7 +489,9 @@ export function buildScene(model: RoomModelV1): SceneData {
     }),
     glassMaterial: new MeshStandardMaterial({
       color: COLORS.glass,
-      roughness: 0.15,
+      emissive: COLORS.glassGlow,
+      emissiveIntensity: 0.25,
+      roughness: 0.1,
       metalness: 0,
       transparent: true,
       opacity: GLASS_OPACITY,
@@ -272,6 +515,21 @@ export function buildScene(model: RoomModelV1): SceneData {
   });
 
   const thresholds = thresholdPieces.length > 0 ? merge(thresholdPieces) : null;
+
+  let entrance: EntranceMesh | null = null;
+  if (foundEntrance && entrancePieces.length > 0) {
+    const { door, outward } = foundEntrance;
+    const [x, y, z] = door.transform.position;
+    entrance = {
+      geometry: merge(entrancePieces),
+      labelPosition: [
+        x + outward[0] * ENTRANCE_LABEL_OUT_M,
+        y - door.dimensions.height / 2,
+        z + outward[1] * ENTRANCE_LABEL_OUT_M,
+      ],
+      outward,
+    };
+  }
 
   // Seller dividers: a dashed line lying on the floor of the rooms it separates.
   const dashes: BufferGeometry[] = [];
@@ -311,6 +569,7 @@ export function buildScene(model: RoomModelV1): SceneData {
     floors,
     thresholds,
     dividers,
+    entrance,
     bounds: { min: plan.min, max: plan.max, floorY, top },
     dispose() {
       for (const wall of walls) {
@@ -321,6 +580,7 @@ export function buildScene(model: RoomModelV1): SceneData {
       for (const floor of floors) floor.geometry.dispose();
       thresholds?.dispose();
       dividers?.dispose();
+      entrance?.geometry.dispose();
     },
   };
 }

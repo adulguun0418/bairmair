@@ -1,3 +1,4 @@
+import { doorHinge, isSameDoor } from '../geometry/doors';
 import { inwardNormal, layoutHotspots, visualCenter } from '../geometry/layout';
 import { boundsOf, pointInPolygon, polygonArea } from '../geometry/polygon';
 import { directionFromYaw, wallEndpoints } from '../geometry/wall';
@@ -68,8 +69,6 @@ export interface FloorPlanOptions {
 
 /** Drawing units per meter. Centimeters keep font sizes and stroke widths in a sane range. */
 const UNITS_PER_M = 100;
-/** Two doors closer than this, and parallel, are the two sides of one physical door. */
-const DOOR_PAIR_DISTANCE_M = 0.5;
 /** How far past the drawn wall band to look for floor on either side of a wall, in meters. */
 const INNER_WALL_PROBE_M = 0.05;
 /** Walls are checked for floor on both sides at about this spacing, in meters. */
@@ -354,13 +353,7 @@ export function renderFloorPlanSvg(model: RoomModelV1, options: FloorPlanOptions
     const [dx, dz] = directionFromYaw(door.transform.yaw);
 
     // A door between two rooms was scanned from both sides. Draw its swing only once.
-    const alreadyDrawn = drawnDoors.some((other) => {
-      const [ox, , oz] = other.transform.position;
-      const [odx, odz] = directionFromYaw(other.transform.yaw);
-      return (
-        Math.hypot(ox - x, oz - z) < DOOR_PAIR_DISTANCE_M && Math.abs(dx * odx + dz * odz) > 0.9
-      );
-    });
+    const alreadyDrawn = drawnDoors.some((other) => isSameDoor(other, door));
     const polygon = polygonOf(door.roomId);
     const inward = polygon ? inwardNormal([x, z], door.transform.yaw, polygon) : null;
     if (alreadyDrawn || !inward) continue;
@@ -368,7 +361,7 @@ export function renderFloorPlanSvg(model: RoomModelV1, options: FloorPlanOptions
 
     // Door leaf standing open at 90 degrees into the room, and the arc it sweeps.
     const w = door.dimensions.width;
-    const hinge: Vec2 = [x - (dx * w) / 2, z - (dz * w) / 2];
+    const hinge = doorHinge(door);
     const latch: Vec2 = [x + (dx * w) / 2, z + (dz * w) / 2];
     const open: Vec2 = [hinge[0] + inward[0] * w, hinge[1] + inward[1] * w];
     const sweep = dx * inward[1] - dz * inward[0] > 0 ? 0 : 1;

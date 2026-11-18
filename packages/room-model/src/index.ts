@@ -6,6 +6,7 @@ export * from './schema/model';
 export * from './geometry/polygon';
 export * from './geometry/faces';
 export * from './geometry/wall';
+export * from './geometry/doors';
 export * from './geometry/layout';
 
 // 2D floor plan as an SVG string

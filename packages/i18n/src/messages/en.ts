@@ -130,6 +130,7 @@ export const en: Messages = {
     view3d: '3D',
     viewPlan: 'Floor plan',
     resetView: 'Reset view',
+    entrance: 'Entrance',
     hint: 'Drag to rotate · Pinch or scroll to zoom',
     webglUnavailable: 'This browser cannot show the 3D view. See the floor plan instead.',
     photoInRoom: 'Photo {{index}}: {{room}}',

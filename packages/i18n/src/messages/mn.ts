@@ -128,6 +128,7 @@ export const mn = {
     view3d: '3D',
     viewPlan: 'Төлөвлөлт',
     resetView: 'Анхны харагдац',
+    entrance: 'Орох хаалга',
     hint: 'Чирж эргүүлэх · Чимхэж томруулах',
     webglUnavailable: 'Энэ хөтөч 3D харагдацыг дэмжихгүй байна. Төлөвлөлтийг үзнэ үү.',
     photoInRoom: 'Зураг {{index}}: {{room}}',
