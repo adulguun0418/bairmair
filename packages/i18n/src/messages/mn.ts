@@ -111,6 +111,14 @@ export const mn = {
     home: 'Нүүр хуудас руу буцах',
     reference: 'Алдааны код: {{code}}',
   },
+  /** The app's "update ready" banner (an over-the-air update has been downloaded). */
+  appUpdate: {
+    title: 'Шинэ хувилбар бэлэн боллоо',
+    body: 'Аппыг дахин ачаалж шинэчлэлийг ашиглана уу.',
+    restart: 'Дахин ачаалах',
+    later: 'Дараа',
+    laterHint: 'Апп дараагийн удаа нээгдэхдээ шинэчлэгдэнэ',
+  },
   rooms: {
     livingRoom: 'Зочны өрөө',
     bedroom: 'Унтлагын өрөө',

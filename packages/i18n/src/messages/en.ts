@@ -113,6 +113,13 @@ export const en: Messages = {
     home: 'Back to the home page',
     reference: 'Error code: {{code}}',
   },
+  appUpdate: {
+    title: 'A new version is ready',
+    body: 'Restart the app to use the update.',
+    restart: 'Restart',
+    later: 'Later',
+    laterHint: 'The app updates the next time it opens',
+  },
   rooms: {
     livingRoom: 'Living room',
     bedroom: 'Bedroom',

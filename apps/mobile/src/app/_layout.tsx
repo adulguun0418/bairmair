@@ -22,6 +22,7 @@ import { StyleSheet, useColorScheme, View } from 'react-native';
 import { AuthProvider } from '@/auth/auth-provider';
 import { startFavorites } from '@/browse/favorites';
 import { I18nProvider, useI18n } from '@/i18n/i18n';
+import { UpdateBanner } from '@/lib/app-update';
 import { startListingSync } from '@/listings/listings';
 import { loadThemePreference } from '@/ui/appearance';
 import { Button } from '@/ui/button';
@@ -111,6 +112,7 @@ export default function RootLayout() {
         <ThemeProvider value={navigationTheme(colors, dark, fontsLoaded)}>
           <StatusBar style="auto" />
           <RootStack />
+          <UpdateBanner />
         </ThemeProvider>
       </AuthProvider>
     </I18nProvider>
