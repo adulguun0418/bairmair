@@ -65,6 +65,7 @@ export function Turnstile({
   resetKey,
   onToken,
   theme = 'auto',
+  appearance = 'interaction-only',
   onError,
   onStatus,
 }: {
@@ -73,6 +74,9 @@ export function Turnstile({
   resetKey: number;
   onToken: (token: string | null) => void;
   theme?: 'auto' | 'light' | 'dark';
+  /** `always`: the widget is on screen the whole time (the app's WebView, where an invisible
+   * widget may never finish). */
+  appearance?: 'always' | 'interaction-only';
   /** Turnstile failed (script blocked, a failed challenge, unsupported browser), with its error
    * code or our reason (`script`, `unsupported`, `timeout`); `onToken(null)` follows too. */
   onError?: (code: string | undefined) => void;
@@ -109,7 +113,7 @@ export function Turnstile({
           'timeout-callback': () => failed('timeout'),
           'before-interactive-callback': () => statusCallback.current?.('interactive'),
           'after-interactive-callback': () => statusCallback.current?.('interacted'),
-          appearance: 'interaction-only',
+          appearance,
           size: 'flexible',
           language,
           theme,
@@ -122,7 +126,7 @@ export function Turnstile({
       if (widget.current) window.turnstile?.remove(widget.current);
       widget.current = null;
     };
-  }, [siteKey, language, theme]);
+  }, [siteKey, language, theme, appearance]);
 
   useEffect(() => {
     if (resetKey > 0 && widget.current) {
