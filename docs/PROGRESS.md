@@ -300,6 +300,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - The update that brings the banner still needs the two restarts; every later one shows the card.
   - Pure rules in `app-update-logic.ts` (tested). Copy: `appUpdate` in `mn.ts`/`en.ts`.
   - Verified: typecheck, lint, tests, `expo export` for iOS. Not verified: on a phone (needs this update and then one more).
+- Fix: search map crash on returning to search (your report, 2026-11-18). Search with the map → a listing → "Зарагдах/Түрээсийн байр" in the header showed "Алдаа гарлаа" (`Style is not done loading`). With Cache Components, Next keeps visited pages alive but hidden (React `<Activity>`): hiding removed the map but kept `ready = true`, so on return the label effect touched the new map before its style loaded. `SearchMap` now keeps the loaded map instance (`readyMap`) instead of a flag, and its effects run only for the current map. Verified in headless Chrome: the live site reproduces the crash; a production build with the fix shows the map and pins, no errors. Watch for the same pattern in any new map/WebGL component (state that outlives an effect cleanup).
 - Tests: 584 unit (room-model 232, browse 122, mobile 118, web 56, i18n 29, send-sms 18, db 7) + 86 integration tests against the dev project (db 63, mobile 12, web 11).
 
 ## Commands
