@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/auth/auth-provider';
 import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
+import { openSitePage } from '@/lib/site-pages';
 import { Button } from '@/ui/button';
 import { TextField } from '@/ui/text-field';
 import { useColors } from '@/ui/theme';
@@ -24,7 +25,7 @@ import { Text } from '@/ui/text';
 export default function SignInScreen() {
   const { mode: modeParam } = useLocalSearchParams<{ mode?: string }>();
   const mode: PhoneMode = modeParam === 'add-phone' ? 'add-phone' : 'sign-in';
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const colors = useColors();
   const scheme = useColorScheme();
   const router = useRouter();
@@ -139,6 +140,28 @@ export default function SignInScreen() {
           )}
         </>
       )}
+
+      {mode === 'sign-in' && (
+        <Text style={[styles.consent, { color: colors.textMuted }]}>
+          {t('auth.consentBefore')}
+          <Text
+            accessibilityRole="link"
+            style={[styles.consentLink, { color: colors.text }]}
+            onPress={() => openSitePage('terms', locale)}
+          >
+            {t('auth.consentTerms')}
+          </Text>
+          {t('auth.consentMiddle')}
+          <Text
+            accessibilityRole="link"
+            style={[styles.consentLink, { color: colors.text }]}
+            onPress={() => openSitePage('privacy', locale)}
+          >
+            {t('auth.consentPrivacy')}
+          </Text>
+          {t('auth.consentAfter')}
+        </Text>
+      )}
     </ScrollView>
   );
 }
@@ -149,4 +172,6 @@ const styles = StyleSheet.create({
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rule: { flex: 1, height: StyleSheet.hairlineWidth },
   apple: { height: 48 },
+  consent: { fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },
+  consentLink: { fontWeight: '600', textDecorationLine: 'underline' },
 });
