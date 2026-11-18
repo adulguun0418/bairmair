@@ -8,6 +8,7 @@ import {
   findEntrance,
 } from '@bairmair/room-model';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { signInForTest } from './sign-in';
 import {
   addPhoto,
   loadMyListing,
@@ -63,7 +64,7 @@ beforeAll(async () => {
   if (error) throw error;
   userId = data.user.id;
   const client = browserClient();
-  const signIn = await client.auth.signInWithPassword({ phone, password });
+  const signIn = await signInForTest(client, { phone, password });
   if (signIn.error) throw signIn.error;
 
   // A draft with a scan uploaded as the app uploads it, then processed by the server.

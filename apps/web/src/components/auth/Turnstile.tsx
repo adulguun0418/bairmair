@@ -13,6 +13,7 @@ interface TurnstileApi {
       appearance: 'always' | 'execute' | 'interaction-only';
       size: 'normal' | 'flexible' | 'compact';
       language: string;
+      theme: 'auto' | 'light' | 'dark';
     },
   ): string;
   reset(widgetId: string): void;
@@ -56,21 +57,32 @@ export function Turnstile({
   language,
   resetKey,
   onToken,
+  theme = 'auto',
+  onError,
 }: {
   siteKey: string;
   language: string;
   resetKey: number;
   onToken: (token: string | null) => void;
+  theme?: 'auto' | 'light' | 'dark';
+  /** Turnstile failed (script blocked or a failed challenge); `onToken(null)` follows too. */
+  onError?: () => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const widget = useRef<string | null>(null);
   const callback = useRef(onToken);
+  const errorCallback = useRef(onError);
   useEffect(() => {
     callback.current = onToken;
+    errorCallback.current = onError;
   });
 
   useEffect(() => {
     let cancelled = false;
+    const failed = () => {
+      callback.current(null);
+      errorCallback.current?.();
+    };
     loadTurnstile()
       .then((api) => {
         if (cancelled || !container.current) return;
@@ -78,19 +90,20 @@ export function Turnstile({
           sitekey: siteKey,
           callback: (token) => callback.current(token),
           'expired-callback': () => callback.current(null),
-          'error-callback': () => callback.current(null),
+          'error-callback': failed,
           appearance: 'interaction-only',
           size: 'flexible',
           language,
+          theme,
         });
       })
-      .catch(() => callback.current(null));
+      .catch(failed);
     return () => {
       cancelled = true;
       if (widget.current) window.turnstile?.remove(widget.current);
       widget.current = null;
     };
-  }, [siteKey, language]);
+  }, [siteKey, language, theme]);
 
   useEffect(() => {
     if (resetKey > 0 && widget.current) {
