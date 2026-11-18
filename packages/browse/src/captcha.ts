@@ -20,6 +20,33 @@ export function parseCaptchaTheme(value: string | null | undefined): CaptchaThem
   return CAPTCHA_THEMES.includes(value as CaptchaTheme) ? (value as CaptchaTheme) : 'auto';
 }
 
+/**
+ * iOS: Turnstile never finishes inside a WKWebView (stuck on "Verifying…"), so the iPhone app
+ * opens the captcha page in the system browser sheet instead (`?return=app`, through
+ * ASWebAuthenticationSession), and the page hands the token back by navigating to this address.
+ * The session catches the navigation and closes; the address never reaches another app.
+ */
+export const CAPTCHA_RETURN_URL = 'bairmair://captcha';
+
+/** `?return=app`: the page was opened by the app in the system browser. */
+export function isCaptchaReturnMode(value: string | null | undefined): boolean {
+  return value === 'app';
+}
+
+/** Where the page sends a token in return mode. */
+export function captchaReturnUrl(token: string): string {
+  return `${CAPTCHA_RETURN_URL}#token=${encodeURIComponent(token)}`;
+}
+
+/** The token from the address the browser session ended on, or null. */
+export function parseCaptchaReturn(url: string): string | null {
+  if (!url.startsWith(`${CAPTCHA_RETURN_URL}#`) && !url.startsWith(`${CAPTCHA_RETURN_URL}?`)) {
+    return null;
+  }
+  const token = new URLSearchParams(url.slice(CAPTCHA_RETURN_URL.length + 1)).get('token');
+  return token && token.length <= 4096 ? token : null;
+}
+
 export type CaptchaEvent =
   /** A fresh token (single use, valid for 5 minutes). */
   | { type: 'token'; token: string }

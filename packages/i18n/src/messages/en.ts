@@ -254,6 +254,9 @@ export const en: Messages = {
     captchaChecking: 'Checking that you are not a robot…',
     captchaFailed: 'The robot check did not work. Check again, or send the code anyway.',
     captchaRetry: 'Check again',
+    captchaPageTitle: 'Confirm that you are not a robot',
+    captchaReturning: 'Going back to the app…',
+    captchaPageFailed: 'The check did not pass.',
     errors: {
       invalidCode: 'The code is wrong or has expired.',
       tooManyRequests: 'Too many attempts. Wait a moment and try again.',

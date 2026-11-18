@@ -254,6 +254,9 @@ export const mn = {
     captchaChecking: 'Робот биш эсэхийг шалгаж байна…',
     captchaFailed: 'Робот шалгалт ажилласангүй. Дахин шалгах эсвэл шууд код илгээж болно.',
     captchaRetry: 'Дахин шалгах',
+    captchaPageTitle: 'Робот биш гэдгээ баталгаажуулна уу',
+    captchaReturning: 'Апп руу буцаж байна…',
+    captchaPageFailed: 'Шалгалт амжилтгүй боллоо.',
     errors: {
       invalidCode: 'Код буруу эсвэл хугацаа нь дууссан байна.',
       tooManyRequests: 'Хэт олон оролдлого хийлээ. Түр хүлээгээд дахин оролдоно уу.',

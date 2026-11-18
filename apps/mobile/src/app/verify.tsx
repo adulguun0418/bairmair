@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, useColorScheme } from 'react-native';
 import { needsCaptcha, sendPhoneCode, verifyPhoneCode, type PhoneMode } from '@/auth/actions';
+import { CAPTCHA_IN_BROWSER, captchaTokenFromBrowser } from '@/auth/captcha-browser';
 import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
@@ -19,7 +20,8 @@ export default function VerifyScreen() {
   const params = useLocalSearchParams<{ phone: string; mode?: string }>();
   const phone = params.phone;
   const mode: PhoneMode = params.mode === 'add-phone' ? 'add-phone' : 'sign-in';
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const scheme = useColorScheme();
   const colors = useColors();
   const router = useRouter();
 
@@ -28,7 +30,9 @@ export default function VerifyScreen() {
   const [busy, setBusy] = useState(false);
   const [resendAt, setResendAt] = useState(() => Date.now() + RESEND_SECONDS * 1000);
   const [now, setNow] = useState(() => Date.now());
-  const captcha = needsCaptcha(mode);
+  /** Android: Turnstile inline in a WebView. iOS: in the system browser sheet, on tap. */
+  const captcha = needsCaptcha(mode) && !CAPTCHA_IN_BROWSER;
+  const browserCaptcha = needsCaptcha(mode) && CAPTCHA_IN_BROWSER;
   const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
   const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
   /** Waiting for the check (it gives up by itself; then the code goes without a token). */
@@ -69,7 +73,13 @@ export default function VerifyScreen() {
     setError(null);
     setBusy(true);
     try {
-      await sendPhoneCode(phone, mode, captchaToken);
+      let token = captchaToken;
+      if (browserCaptcha) {
+        token = await captchaTokenFromBrowser(locale, scheme === 'dark' ? 'dark' : 'light');
+        // The person closed the sheet: nothing sent, nothing to say.
+        if (!token) return;
+      }
+      await sendPhoneCode(phone, mode, token);
       setResendAt(Date.now() + RESEND_SECONDS * 1000);
     } catch (cause) {
       setError(t(`auth.errors.${authErrorKey(cause)}`));
