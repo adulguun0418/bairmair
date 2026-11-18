@@ -196,7 +196,13 @@ export default function SearchMap({
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [supported] = useState(canShowMap);
-  const [ready, setReady] = useState(false);
+  /**
+   * The map whose style has loaded. Not a boolean: Next keeps visited pages alive but hidden
+   * (React `<Activity>`). Hiding runs the cleanup (the map is removed) but keeps this state, and
+   * showing the page again creates a new map. A `ready` flag would still be true then, and the
+   * effects below would touch the new map before its style loaded ("Style is not done loading").
+   */
+  const [readyMap, setReadyMap] = useState<MapLibreMap | null>(null);
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
   const [mode, setMode] = useState<LabelMode>('price');
   const [selection, setSelection] = useState<string[] | null>(null);
@@ -273,7 +279,7 @@ export default function SearchMap({
       });
       map.addSource(HIGHLIGHT, { type: 'geojson', data: EMPTY });
       for (const layer of LAYERS) map.addLayer(layer);
-      setReady(true);
+      setReadyMap(map);
     });
 
     map.on('moveend', (event) => {
@@ -321,6 +327,7 @@ export default function SearchMap({
 
     return () => {
       mapRef.current = null;
+      setReadyMap(null);
       map.remove();
     };
   }, [supported, locale]);
@@ -328,8 +335,8 @@ export default function SearchMap({
   // Pins for the visible area, again whenever the filters change or the map moves out of the
   // loaded area.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
+    const map = readyMap;
+    if (!map || map !== mapRef.current) return;
     const filters = JSON.parse(argsKey) as SearchListingsArgs;
     let controller: AbortController | null = null;
     let loaded: { area: Viewport; rows: MapPinRow[] } | null = null;
@@ -398,32 +405,32 @@ export default function SearchMap({
       map.off('moveend', onMoveEnd);
       controller?.abort();
     };
-  }, [ready, argsKey, locale, attempt]);
+  }, [readyMap, argsKey, locale, attempt]);
 
   // Price or price per m² on the pins.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
+    const map = readyMap;
+    if (!map || map !== mapRef.current) return;
     const label: ExpressionSpecification =
       mode === 'price' ? ['get', 'label'] : ['coalesce', ['get', 'labelPerArea'], ['get', 'label']];
     map.setLayoutProperty(PINS, 'text-field', label);
     map.setLayoutProperty(HIGHLIGHT, 'text-field', label);
-  }, [mode, ready]);
+  }, [mode, readyMap]);
 
   // The map area the list is limited to, outlined.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
+    const map = readyMap;
+    if (!map || map !== mapRef.current) return;
     const area = boundsKey ? (JSON.parse(boundsKey) as Viewport) : null;
     map
       .getSource<GeoJSONSource>(AREA)
       ?.setData(area ? { type: 'FeatureCollection', features: [areaFeature(area)] } : EMPTY_AREA);
-  }, [boundsKey, ready]);
+  }, [boundsKey, readyMap]);
 
   // The pin of the card under the pointer.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
+    const map = readyMap;
+    if (!map || map !== mapRef.current) return;
     const onHover = (event: Event) => {
       const id = (event as CustomEvent<string | null>).detail;
       const pin = id ? pinsById.current.get(id) : undefined;
@@ -433,7 +440,7 @@ export default function SearchMap({
     };
     window.addEventListener(LISTING_HOVER_EVENT, onHover);
     return () => window.removeEventListener(LISTING_HOVER_EVENT, onHover);
-  }, [ready]);
+  }, [readyMap]);
 
   const searchArea = () => {
     const map = mapRef.current;
