@@ -131,6 +131,7 @@ export const en: Messages = {
     viewPlan: 'Floor plan',
     resetView: 'Reset view',
     entrance: 'Entrance',
+    plainView: 'Plain view',
     hint: 'Drag to rotate · Pinch or scroll to zoom',
     webglUnavailable: 'This browser cannot show the 3D view. See the floor plan instead.',
     photoInRoom: 'Photo {{index}}: {{room}}',
@@ -485,6 +486,23 @@ export const en: Messages = {
     clearTitle: 'Remove all lines?',
     clearBody: 'The divided rooms, their names and the photos’ rooms in them are removed.',
     cancel: 'Cancel',
+    done: 'Done',
+  },
+  entrance: {
+    title: 'Front door',
+    open: 'Choose the front door',
+    cancel: 'Cancel',
+    openHint:
+      'Mark the apartment’s front door on the floor plan. The 3D model opens looking in through it.',
+    intro: 'Tap the front door on the floor plan.',
+    introWeb: 'Click the front door on the floor plan.',
+    chosen: 'You marked the front door (blue, with an arrow).',
+    guessed:
+      'The front door was guessed from the scan (blue, with an arrow). If it is wrong, choose the right one.',
+    none: 'The front door is not known. Choose it on the floor plan.',
+    noDoor: 'There is no door there. Tap closer to a door.',
+    saved: 'Front door saved.',
+    auto: 'Guess it automatically',
     done: 'Done',
   },
   photoRooms: {

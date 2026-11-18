@@ -163,6 +163,45 @@ describe('room dividers', () => {
   });
 });
 
+// Migration 20261120100000: the seller's front door.
+describe('entrance door', () => {
+  const doorId = '3F1C8E2A-6B7D-4E0F-9A21-5C4D3B2A1F00';
+  const readAnon = () => anon.from('room_scans').select('entrance_door_id').eq('id', scanId);
+
+  it('is written by the owner, read by anyone who can see the scan, and can be cleared', async () => {
+    expect((await readAnon()).data).toEqual([{ entrance_door_id: null }]);
+    const write = await alice.client
+      .from('room_scans')
+      .update({ entrance_door_id: doorId })
+      .eq('id', scanId)
+      .select('id');
+    expect(write.error).toBeNull();
+    expect(write.data).toHaveLength(1);
+    expect((await readAnon()).data).toEqual([{ entrance_door_id: doorId }]);
+
+    const other = await bob.client
+      .from('room_scans')
+      .update({ entrance_door_id: 'SOMETHING-ELSE' })
+      .eq('id', scanId)
+      .select('id');
+    expect(other.data).toEqual([]);
+    expect((await readAnon()).data).toEqual([{ entrance_door_id: doorId }]);
+
+    const tooLong = await alice.client
+      .from('room_scans')
+      .update({ entrance_door_id: 'x'.repeat(65) })
+      .eq('id', scanId);
+    expect(tooLong.error?.code).toBe('23514');
+
+    const cleared = await alice.client
+      .from('room_scans')
+      .update({ entrance_door_id: null })
+      .eq('id', scanId);
+    expect(cleared.error).toBeNull();
+    expect((await readAnon()).data).toEqual([{ entrance_door_id: null }]);
+  });
+});
+
 describe('district_price_stats', () => {
   beforeAll(async () => {
     await publishRent(1500);

@@ -96,7 +96,7 @@ export function retryScanModel(scanId: string): void {
 }
 
 /**
- * The listing's scan model with the seller's dividers and room labels applied (areas and the
+ * The listing's scan model with the seller's dividers, room labels and front door applied (areas and the
  * incomplete-room check follow the divided rooms); null without a scan.
  */
 export function useScanModel(listing: LocalListing): ScanModelState | null {
@@ -111,9 +111,10 @@ export function useScanModel(listing: LocalListing): ScanModelState | null {
 
   const dividers = scan?.roomDividers;
   const roomLabels = scan?.roomLabels;
+  const entranceDoorId = scan?.entranceDoorId ?? null;
   return useMemo(() => {
     if (!dividers || !roomLabels || state?.status !== 'ready') return state;
-    const model = applyAnnotations(state.model, { dividers, roomLabels });
+    const model = applyAnnotations(state.model, { dividers, roomLabels, entranceDoorId });
     return dividers.length === 0 ? { ...state, model } : ready(model);
-  }, [state, dividers, roomLabels]);
+  }, [state, dividers, roomLabels, entranceDoorId]);
 }

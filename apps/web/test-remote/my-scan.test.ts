@@ -1,7 +1,12 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { BUCKETS, CONTENT_TYPES, scanRawPaths } from '@bairmair/db';
-import { applyAnnotations, computeMetrics, dividerFromPlan } from '@bairmair/room-model';
+import {
+  applyAnnotations,
+  computeMetrics,
+  dividerFromPlan,
+  findEntrance,
+} from '@bairmair/room-model';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   addPhoto,
@@ -101,24 +106,38 @@ afterAll(async () => {
 describe('website scan review', () => {
   it('divides a room, labels it, and puts a photo in it', async () => {
     const scan = await loadMyScan(listingId);
-    expect(scan).toEqual({ id: scanId, status: 'ready', roomLabels: {}, dividers: [] });
+    expect(scan).toEqual({
+      id: scanId,
+      status: 'ready',
+      roomLabels: {},
+      dividers: [],
+      entranceDoorId: null,
+    });
     const converted = await loadScanModel(listingId, scanId);
     expect(converted.rooms).toHaveLength(3);
 
-    // The kitchen side of the open living room, drawn on the plan.
+    // The kitchen side of the open living room, drawn on the plan, and an open door marked as
+    // the front door (the guess is the closed one).
     const divider = dividerFromPlan(converted, 'kitch', [-0.3, 0.6], [-0.3, 3.4]);
     const living = converted.rooms[0]!.id;
     const kitchen = `${living.slice(0, 40)}~kitch`;
     const labels = { [kitchen]: { label: 'kitchen' as const, name: 'Гал тогоо, хоолны өрөө' } };
-    await saveScanAnnotations(scanId, labels, [divider]);
+    const entranceDoorId = converted.doors.find((door) => door.isOpen === true)!.id;
+    await saveScanAnnotations(scanId, { labels, dividers: [divider], entranceDoorId });
     expect(await loadMyScan(listingId)).toEqual({
       id: scanId,
       status: 'ready',
       roomLabels: labels,
       dividers: [divider],
+      entranceDoorId,
     });
 
-    const model = applyAnnotations(converted, { dividers: [divider], roomLabels: labels });
+    const model = applyAnnotations(converted, {
+      dividers: [divider],
+      roomLabels: labels,
+      entranceDoorId,
+    });
+    expect(findEntrance(model)).toMatchObject({ source: 'seller', door: { id: entranceDoorId } });
     expect(model.rooms.map((room) => room.id)).toContain(kitchen);
     expect(model.rooms.find((room) => room.id === kitchen)?.name).toBe('Гал тогоо, хоолны өрөө');
     expect(computeMetrics(model).rooms).toHaveLength(4);

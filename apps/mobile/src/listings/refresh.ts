@@ -44,12 +44,14 @@ function mergeScan(local: LocalScan | null, server: LocalScan | null): LocalScan
     !final || (server.processing === local.processing && server.totalAreaM2 === local.totalAreaM2);
   const sameAnnotations =
     stableJson(server.roomLabels) === stableJson(local.roomLabels) &&
-    stableJson(server.roomDividers) === stableJson(local.roomDividers);
+    stableJson(server.roomDividers) === stableJson(local.roomDividers) &&
+    server.entranceDoorId === local.entranceDoorId;
   if (sameResult && sameAnnotations) return local;
   return {
     ...local,
     roomLabels: server.roomLabels,
     roomDividers: server.roomDividers,
+    entranceDoorId: server.entranceDoorId,
     ...(final ? { processing: server.processing, totalAreaM2: server.totalAreaM2 } : {}),
   };
 }

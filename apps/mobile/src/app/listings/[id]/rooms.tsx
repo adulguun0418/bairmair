@@ -1,6 +1,6 @@
 import { LISTING_LIMITS } from '@bairmair/db';
 import { formatArea, roomDisplayName } from '@bairmair/i18n';
-import { ROOM_LABELS } from '@bairmair/room-model';
+import { findEntrance, ROOM_LABELS } from '@bairmair/room-model';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useI18n } from '@/i18n/i18n';
@@ -41,6 +41,7 @@ function RoomReview({ listing, inFlow }: { listing: LocalListing; inFlow: boolea
   const router = useRouter();
   const state = useScanModel(listing);
   const scan = listing.scan!;
+  const entrance = state?.status === 'ready' ? findEntrance(state.model) : null;
 
   const labelChoices = ROOM_LABELS.map((label) => ({ value: label, label: t(`rooms.${label}`) }));
   const next = () => {
@@ -67,6 +68,25 @@ function RoomReview({ listing, inFlow }: { listing: LocalListing; inFlow: boolea
       {state?.status === 'ready' && (
         <>
           <ScanFloorPlan model={state.model} />
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.heading, { color: colors.text }]}>{t('entrance.title')}</Text>
+            <Text style={[styles.small, { color: colors.textMuted }]}>
+              {entrance?.source === 'seller'
+                ? t('entrance.chosen')
+                : entrance
+                  ? t('entrance.guessed')
+                  : t('entrance.none')}
+            </Text>
+            <Button
+              title={t('entrance.open')}
+              icon="rooms"
+              variant="secondary"
+              size="small"
+              onPress={() =>
+                router.push({ pathname: '/listings/[id]/entrance', params: { id: listing.id } })
+              }
+            />
+          </View>
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
             <Text style={[styles.small, { color: colors.textMuted }]}>
               {t('roomDivide.openHint')}

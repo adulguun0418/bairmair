@@ -3,7 +3,11 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   convertRoomPlan,
+  applyAnnotations,
   doorHinge,
+  doorNear,
+  parseEntranceDoorId,
+  safeParseRoomModel,
   findEntrance,
   isSameDoor,
   type Aperture,
@@ -82,5 +86,48 @@ describe('findEntrance', () => {
     expect(findEntrance(hallway(door('a', 0, -1.5), door('b', 0.05, -1.45, Math.PI)))).toBeNull();
     const bedroom = minimalModel();
     expect(findEntrance({ ...bedroom, doors: [door('a', 0, -1.5)] })).toBeNull();
+  });
+});
+
+describe('the seller’s front door', () => {
+  const twoRoom = () => buildSample(SAMPLE_SPECS['two-room']);
+
+  it('wins over the guess, facing away from its room', () => {
+    const model = applyAnnotations(twoRoom(), { entranceDoorId: 'bathroom-door-hallway' });
+    const entrance = findEntrance(model)!;
+    expect(entrance).toMatchObject({ source: 'seller', door: { id: 'bathroom-door-hallway' } });
+    expect(findEntrance(twoRoom())?.source).toBe('guess');
+  });
+
+  it('is ignored when the model has no such door, or the value is not an id', () => {
+    expect(applyAnnotations(twoRoom(), { entranceDoorId: 'gone' }).entranceDoorId).toBeUndefined();
+    expect(applyAnnotations(twoRoom(), { entranceDoorId: null }).entranceDoorId).toBeUndefined();
+    expect(parseEntranceDoorId('ABC-1')).toBe('ABC-1');
+    expect(parseEntranceDoorId('')).toBeNull();
+    expect(parseEntranceDoorId(12)).toBeNull();
+    expect(parseEntranceDoorId('x'.repeat(65))).toBeNull();
+  });
+
+  it('must name a door of the model', () => {
+    expect(safeParseRoomModel({ ...twoRoom(), entranceDoorId: 'entrance' }).success).toBe(true);
+    expect(safeParseRoomModel({ ...twoRoom(), entranceDoorId: 'nope' }).success).toBe(false);
+  });
+
+  it('survives re-conversion and dividers on a real scan (RoomPlan’s door ids)', () => {
+    const converted = scan('apartment-whole-open-plan');
+    const door = converted.doors.find((d) => d.isOpen === true)!;
+    const again = scan('apartment-whole-open-plan');
+    expect(applyAnnotations(again, { entranceDoorId: door.id }).entranceDoorId).toBe(door.id);
+  });
+});
+
+describe('doorNear', () => {
+  it('picks the nearest door within reach of a tap, else none', () => {
+    const model = hallway(door('left', -1, -1.5), door('right', 1, -1.5));
+    expect(doorNear(model, [-1.2, -1.3])?.id).toBe('left');
+    expect(doorNear(model, [0.6, -1.4])?.id).toBe('right');
+    // Within the door's width, the distance is to the wall line.
+    expect(doorNear(model, [1.4, -1.0])?.id).toBe('right');
+    expect(doorNear(model, [0, 1])).toBeNull();
   });
 });

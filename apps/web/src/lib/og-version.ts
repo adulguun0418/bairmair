@@ -5,7 +5,7 @@
  *
  * Bump `OG_DESIGN_VERSION` when the image's design changes.
  */
-export const OG_DESIGN_VERSION = 2;
+export const OG_DESIGN_VERSION = 3;
 
 /** What the image shows. */
 export interface OgImageContent {
@@ -18,8 +18,8 @@ export interface OgImageContent {
   district_id: number | null;
   complex_name: string | null;
   coverPhotoId: string | null;
-  /** The scan's rooms and total area (the plan inset), or null without a scan. */
-  scan: { rooms: number; totalAreaM2: number } | null;
+  /** The scan's rooms, total area and front door (the plan inset), or null without a scan. */
+  scan: { rooms: number; totalAreaM2: number; entranceDoorId: string | null } | null;
 }
 
 export function ogImageVersion(content: OgImageContent): string {

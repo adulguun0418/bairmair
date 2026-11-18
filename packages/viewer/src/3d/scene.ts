@@ -343,14 +343,19 @@ export function buildScene(model: RoomModelV1): SceneData {
     const [x, , z] = door.transform.position;
     return room ? inwardNormal([x, z], door.transform.yaw, room.floor.polygon) : null;
   };
-  // A door scanned from both rooms gets one leaf, like its single swing on the floor plan.
+  const foundEntrance = findEntrance(model);
+  // A door scanned from both rooms gets one leaf, like its single swing on the floor plan. The
+  // front door goes first, so a seller's pick of either side is the one drawn.
+  const entranceId = foundEntrance?.door.id;
+  const doorOrder = [...model.doors].sort(
+    (a, b) => Number(b.id === entranceId) - Number(a.id === entranceId),
+  );
   const leafDoors: Aperture[] = [];
-  for (const door of model.doors) {
+  for (const door of doorOrder) {
     if (!doorInward(door) || leafDoors.some((other) => isSameDoor(other, door))) continue;
     leafDoors.push(door);
   }
   const leafDoorIds = new Set(leafDoors.map((door) => door.id));
-  const foundEntrance = findEntrance(model);
   const entrancePieces: BufferGeometry[] = [];
 
   const aperturesByWall = new Map<string, Aperture[]>();
@@ -405,12 +410,14 @@ export function buildScene(model: RoomModelV1): SceneData {
         continue;
       }
       const door = doorsById.get(aperture.id);
-      if (door && leafDoorIds.has(door.id)) {
-        const inward = doorInward(door)!;
+      const isEntrance = door !== undefined && door.id === entranceId;
+      if (door && (leafDoorIds.has(door.id) || isEntrance)) {
+        // The front door always gets drawn; without a room it opens away from `outward`.
+        const outward = foundEntrance?.outward ?? [0, 0];
+        const inward = doorInward(door) ?? [-outward[0], -outward[1]];
         const hinge = doorHinge(door);
         const along = directionFromYaw(yaw);
         const hingeU = (hinge[0] - x) * along[0] + (hinge[1] - z) * along[1];
-        const isEntrance = door.id === foundEntrance?.door.id;
         const parts = doorParts(
           cutout,
           height,

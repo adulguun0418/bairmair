@@ -91,6 +91,7 @@ describe('editorSteps', () => {
         totalAreaM2: 54.2,
         roomLabels: {},
         roomDividers: [],
+        entranceDoorId: null,
         labelsRev: 0,
         labelsSyncedRev: 0,
       },

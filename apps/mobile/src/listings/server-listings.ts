@@ -1,5 +1,9 @@
 import type { Tables, TypedSupabaseClient } from '@bairmair/db';
-import { parseRoomDividers, parseRoomLabelOverrides } from '@bairmair/room-model';
+import {
+  parseEntranceDoorId,
+  parseRoomDividers,
+  parseRoomLabelOverrides,
+} from '@bairmair/room-model';
 import { formFromRow, formToFields } from '@bairmair/browse';
 import type { LocalListing, LocalPhoto, LocalScan } from './model';
 import { classifyPostgrestError, SyncError } from './sync-errors';
@@ -109,7 +113,7 @@ export async function fetchServerCopies(
       client
         .from('room_scans')
         .select(
-          'id, listing_id, status, metrics, room_labels, room_dividers, created_at, device_model, ios_version, app_version',
+          'id, listing_id, status, metrics, room_labels, room_dividers, entrance_door_id, created_at, device_model, ios_version, app_version',
         )
         .in('listing_id', chunk)
         .order('is_current', { ascending: false })
@@ -215,6 +219,7 @@ type ScanRow = Pick<
   | 'metrics'
   | 'room_labels'
   | 'room_dividers'
+  | 'entrance_door_id'
   | 'created_at'
   | 'device_model'
   | 'ios_version'
@@ -247,6 +252,7 @@ export function scanFromRow(row: ScanRow, fix: ScanFix | null): LocalScan {
     totalAreaM2: typeof metrics?.totalAreaM2 === 'number' ? metrics.totalAreaM2 : null,
     roomLabels: parseRoomLabelOverrides(row.room_labels),
     roomDividers: parseRoomDividers(row.room_dividers),
+    entranceDoorId: parseEntranceDoorId(row.entrance_door_id),
     labelsRev: 0,
     labelsSyncedRev: 0,
   };

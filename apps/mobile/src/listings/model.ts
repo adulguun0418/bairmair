@@ -80,7 +80,9 @@ export interface LocalScan {
   roomLabels: Record<string, RoomLabelOverride>;
   /** The seller's lines splitting rooms (`room_scans.room_dividers`), in drawing order. */
   roomDividers: RoomDivider[];
-  /** Bumped by every change to the labels or dividers; both are sent together. */
+  /** The seller's front door (`room_scans.entrance_door_id`), a door id; null: guessed. */
+  entranceDoorId: string | null;
+  /** Bumped by every change to the labels, dividers or front door; all are sent together. */
   labelsRev: number;
   labelsSyncedRev: number;
 }
@@ -172,7 +174,13 @@ export function normalizeListing(saved: LocalListing): LocalListing {
     syncedFields: raw.syncedFields ?? null,
     statusRev: raw.statusRev ?? 0,
     statusSyncedRev: raw.statusSyncedRev ?? 0,
-    scan: raw.scan ? { ...raw.scan, roomDividers: raw.scan.roomDividers ?? [] } : null,
+    scan: raw.scan
+      ? {
+          ...raw.scan,
+          roomDividers: raw.scan.roomDividers ?? [],
+          entranceDoorId: raw.scan.entranceDoorId ?? null,
+        }
+      : null,
     removedScanIds: raw.removedScanIds ?? [],
     photos: raw.photos.map((photo) => ({
       ...photo,
@@ -350,6 +358,7 @@ export function attachScan(listing: LocalListing, scan: NewScan, now: string): L
       totalAreaM2: null,
       roomLabels: {},
       roomDividers: [],
+      entranceDoorId: null,
       labelsRev: 0,
       labelsSyncedRev: 0,
     },
@@ -405,6 +414,22 @@ export function addRoomDivider(
       roomDividers: [...scan.roomDividers, divider],
       labelsRev: scan.labelsRev + 1,
     },
+  });
+}
+
+/**
+ * Marks the front door (a door id of the scan's model), or clears it (`null`: the viewers guess
+ * it). Synced with the labels and dividers.
+ */
+export function setEntranceDoor(
+  listing: LocalListing,
+  doorId: string | null,
+  now: string,
+): LocalListing {
+  const scan = listing.scan;
+  if (!scan || scan.entranceDoorId === doorId) return listing;
+  return edited(listing, now, {
+    scan: { ...scan, entranceDoorId: doorId, labelsRev: scan.labelsRev + 1 },
   });
 }
 

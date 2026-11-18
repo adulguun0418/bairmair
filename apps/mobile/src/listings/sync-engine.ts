@@ -56,13 +56,14 @@ export interface ListingRemote {
   /** Inserts the `room_scans` row. An existing row counts as success. */
   createScan(listingId: string, scan: LocalScan): Promise<void>;
   /**
-   * Writes `room_scans.room_labels` and `room_dividers` together. Throws `scanMissing` if the
+   * Writes `room_scans.room_labels`, `room_dividers` and `entrance_door_id` together. Throws `scanMissing` if the
    * row is gone.
    */
   saveRoomLabels(
     scanId: string,
     labels: Record<string, RoomLabelOverride>,
     dividers: RoomDivider[],
+    entranceDoorId: string | null,
   ): Promise<void>;
   /** Sets (or clears) a photo's scan and room. */
   assignPhotoRoom(photoId: string, room: PhotoRoom | null): Promise<void>;
@@ -346,7 +347,7 @@ export class SyncEngine {
         return;
       case 'saveRoomLabels':
         try {
-          await this.remote.saveRoomLabels(op.scanId, op.labels, op.dividers);
+          await this.remote.saveRoomLabels(op.scanId, op.labels, op.dividers, op.entranceDoorId);
         } catch (error) {
           if (error instanceof SyncError && error.key === 'scanMissing') {
             this.store.update(id, (current) => resetScanRow(current, op.scanId));

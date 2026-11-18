@@ -47,6 +47,7 @@ function scan(id = SCAN): LocalScan {
     totalAreaM2: 54.2,
     roomLabels: { r1: { label: 'bedroom' } },
     roomDividers: [],
+    entranceDoorId: null,
     labelsRev: 0,
     labelsSyncedRev: 0,
   };
@@ -193,6 +194,14 @@ describe('mergeServerCopy', () => {
       roomLabels: { r1: { label: 'livingRoom', name: 'Зочны' } },
     });
     expect(merged.staleFiles).toEqual([]);
+  });
+
+  it('takes a front door marked on the website', () => {
+    const local = phoneCopy();
+    const server = serverCopy({ scan: { ...scan(), entranceDoorId: 'DOOR-1' } });
+    const merged = mergeServerCopy(local, server, NOW)!;
+    expect(merged.listing.scan).toEqual({ ...local.scan, entranceDoorId: 'DOOR-1' });
+    expect(mergeServerCopy(merged.listing, server, NOW)).toBeNull();
   });
 
   it('compares room labels whatever their key order', () => {

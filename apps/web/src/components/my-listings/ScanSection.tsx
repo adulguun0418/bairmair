@@ -7,6 +7,8 @@ import {
   applyRoomDividers,
   computeMetrics,
   dividerFromPlan,
+  doorNear,
+  findEntrance,
   floorPlanViewBox,
   incompleteRoomIds,
   isMadeByDivider,
@@ -69,7 +71,10 @@ export function ScanSection({
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const [labels, setLabels] = useState<Record<string, RoomLabelOverride>>({});
   const [dividers, setDividers] = useState<RoomDivider[]>([]);
-  const [dividing, setDividing] = useState(false);
+  const [entranceDoorId, setEntranceDoorId] = useState<string | null>(null);
+  /** What a pointer on the plan does: draw a divider, pick the front door, or nothing. */
+  const [planMode, setPlanMode] = useState<PlanMode>(null);
+  const dividing = planMode === 'divide';
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -86,6 +91,7 @@ export function ScanSection({
       if (!active) return;
       setLabels(scan.roomLabels);
       setDividers(scan.dividers);
+      setEntranceDoorId(scan.entranceDoorId);
       setLoaded({ state: 'ready', scan, converted });
     })().catch(() => active && setLoaded({ state: 'error' }));
     return () => {
@@ -101,13 +107,14 @@ export function ScanSection({
         ? applyAnnotations(converted, {
             dividers,
             roomLabels: labels,
+            entranceDoorId,
             photos: photos.map((photo) => ({
               id: photo.id,
               roomId: photo.room?.scanId === scanId ? photo.room.roomId : null,
             })),
           })
         : null,
-    [converted, dividers, labels, photos, scanId],
+    [converted, dividers, labels, entranceDoorId, photos, scanId],
   );
 
   if (!listingId || loaded.state === 'none') {
@@ -130,22 +137,31 @@ export function ScanSection({
   const incomplete = new Set(incompleteRoomIds(model));
   const roomIds = new Set(model.rooms.map((room) => room.id));
 
-  /** Saves labels and dividers together; on failure the previous ones come back. */
+  /**
+   * Saves labels, dividers and the front door together (only `change` differs from now); on
+   * failure the previous ones come back.
+   */
   const saveAnnotations = async (
-    nextLabels: Record<string, RoomLabelOverride>,
-    nextDividers: RoomDivider[],
+    change: Partial<{
+      labels: Record<string, RoomLabelOverride>;
+      dividers: RoomDivider[];
+      entranceDoorId: string | null;
+    }>,
     success: string | null = null,
   ) => {
-    const before = { labels, dividers };
-    setLabels(nextLabels);
-    setDividers(nextDividers);
+    const before = { labels, dividers, entranceDoorId };
+    const next = { ...before, ...change };
+    setLabels(next.labels);
+    setDividers(next.dividers);
+    setEntranceDoorId(next.entranceDoorId);
     setBusy(true);
     try {
-      await saveScanAnnotations(scanId, nextLabels, nextDividers);
+      await saveScanAnnotations(scanId, next);
       setNotice(success ? { text: success, error: false } : null);
     } catch {
       setLabels(before.labels);
       setDividers(before.dividers);
+      setEntranceDoorId(before.entranceDoorId);
       setNotice({ text: t('listingForm.saveFailed'), error: true });
     } finally {
       setBusy(false);
@@ -154,8 +170,22 @@ export function ScanSection({
 
   const changeLabel = (roomId: string, change: RoomLabelOverride) => {
     const next = withRoomLabel(labels, roomId, change);
-    if (next !== labels) void saveAnnotations(next, dividers);
+    if (next !== labels) void saveAnnotations({ labels: next });
   };
+
+  /** A click on the plan while picking the front door: the door nearest to it, if any. */
+  const pickEntrance = (point: Vec2) => {
+    const door = doorNear(model, point);
+    if (!door) {
+      setNotice({ text: t('entrance.noDoor'), error: true });
+      return;
+    }
+    setPlanMode(null);
+    if (door.id !== entranceDoorId) {
+      void saveAnnotations({ entranceDoorId: door.id }, t('entrance.saved'));
+    }
+  };
+  const entrance = findEntrance(model);
 
   const addDivider = (divider: RoomDivider) => {
     if (dividers.length >= ROOM_DIVIDER_LIMITS.count) {
@@ -167,7 +197,7 @@ export function ScanSection({
       setNotice({ text: t(`roomDivide.${result?.status ?? 'noCut'}`), error: true });
       return;
     }
-    void saveAnnotations(labels, [...dividers, divider], t('roomDivide.applied'));
+    void saveAnnotations({ dividers: [...dividers, divider] }, t('roomDivide.applied'));
   };
 
   /** Removes dividers with the rooms they made: their labels, and their photos' rooms. */
@@ -176,10 +206,10 @@ export function ScanSection({
     const nextLabels = Object.fromEntries(
       Object.entries(labels).filter(([roomId]) => !isMadeByDivider(roomId, removed)),
     );
-    await saveAnnotations(
-      nextLabels,
-      dividers.filter((divider) => !removed.has(divider.id)),
-    );
+    await saveAnnotations({
+      labels: nextLabels,
+      dividers: dividers.filter((divider) => !removed.has(divider.id)),
+    });
     const orphaned = photos.filter(
       (photo) => photo.room?.scanId === scanId && isMadeByDivider(photo.room.roomId, removed),
     );
@@ -223,13 +253,60 @@ export function ScanSection({
           model={model}
           text={text}
           title={t('viewer.viewPlan')}
-          dividing={dividing}
+          mode={planMode}
           onLine={(a, b) =>
             addDivider(
               dividerFromPlan(model, crypto.randomUUID().replace(/-/g, '').slice(0, 8), a, b),
             )
           }
+          onPoint={pickEntrance}
         />
+
+        {/* The front door */}
+        <div className="space-y-2 rounded-xl border border-line p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2 font-medium">
+              <span aria-hidden="true" className="inline-block h-4 w-2.5 rounded-sm bg-[#1a2b60]" />
+              {t('entrance.title')}
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setPlanMode((current) => (current === 'entrance' ? null : 'entrance'));
+                  setNotice(null);
+                }}
+                className={planMode === 'entrance' ? primaryButton : smallButton}
+              >
+                {planMode === 'entrance' ? t('entrance.cancel') : t('entrance.open')}
+              </button>
+              {entranceDoorId !== null && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setPlanMode(null);
+                    void saveAnnotations({ entranceDoorId: null });
+                  }}
+                  className={smallButton}
+                >
+                  {t('entrance.auto')}
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-fg-muted">
+            {planMode === 'entrance'
+              ? t('entrance.introWeb')
+              : entrance?.source === 'seller'
+                ? t('entrance.chosen')
+                : entrance
+                  ? t('entrance.guessed')
+                  : t('entrance.none')}
+          </p>
+        </div>
+
         <p className="text-sm text-fg-muted">
           {dividing ? t('roomDivide.introWeb') : t('roomDivide.openHint')}
         </p>
@@ -237,7 +314,7 @@ export function ScanSection({
           <button
             type="button"
             onClick={() => {
-              setDividing((current) => !current);
+              setPlanMode((current) => (current === 'divide' ? null : 'divide'));
               setNotice(null);
             }}
             className={
@@ -412,22 +489,27 @@ function RoomNameInput({
   );
 }
 
+type PlanMode = 'divide' | 'entrance' | null;
+
 /**
- * The floor plan; while dividing, a drag across it draws a line. The SVG fits its view box into
- * the box, centered, so a pointer position maps back to plan coordinates.
+ * The floor plan. While dividing, a drag across it draws a line; while picking the front door, a
+ * click gives a point. The SVG fits its view box into the box, centered, so a pointer position
+ * maps back to plan coordinates.
  */
 function DividablePlan({
   model,
   text,
   title,
-  dividing,
+  mode,
   onLine,
+  onPoint,
 }: {
   model: RoomModelV1;
   text: ReturnType<typeof useViewerText>['text'];
   title: string;
-  dividing: boolean;
+  mode: PlanMode;
   onLine: (a: Vec2, b: Vec2) => void;
+  onPoint: (point: Vec2) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [stroke, setStroke] = useState<Stroke | null>(null);
@@ -452,7 +534,16 @@ function DividablePlan({
       className="relative h-[min(60vh,460px)] overflow-hidden rounded-xl border border-line bg-white"
     >
       <FloorPlan model={model} text={text} title={title} className="h-full w-full" />
-      {dividing && (
+      {mode === 'entrance' && (
+        <div
+          className="absolute inset-0 cursor-pointer"
+          onClick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            onPoint(toPlan([event.clientX - rect.left, event.clientY - rect.top]));
+          }}
+        />
+      )}
+      {mode === 'divide' && (
         <div
           className="absolute inset-0 cursor-crosshair"
           style={{ touchAction: 'none' }}
@@ -503,5 +594,7 @@ function DividablePlan({
 
 const inputClass =
   'w-full rounded-lg border border-line-2 bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-primary disabled:opacity-60';
+const primaryButton =
+  'rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-on-primary hover:opacity-90 disabled:opacity-50';
 const smallButton =
   'rounded-full border border-line-2 px-3 py-1.5 text-sm hover:bg-surface-2 disabled:opacity-50';
