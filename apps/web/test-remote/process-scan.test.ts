@@ -10,6 +10,7 @@ import {
 } from '@bairmair/db';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { signInForTest } from './sign-in';
 import { POST } from '@/app/api/scans/[id]/process/route';
 
 /**
@@ -55,7 +56,7 @@ async function createUser(): Promise<User> {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     noSession,
   );
-  const signIn = await client.auth.signInWithPassword({ phone, password });
+  const signIn = await signInForTest(client, { phone, password });
   if (signIn.error) throw signIn.error;
   return { id: data.user.id, token: signIn.data.session.access_token, client };
 }

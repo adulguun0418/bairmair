@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, useColorScheme, View } from 'react-native';
 import {
+  needsCaptcha,
   sendPhoneCode,
   signInWithApple,
   signInWithGoogle,
@@ -10,6 +11,7 @@ import {
   type SignInResult,
 } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
+import { CaptchaView } from '@/auth/captcha-view';
 import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { openSitePage } from '@/lib/site-pages';
@@ -36,6 +38,10 @@ export default function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
+  const captcha = needsCaptcha(mode);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  /** Remounts the captcha after each attempt: a token is single use. */
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -48,16 +54,18 @@ export default function SignInScreen() {
       setInputError(t('auth.invalidPhone'));
       return;
     }
+    if (captcha && !captchaToken) return;
     setInputError(null);
     setError(null);
     setBusy(true);
     try {
-      await sendPhoneCode(phone, mode);
+      await sendPhoneCode(phone, mode, captchaToken);
       router.push({ pathname: '/verify', params: { phone, mode } });
     } catch (cause) {
       setError(t(`auth.errors.${authErrorKey(cause)}`));
     } finally {
       setBusy(false);
+      if (captcha) setCaptchaKey((n) => n + 1);
     }
   };
 
@@ -106,7 +114,12 @@ export default function SignInScreen() {
         error={inputError}
         autoFocus
       />
-      <Button title={t('auth.sendCode')} onPress={() => void submitPhone()} disabled={busy} />
+      {captcha && <CaptchaView key={captchaKey} onToken={setCaptchaToken} />}
+      <Button
+        title={t('auth.sendCode')}
+        onPress={() => void submitPhone()}
+        disabled={busy || (captcha && !captchaToken)}
+      />
 
       {error && <Text style={[styles.body, { color: colors.danger }]}>{error}</Text>}
 

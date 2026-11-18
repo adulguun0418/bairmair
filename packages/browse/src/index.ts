@@ -1,5 +1,6 @@
 export * from './agent';
 export * from './auth-errors';
+export * from './captcha';
 export * from './embed';
 export * from './favorites-remote';
 export * from './favorites-store';

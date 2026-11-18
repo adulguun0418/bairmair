@@ -1,6 +1,11 @@
 'use client';
 
-import { authErrorKey, formatMongolianPhone, type AuthErrorKey } from '@bairmair/browse';
+import {
+  authErrorKey,
+  formatMongolianPhone,
+  normalizeMongolianPhone,
+  type AuthErrorKey,
+} from '@bairmair/browse';
 import { createTranslator, localePath, type Locale } from '@bairmair/i18n';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,9 +20,9 @@ type Step = { kind: 'phone' } | { kind: 'code'; phone: string; sentAt: number };
 type Message = { key: 'invalidPhone' } | { key: AuthErrorKey } | null;
 
 /**
- * Website sign-in with a Mongolian phone number: number + Turnstile → our `/api/auth/otp` texts
- * a code → the browser checks the code with Supabase and keeps the session. New numbers get an
- * account, as in the app. Afterwards it returns to `?next=` (same site only).
+ * Website sign-in with a Mongolian phone number: number + Turnstile token → Supabase Auth checks
+ * the token and texts a code (send-sms hook) → the browser checks the code and keeps the session.
+ * New numbers get an account, as in the app. Afterwards it returns to `?next=` (same site only).
  */
 export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: string }) {
   const t = useMemo(() => createTranslator(locale), [locale]);
@@ -51,30 +56,29 @@ export function SignInForm({ locale, siteKey }: { locale: Locale; siteKey: strin
       setMessage({ key: 'captcha' });
       return;
     }
+    const phone = normalizeMongolianPhone(number);
+    if (!phone) {
+      setMessage({ key: 'invalidPhone' });
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
-      const response = await fetch('/api/auth/otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: number, captchaToken: token }),
+      // Supabase Auth checks the token with Cloudflare (captcha protection), so the request goes
+      // straight from the browser: Auth's per-IP limits then count each visitor separately.
+      const { error } = await browserClient().auth.signInWithOtp({
+        phone,
+        options: { captchaToken: token },
       });
-      const body = (await response.json().catch(() => ({}))) as {
-        sent?: boolean;
-        phone?: string;
-        error?: string;
-      };
-      if (response.ok && body.sent && body.phone) {
-        setStep({ kind: 'code', phone: body.phone, sentAt: Date.now() });
+      if (error) {
+        setMessage({ key: authErrorKey(error) });
+      } else {
+        setStep({ kind: 'code', phone, sentAt: Date.now() });
         setNow(Date.now());
         setCode('');
-      } else if (body.error === 'invalid_phone') {
-        setMessage({ key: 'invalidPhone' });
-      } else {
-        setMessage({ key: authErrorKey({ code: body.error }) });
       }
-    } catch {
-      setMessage({ key: 'network' });
+    } catch (cause) {
+      setMessage({ key: authErrorKey(cause) });
     } finally {
       setBusy(false);
       // Tokens are single use.

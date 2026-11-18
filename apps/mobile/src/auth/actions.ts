@@ -14,14 +14,28 @@ export type PhoneMode = 'sign-in' | 'add-phone';
 
 export type SignInResult = 'signed-in' | 'canceled';
 
-/** Sends the 6-digit SMS code (through the send-sms hook). `phone` is E.164. */
-export async function sendPhoneCode(phone: string, mode: PhoneMode): Promise<void> {
+/**
+ * Sends the 6-digit SMS code (through the send-sms hook). `phone` is E.164.
+ * Sign-in needs a Turnstile token (`CaptchaView`): Supabase Auth's captcha protection covers
+ * `/otp`. Adding a phone is an update of the signed-in user, which captcha does not cover.
+ */
+export async function sendPhoneCode(
+  phone: string,
+  mode: PhoneMode,
+  captchaToken?: string | null,
+): Promise<void> {
   const { error } =
     mode === 'sign-in'
-      ? await supabase.auth.signInWithOtp({ phone })
+      ? await supabase.auth.signInWithOtp({
+          phone,
+          options: { captchaToken: captchaToken ?? undefined },
+        })
       : await supabase.auth.updateUser({ phone });
   if (error) throw error;
 }
+
+/** Whether sending a code in this mode needs a captcha token. */
+export const needsCaptcha = (mode: PhoneMode): boolean => mode === 'sign-in';
 
 export async function verifyPhoneCode(
   phone: string,

@@ -213,11 +213,17 @@ token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
 web3 = 30
 
-# Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
-# provider = "hcaptcha"
-# secret = ""
+# Captcha (Cloudflare Turnstile) before Auth texts a code, for every client: Auth's endpoints are
+# reachable with the public key, so without it a bot could use up the hourly SMS cap or text
+# any number. Covers /otp, /resend, /signup and password sign-in; not Apple sign-in (id_token),
+# token refresh, /verify, or requests made with the secret key (server code, remote tests).
+# The website's form and the app's /embed/captcha page (WebView) send the token. Turning it on
+# breaks sign-in for app versions older than 0.1.19 (they send no token).
+# Secret: the Turnstile widget's secret key, TURNSTILE_SECRET_KEY in supabase/.env.
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "env(TURNSTILE_SECRET_KEY)"
 
 [auth.email]
 # Allow/disallow the email provider. When false, users can't sign up or sign in with email.

@@ -251,6 +251,9 @@ export const en: Messages = {
     changeNumber: 'Change number',
     signedIn: 'Signed in.',
     resendIn: 'You can resend in {{seconds}} s',
+    captchaChecking: 'Checking that you are not a robot…',
+    captchaFailed: 'The robot check did not load. Check your internet connection and try again.',
+    captchaRetry: 'Check again',
     errors: {
       invalidCode: 'The code is wrong or has expired.',
       tooManyRequests: 'Too many attempts. Wait a moment and try again.',

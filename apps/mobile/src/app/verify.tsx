@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
-import { sendPhoneCode, verifyPhoneCode, type PhoneMode } from '@/auth/actions';
+import { needsCaptcha, sendPhoneCode, verifyPhoneCode, type PhoneMode } from '@/auth/actions';
+import { CaptchaView } from '@/auth/captcha-view';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
@@ -27,6 +28,10 @@ export default function VerifyScreen() {
   const [busy, setBusy] = useState(false);
   const [resendAt, setResendAt] = useState(() => Date.now() + RESEND_SECONDS * 1000);
   const [now, setNow] = useState(() => Date.now());
+  const captcha = needsCaptcha(mode);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  /** Remounts the captcha after each resend: a token is single use. */
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -57,15 +62,17 @@ export default function VerifyScreen() {
   };
 
   const resend = async () => {
+    if (captcha && !captchaToken) return;
     setError(null);
     setBusy(true);
     try {
-      await sendPhoneCode(phone, mode);
+      await sendPhoneCode(phone, mode, captchaToken);
       setResendAt(Date.now() + RESEND_SECONDS * 1000);
     } catch (cause) {
       setError(t(`auth.errors.${authErrorKey(cause)}`));
     } finally {
       setBusy(false);
+      if (captcha) setCaptchaKey((n) => n + 1);
     }
   };
 
@@ -101,8 +108,10 @@ export default function VerifyScreen() {
         title={secondsLeft > 0 ? t('auth.resendIn', { seconds: secondsLeft }) : t('auth.resend')}
         variant="secondary"
         onPress={() => void resend()}
-        disabled={busy || secondsLeft > 0}
+        disabled={busy || secondsLeft > 0 || (captcha && !captchaToken)}
       />
+      {/* A token ready for "send again". */}
+      {captcha && <CaptchaView key={captchaKey} onToken={setCaptchaToken} />}
     </ScrollView>
   );
 }

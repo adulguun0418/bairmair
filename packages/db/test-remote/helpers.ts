@@ -1,5 +1,5 @@
 import { randomInt, randomUUID } from 'node:crypto';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../src/database.types';
 
 function required(name: string): string {
@@ -37,6 +37,24 @@ export interface TestUser {
 const created: string[] = [];
 
 /**
+ * Signs in with a password on a client with the publishable key, like a real app client.
+ * Password sign-in is under Auth's captcha protection, which skips requests made with the
+ * secret key: a throwaway secret-key client signs in (never the shared `admin`, whose requests
+ * would then run as the user), and its session moves to `client`.
+ */
+export async function signInWithPassword(
+  client: Client,
+  credentials: { phone: string; password: string } | { email: string; password: string },
+): Promise<Session> {
+  const auth = createClient<Database>(env.url, env.secretKey, noSession).auth;
+  const { data, error } = await auth.signInWithPassword(credentials);
+  if (error) throw error;
+  const set = await client.auth.setSession(data.session);
+  if (set.error) throw set.error;
+  return data.session;
+}
+
+/**
  * Creates a user with a confirmed phone and a password, then signs in as them.
  * +976 0xxxxxxx: Mongolian numbers never start with 0, so these reach no one (and no SMS is sent:
  * the admin API confirms the phone directly).
@@ -54,8 +72,7 @@ export async function createUser(label: string): Promise<TestUser> {
   created.push(data.user.id);
 
   const client = createClient<Database>(env.url, env.publishableKey, noSession);
-  const { error: signInError } = await client.auth.signInWithPassword({ phone, password });
-  if (signInError) throw signInError;
+  await signInWithPassword(client, { phone, password });
   return { id: data.user.id, phone, client };
 }
 
@@ -76,8 +93,7 @@ export async function createEmailUser(label: string): Promise<TestUser> {
   created.push(data.user.id);
 
   const client = createClient<Database>(env.url, env.publishableKey, noSession);
-  const { error: signInError } = await client.auth.signInWithPassword({ email, password });
-  if (signInError) throw signInError;
+  await signInWithPassword(client, { email, password });
   return { id: data.user.id, phone: '', client };
 }
 

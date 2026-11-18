@@ -3,6 +3,7 @@ import { EMPTY_FORM, formToFields, type ListingFields } from '@bairmair/browse';
 import { BUCKETS, listingPhotoPath, type Database } from '@bairmair/db';
 import { createClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { signInForTest } from './sign-in';
 import {
   addPhoto,
   confirmAvailable,
@@ -51,7 +52,7 @@ beforeAll(async () => {
   });
   if (error) throw error;
   userId = data.user.id;
-  const signIn = await browserClient().auth.signInWithPassword({ phone, password });
+  const signIn = await signInForTest(browserClient(), { phone, password });
   if (signIn.error) throw signIn.error;
 });
 
