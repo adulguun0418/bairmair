@@ -21,9 +21,9 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import type { PerspectiveCamera, Vector3 } from 'three';
+import { MeshBasicMaterial, type Mesh, type PerspectiveCamera, type Vector3 } from 'three';
 import type { ViewerText } from '../text';
-import { buildScene, COLORS, GLASS_OPACITY, type SceneData, type WallMesh } from './scene';
+import { buildScene, COLORS, CUT_WALL_M, type SceneData, type WallMesh } from './scene';
 
 export interface RoomViewer3DProps {
   model: RoomModelV1;
@@ -67,10 +67,6 @@ const INTRO_MS = 3000;
 /** After a drag, the showcase waits this long before turning by itself again. */
 const SHOWCASE_RESUME_MS = 4000;
 
-/** Opacity of a wall between the camera and its room. */
-const FADED_WALL_OPACITY = 0.12;
-/** A wall between two rooms fades only this far, so the rooms stay visibly apart. */
-const FADED_INNER_WALL_OPACITY = 0.45;
 /** A drag longer than this many pixels is a camera move, not a tap on a room. */
 const TAP_TOLERANCE_PX = 6;
 
@@ -143,12 +139,6 @@ export function RoomViewer3D({
           {scene.thresholds && (
             <mesh geometry={scene.thresholds}>
               <meshStandardMaterial color={COLORS.threshold} roughness={0.95} />
-            </mesh>
-          )}
-          {scene.caps && (
-            // Opaque, apart from the walls: a faded wall still shows its line from above.
-            <mesh geometry={scene.caps}>
-              <meshBasicMaterial color={COLORS.wallCap} />
             </mesh>
           )}
           {scene.dividers && (
@@ -435,25 +425,38 @@ function Floors({
   ));
 }
 
+/**
+ * The walls, as a cutaway: a wall between the camera and its room is cut down to a low solid
+ * stub (`CUT_WALL_M`) with its dark top moved down with it, so it never hides the room and never
+ * turns into a see-through ghost. Walls without a room are never cut.
+ */
 function Walls({ walls }: { walls: WallMesh[] }) {
+  const caps = useRef(new Map<string, Mesh>());
+  const capMaterial = useMemo(() => new MeshBasicMaterial({ color: COLORS.wallCap }), []);
+  useEffect(() => () => capMaterial.dispose(), [capMaterial]);
+  const gl = useThree((state) => state.gl);
+  useEffect(() => {
+    gl.localClippingEnabled = true;
+  }, [gl]);
+
   useFrame((state, delta) => {
     const { x, z } = state.camera.position;
     const step = Math.min(1, delta * 10);
     let animating = false;
     for (const wall of walls) {
-      let target = 1;
+      let target = wall.top;
       if (wall.outward) {
         // Camera on the outer side of the wall: the wall is between the camera and its room.
         const side =
           (x - wall.center[0]) * wall.outward[0] + (z - wall.center[1]) * wall.outward[1];
-        if (side > 0.05) target = wall.inner ? FADED_INNER_WALL_OPACITY : FADED_WALL_OPACITY;
+        if (side > 0.05) target = Math.min(wall.top, wall.bottom + CUT_WALL_M);
       }
-      const material = wall.material;
-      const next = material.opacity + (target - material.opacity) * step;
-      const settled = Math.abs(target - next) < 0.01;
-      material.opacity = settled ? target : next;
-      material.depthWrite = material.opacity > 0.6;
-      wall.glassMaterial.opacity = GLASS_OPACITY * material.opacity;
+      const current = wall.clip.constant;
+      const next = current + (target - current) * step;
+      const settled = Math.abs(target - next) < 0.005;
+      wall.clip.constant = settled ? target : next;
+      const cap = caps.current.get(wall.id);
+      if (cap) cap.position.y = wall.clip.constant - wall.top;
       if (!settled) animating = true;
     }
     if (animating) state.invalidate();
@@ -462,6 +465,14 @@ function Walls({ walls }: { walls: WallMesh[] }) {
   return walls.map((wall) => (
     <group key={wall.id} position={wall.position} rotation-y={wall.yaw}>
       <mesh geometry={wall.geometry} material={wall.material} />
+      <mesh
+        geometry={wall.cap}
+        material={capMaterial}
+        ref={(mesh) => {
+          if (mesh) caps.current.set(wall.id, mesh);
+          else caps.current.delete(wall.id);
+        }}
+      />
       {wall.panes.map((pane, index) => (
         <mesh key={index} position={pane.position} material={wall.glassMaterial}>
           <planeGeometry args={[pane.width, pane.height]} />
