@@ -98,7 +98,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Over-the-air updates (`expo-updates` 58.0.22, EAS Update; **needs a new build**, then JS-only changes ship without one):
   - `app.json`: `updates.url` (EAS project) and `runtimeVersion` (now the fixed string `"0.1.0"`, see Decisions). `eas.json`: channels `development` and `preview` on their profiles.
   - Publish: `pnpm update:preview -m "<what changed>"` in `apps/mobile` (= `eas update --channel preview --environment preview`). The `EXPO_PUBLIC_*` values come from the EAS `preview` environment; checked that they win over the local `.env` (an export with the shell values had them, not the Wi-Fi address).
-  - The app checks on every launch, downloads in the background, and runs the update from the next launch (close the app fully, open it again). Бүртгэл shows the version and "суулгасан хувилбар" or "шинэчлэл <time>".
+  - The app checks on every launch (and, since 0.1.16, when it returns to the foreground), downloads in the background, and offers "Дахин ачаалах" once the update is on the phone (otherwise it runs from the next launch). Бүртгэл shows the version and "суулгасан хувилбар" or "шинэчлэл <time>".
   - Two numbers: `version` is what Бүртгэл shows and may change in any update (0.1.1, 0.1.2 shipped that way); `runtimeVersion` is the native code's identity, and EAS sends an update only to builds with the same runtime (the dashboard's "Runtime" column). Raise `runtimeVersion` only with a new build after a native change.
   - In the EAS dashboard, a `*` after the commit means the update was bundled from uncommitted files (the "what changed" test update on iOS).
 - Web sign-in, account, favorites and reports:
@@ -298,7 +298,13 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Now a wall between the camera and its room is cut down to a solid 45 cm stub (`CUT_WALL_M`) through a per-wall clipping plane (`WallMesh.clip`, `localClippingEnabled`), animated like the fade was; its dark top slab (`WallMesh.cap`) moves down with the cut. Walls are opaque and double-sided, so a cut looks solid. Every wall always reads as a wall; nothing is see-through. The navy front door is drawn apart and keeps its full height.
   - Trade-off: windows (and open door leaves) in a cut wall are cut too, until you turn to the other side.
   - Verified: typecheck, lint; headless Chrome on the friend's apartment from the entrance view and from the back. No unit test: the viewer package has none (geometry checked visually).
-- Tests: 575 unit (room-model 232, browse 122, mobile 109, web 56, i18n 29, send-sms 18, db 7) + 86 integration tests against the dev project (db 63, mobile 12, web 11).
+- "Update ready" banner (your request: no more closing and reopening twice; app 0.1.16, OTA, JS only):
+  - Why two restarts: expo-updates checks at launch but never makes the launch wait (`fallbackToCacheTimeout` 0, a native setting), so the first launch downloads and the second runs the update.
+  - `src/lib/app-update.tsx` (`UpdateBanner`, in the root layout): once `useUpdates()` reports a downloaded update, a navy card under the status bar: "Шинэ хувилбар бэлэн боллоо" with "Дахин ачаалах" (`Updates.reloadAsync()`, a restart in about a second without leaving the app) and "Дараа" (hidden for that update; it runs at the next launch; a newer download shows the card again). Never restarts by itself. Hidden on the scanner screens (a capture lives only in memory). Coming back to the foreground also checks and downloads (at most every 15 minutes), since people rarely close apps fully. Development builds have updates off and render nothing. iOS modal screens (filters, report sheet) are drawn over it.
+  - The update that brings the banner still needs the two restarts; every later one shows the card.
+  - Pure rules in `app-update-logic.ts` (tested). Copy: `appUpdate` in `mn.ts`/`en.ts`.
+  - Verified: typecheck, lint, tests, `expo export` for iOS. Not verified: on a phone (needs this update and then one more).
+- Tests: 584 unit (room-model 232, browse 122, mobile 118, web 56, i18n 29, send-sms 18, db 7) + 86 integration tests against the dev project (db 63, mobile 12, web 11).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -435,6 +441,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Front-door picker copy (`entrance` in `mn.ts`), e.g. "Автоматаар таамаглах", and `viewer.plainView` "Цэвэр харагдац".
 
 ## Next
+- You, update banner (after merge: `pnpm update:preview -m "Update ready banner"` in `apps/mobile` on a clean, up-to-date `main`): this update arrives the old way, so close and reopen twice; Бүртгэл shows 0.1.16. To see the banner, the next OTA update must arrive: after any later `update:preview`, open the app (or bring it back from the background after 15 minutes); within a few seconds the navy card appears under the status bar. "Дахин ачаалах" restarts into it (Бүртгэл shows the new version); "Дараа" hides it until the next launch. It never shows while scanning.
 - You, 3D doors and windows (after Vercel deploys `main`): open your friend's listing (web or the app's "3D-ээр үзэх"): the navy front door with "Орох хаалга" sits at the front; "Анхны харагдац" returns there; windows have dark frames and sills; interior doors are wood, open ones swung into the room.
 - You, front door and plain view (after Vercel deploys `main`; app 0.1.15 published as an OTA update on 2026-11-18):
   - Website: `/my-listings` → your friend's listing → "3D скан": the "Орох хаалга" card says it was guessed; "Орох хаалга сонгох" → click another door on the plan: it turns sky blue with an arrow, "Орох хаалгыг хадгаллаа."; the public page's 3D now opens looking in through that door. "Автоматаар таамаглах" brings back the guess.
