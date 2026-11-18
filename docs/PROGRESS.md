@@ -18,7 +18,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - `apps/web` (Next.js 16): `/samples` gallery and `/samples/[sample]` with 3D view, floor plan, room list and photo dialog, in sync.
 - Step 3:
   - Dev project `bairmair` (ref `xjfqbgwobpudqgjmnaod`, Postgres 17, Seoul) linked; 7 migrations applied: schema, districts, triggers, RPCs (`reveal_listing_contact`, `record_listing_view`, `confirm_listing_available`), grants + RLS, storage buckets and policies.
-  - Auth from `supabase/config.toml`: phone OTP through the `send-sms` Edge Function (Send SMS hook). Test number +976 00000001, code 123456 (skips the hook). Real phones used as dev test numbers stay out of the public repo: they live in `DEV_TEST_OTP` in `supabase/.env` (see Commands).
+  - Auth from `supabase/config.toml`: phone OTP through the `send-sms` Edge Function (Send SMS hook). Test numbers (fixed code, skip the hook) live only in `DEV_TEST_OTP` in `supabase/.env`, never in the public repo (see Commands; the fake +976 00000001 was public until the security pass and was removed).
   - `@bairmair/db`: generated types, storage paths, database error keys.
   - Verified on the live project: Cyrillic trigrams work (ICU en-US locale); phone auth needs no built-in SMS provider; the caller IP reaches SQL; CLI works on Windows without Docker.
 - Step 4, part 1:
@@ -301,7 +301,13 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Pure rules in `app-update-logic.ts` (tested). Copy: `appUpdate` in `mn.ts`/`en.ts`.
   - Verified: typecheck, lint, tests, `expo export` for iOS. Not verified: on a phone (needs this update and then one more).
 - Fix: search map crash on returning to search (your report, 2026-11-18). Search with the map → a listing → "Зарагдах/Түрээсийн байр" in the header showed "Алдаа гарлаа" (`Style is not done loading`). With Cache Components, Next keeps visited pages alive but hidden (React `<Activity>`): hiding removed the map but kept `ready = true`, so on return the label effect touched the new map before its style loaded. `SearchMap` now keeps the loaded map instance (`readyMap`) instead of a flag, and its effects run only for the current map. Verified in headless Chrome: the live site reproduces the crash; a production build with the fix shows the map and pins, no errors. Watch for the same pattern in any new map/WebGL component (state that outlives an effect cleanup).
-- Tests: 584 unit (room-model 232, browse 122, mobile 118, web 56, i18n 29, send-sms 18, db 7) + 86 integration tests against the dev project (db 63, mobile 12, web 11).
+- Security pass (your request, 2026-11-18; review of the whole project, items 1, 2, 4, 5 fixed; the rest is listed under "Security: open items"):
+  - Public test login removed from `config.toml` (`97600000001 = "123456"`: anyone could sign in with a verified phone and publish). The config now says never to list numbers there; `DEV_TEST_OTP` added to `supabase/.env.example`. The CLI treats `test_otp` as unmanaged, so the number must be deleted in the dashboard (see Next).
+  - Per-number limit on sign-in codes: migration 16 (`20261121100000_sms_limits.sql`): `private.sms_sends` (SHA-256 of the number, kept 1 day) and `public.claim_sms_send(phone)` (service role only; advisory lock per number). The send-sms hook claims before texting: at most 5 codes per number per hour and 10 per day, on top of Auth's 60 s per number; over the limit it answers `sms_rate_limited` (429), which the apps show as "Хэт олон оролдлого хийлээ…" (`authErrorKey` reads the hook's message; the web code route passes it as the code). A failed check sends anyway (fail open, logged `sms_limit_check_failed`). The hook reads `SUPABASE_URL` + `SUPABASE_SECRET_KEYS` (set by Supabase). Gateway timeout 3.5 s, check 1 s (Auth waits 5 s). Still open: a bot can use up the project's 30 SMS/hour with 30 different numbers; only Auth captcha closes that.
+  - Profiles: migration 17 (`20261121100100_public_profiles.sql`): a profile is readable by its own user, and by everyone only for agents and sellers of a live (published / sold) listing. Before, `GET /rest/v1/profiles` listed every account's name and sign-up date.
+  - Website headers (`next.config.ts`): CSP `frame-ancestors 'none'; base-uri 'self'; object-src 'none'` (no script policy: nonces would make the cached pages dynamic), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera, microphone, payment, usb off; geolocation for our own pages), no `X-Powered-By`. `/api/plan` keeps its strict `default-src 'none'`. Vercel already sends HSTS.
+  - Verified: typecheck, lint, unit tests; migrations pushed and the hook deployed; integration tests (db: a user without a live listing is not public, a seller becomes public with the listing, a former agent stops being public); the live hook signed by hand with a fake +976 0 number (WeSend refuses it, no charge): requests 1–5 passed the limit, the 6th got `sms_rate_limited`; the public key gets 42501 on `claim_sms_send`; anonymous `profiles` returns 3 of 4 accounts; headers checked on a production build (page, listing, embed, sign-in, plan SVG).
+- Tests: 594 unit (room-model 232, browse 124, mobile 118, web 56, i18n 29, send-sms 28, db 7) + 88 integration tests against the dev project (db 65, mobile 12, web 11).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -412,7 +418,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Step 6 serves the model with `applyAnnotations(model, { roomLabels, photos })` from `room_scans.room_labels` and `listing_photos.room_id`; replaced scans' `scan-models` files still need a server-side cleanup.
 - Google sign-in: needs a Google Cloud OAuth web client (ID + secret) in `[auth.external.google]`; the button appears by itself once the provider is on. storage-js `exists()` returns `data: false` *with* an error for a missing object.
 - Icons come from `assets/brand/logo.svg` on white: the full logo (building + "bairmair") for the iOS icon, Android adaptive icon and splash; `logo-mark.svg` (building only) for the web icons and the small Expo web favicon. The web header uses `logo-horizontal.svg` (mark left, wordmark right), built from `logo.svg`'s own paths by `node assets/brand/build-horizontal.mjs` (also writes `apps/web/public/brand/`). The new app icons and splash show up with the next EAS build.
-- Before production: separate project, remove the test OTP number, turn off the email provider (kept on in dev for the tests).
+- Before production: separate project, no test OTP numbers, turn off the email provider (kept on in dev for the tests).
 
 ## To review
 - Header/footer/legal copy (`nav`, `theme`, `footer`, `legal`, `contact` in `mn.ts`) and the page texts in `apps/web/src/content/` (drafts, not legal advice).
@@ -438,6 +444,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Front-door picker copy (`entrance` in `mn.ts`), e.g. "Автоматаар таамаглах", and `viewer.plainView` "Цэвэр харагдац".
 
 ## Next
+- You, security pass: Supabase dashboard → Authentication → Sign In / Providers → Phone → test phone numbers: delete `97600000001` (its code is in the public git history, so it stays a working login until deleted; I could not change it through the CLI). Keep any number you need in `DEV_TEST_OTP` with a new code. Then the website (after Vercel deploys `main`): sign in, open a listing, the map and the photo picker; nothing should look different. The app needs nothing.
 - You, update banner (0.1.16 published 2026-11-18; 0.1.17, a version bump only, published right after as the test update): if Бүртгэл already shows 0.1.16, open the app (or bring it back from the background after 15 minutes); within a few seconds the navy card appears under the status bar. If the phone skipped 0.1.16, it downloads 0.1.17 directly and needs the two restarts once more; the banner then shows from the next update on. "Дахин ачаалах" restarts into it (Бүртгэл shows the new version); "Дараа" hides it until the next launch. It never shows while scanning.
 - You, 3D doors and windows (after Vercel deploys `main`): open your friend's listing (web or the app's "3D-ээр үзэх"): the navy front door with "Орох хаалга" sits at the front; "Анхны харагдац" returns there; windows have dark frames and sills; interior doors are wood, open ones swung into the room.
 - You, front door and plain view (after Vercel deploys `main`; app 0.1.15 published as an OTA update on 2026-11-18):
@@ -508,6 +515,14 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Keep the key's IP allowlist empty in WeSend: Edge Functions have no fixed IP.
 - Failures show in the function logs (Supabase dashboard → Edge Functions → send-sms → Logs) as `sms_send_failed` with `wesend <status> <code>` (e.g. `insufficient_credits`, `recipient_rate_limited`). The app shows its generic "SMS failed" message.
 - Numbers in `DEV_TEST_OTP` never reach the hook (fixed code, no SMS).
+
+## Security: open items (from the 2026-11-18 review)
+- Auth captcha for every client (closes SMS-cap exhaustion and texting arbitrary numbers): Turnstile in a WebView in the app (JS only, `react-native-webview` is in the builds), the web route forwards the token instead of checking it, integration tests need a workaround. Ship the app side first, then switch captcha on.
+- Seller phone scraping: anonymous reveals are 10/hour per IP; rotating proxies get around that. Turnstile on anonymous reveals (through a Next.js route) or sign-in to reveal.
+- Production Supabase project (tests and live users share the dev one; Vercel Preview holds its secret key: check Vercel's fork protection, the repo is public).
+- "Scanned on-site" and the scanned area come from the seller's phone and can be forged through the API (App Attest needs native code).
+- `contact_reveals.ip_hash` is unsalted SHA-256 (reversible) and never deleted: keyed hash + 30-day cleanup.
+- Smaller: `record_listing_view` unlimited; draft/hidden photos and old scan models stay in public buckets; Vercel Firewall rate limit on `/api/og`, `/api/plan`; database network restrictions; 2FA on every service account; the app's session in AsyncStorage unencrypted.
 
 ## Open decisions
 - Google sign-in credentials (Google Cloud OAuth web client), whenever you want Google on.

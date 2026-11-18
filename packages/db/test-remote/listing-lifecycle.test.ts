@@ -110,12 +110,17 @@ describe('reference data', () => {
 
 describe('profiles', () => {
   it('a profile is created on sign-up, named from the auth metadata', async () => {
-    const { data } = await anon
+    const { data } = await alice.client
       .from('profiles')
       .select('id, role, display_name')
       .eq('id', alice.id)
       .single();
     expect(data).toEqual({ id: alice.id, role: 'owner', display_name: 'Test alice' });
+  });
+
+  it('a user without a live listing or agent profile is not public', async () => {
+    expect((await anon.from('profiles').select('id').eq('id', alice.id)).data).toEqual([]);
+    expect((await bob.client.from('profiles').select('id').eq('id', alice.id)).data).toEqual([]);
   });
 
   it('users edit their own name, never their role or someone else', async () => {
@@ -349,6 +354,11 @@ describe('photos and publishing', () => {
       public_lat: snapped(ZAISAN.lat),
       listing_photos: [{ storage_path: listingPhotoPath(listingId, photoId) }],
     });
+  });
+
+  it("the seller's profile becomes public with the live listing", async () => {
+    const { data } = await anon.from('profiles').select('id, role').eq('id', alice.id).single();
+    expect(data).toEqual({ id: alice.id, role: 'owner' });
   });
 
   it('the owner confirms availability; nobody else can', async () => {
@@ -690,8 +700,10 @@ describe('agents', () => {
       .select('profile_id');
     expect(own.error).toBeNull();
     expect(own.data).toEqual([{ profile_id: bob.id }]);
-    const profile = await anon.from('profiles').select('role').eq('id', bob.id).single();
+    const profile = await bob.client.from('profiles').select('role').eq('id', bob.id).single();
     expect(profile.data?.role).toBe('owner');
+    // No longer an agent and no live listing: no longer public.
+    expect((await anon.from('profiles').select('id').eq('id', bob.id)).data).toEqual([]);
     const agent = await anon.from('agent_profiles').select('profile_id').eq('profile_id', bob.id);
     expect(agent.data).toEqual([]);
   });

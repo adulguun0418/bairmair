@@ -615,6 +615,7 @@ export type Database = {
       };
     };
     Functions: {
+      claim_sms_send: { Args: { p_phone: string }; Returns: boolean };
       confirm_listing_available: {
         Args: { p_listing_id: string };
         Returns: string;

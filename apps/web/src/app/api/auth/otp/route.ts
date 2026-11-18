@@ -1,3 +1,4 @@
+import { SMS_RATE_LIMITED } from '@bairmair/browse';
 import type { Database } from '@bairmair/db';
 import { createClient } from '@supabase/supabase-js';
 import { publicEnv } from '@/lib/public-env';
@@ -38,9 +39,13 @@ export async function POST(request: Request) {
             { auth: { persistSession: false, autoRefreshToken: false } },
           ).auth;
           const { error } = await auth.signInWithOtp({ phone });
-          return error
-            ? { code: error.code ?? 'unexpected_failure', status: error.status ?? 500 }
-            : null;
+          if (!error) return null;
+          // The send-sms hook's refusal arrives as its message; the browser maps codes only.
+          const code =
+            error.message === SMS_RATE_LIMITED
+              ? SMS_RATE_LIMITED
+              : (error.code ?? 'unexpected_failure');
+          return { code, status: error.status ?? 500 };
         },
       },
       body,

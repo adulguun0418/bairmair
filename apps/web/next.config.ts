@@ -5,8 +5,48 @@ const photoPattern = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? [new URL(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/**`)]
   : [];
 
+/**
+ * Security headers on every response (Vercel adds HSTS itself).
+ * - No site may frame our pages (clickjacking of /account, /my-listings). The app's 3D screen
+ *   loads the embed page as its own page in a WebView, not in a frame, so it is unaffected.
+ * - The CSP only sets directives that do not limit scripts, styles or connections (framing,
+ *   `<base>`, plugins); a script policy needs per-request nonces, which would make the cached
+ *   pages dynamic. React's escaping is the XSS defence for now.
+ * - Geolocation stays on for our own pages: the pin picker's "use my location".
+ */
+const SECURITY_HEADERS = [
+  {
+    key: 'Content-Security-Policy',
+    value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+  },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=(self), payment=(), usb=()',
+  },
+];
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  poweredByHeader: false,
+  async headers() {
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      // Floor-plan SVGs (seller-typed room names inside): the route's own strict policy, which
+      // the line above would otherwise replace. A later match wins for the same header.
+      {
+        source: '/api/plan/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+          },
+        ],
+      },
+    ];
+  },
   images: {
     // Vercel resizes on its own image service (5,000 transformations a month on Hobby). Local
     // builds serve the originals: the repo does not build `sharp` (see PROGRESS).
