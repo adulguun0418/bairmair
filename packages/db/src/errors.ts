@@ -38,6 +38,16 @@ export const API_ERROR_KEYS = [
   'scan_files_missing',
   /** The raw file is not a RoomPlan export we can convert; the scan is now `failed` (HTTP 422). */
   'scan_conversion_failed',
+  /** Unknown product, or a malformed payment request (HTTP 400). */
+  'payment_invalid',
+  /** The product is not open to this user (HTTP 403). */
+  'payment_forbidden',
+  /** The payment does not exist or is not the caller's (HTTP 404). */
+  'payment_not_found',
+  /** Too many new invoices in the last hour (HTTP 429). */
+  'payment_rate_limited',
+  /** Payments are not configured on this server, or QPay did not answer (HTTP 503). */
+  'payment_unavailable',
   /** Anything else; safe to retry (HTTP 500). */
   'server_error',
 ] as const;

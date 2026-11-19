@@ -440,6 +440,77 @@ export type Database = {
           },
         ];
       };
+      payments: {
+        Row: {
+          amount: number;
+          checked_at: string | null;
+          checkout: Json;
+          closed_at: string | null;
+          created_at: string;
+          currency: Database['public']['Enums']['currency_code'];
+          description: string;
+          fulfilled_at: string | null;
+          id: string;
+          paid_amount: number | null;
+          paid_at: string | null;
+          product: string;
+          qpay_invoice_id: string;
+          qpay_payment_id: string | null;
+          status: Database['public']['Enums']['payment_status'];
+          subject_id: string | null;
+          updated_at: string;
+          user_id: string | null;
+        };
+        Insert: {
+          amount: number;
+          checked_at?: string | null;
+          checkout: Json;
+          closed_at?: string | null;
+          created_at?: string;
+          currency?: Database['public']['Enums']['currency_code'];
+          description: string;
+          fulfilled_at?: string | null;
+          id: string;
+          paid_amount?: number | null;
+          paid_at?: string | null;
+          product: string;
+          qpay_invoice_id: string;
+          qpay_payment_id?: string | null;
+          status?: Database['public']['Enums']['payment_status'];
+          subject_id?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          amount?: number;
+          checked_at?: string | null;
+          checkout?: Json;
+          closed_at?: string | null;
+          created_at?: string;
+          currency?: Database['public']['Enums']['currency_code'];
+          description?: string;
+          fulfilled_at?: string | null;
+          id?: string;
+          paid_amount?: number | null;
+          paid_at?: string | null;
+          product?: string;
+          qpay_invoice_id?: string;
+          qpay_payment_id?: string | null;
+          status?: Database['public']['Enums']['payment_status'];
+          subject_id?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payments_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_path: string | null;
@@ -712,6 +783,7 @@ export type Database = {
       listing_status: 'draft' | 'published' | 'sold_or_rented' | 'archived';
       listing_type: 'sale' | 'rent';
       parking_type: 'none' | 'outdoor' | 'garage' | 'underground';
+      payment_status: 'pending' | 'paid' | 'cancelled' | 'expired';
       report_reason: 'fake' | 'wrong_info' | 'unavailable' | 'duplicate' | 'offensive' | 'other';
       report_status: 'open' | 'resolved' | 'dismissed';
       scan_status: 'uploaded' | 'ready' | 'failed';
@@ -844,6 +916,7 @@ export const Constants = {
       listing_status: ['draft', 'published', 'sold_or_rented', 'archived'],
       listing_type: ['sale', 'rent'],
       parking_type: ['none', 'outdoor', 'garage', 'underground'],
+      payment_status: ['pending', 'paid', 'cancelled', 'expired'],
       report_reason: ['fake', 'wrong_info', 'unavailable', 'duplicate', 'offensive', 'other'],
       report_status: ['open', 'resolved', 'dismissed'],
       scan_status: ['uploaded', 'ready', 'failed'],

@@ -1,7 +1,8 @@
 import { BUCKETS, CONTENT_TYPES, type TypedSupabaseClient } from '@bairmair/db';
-import type { Database, Json } from '@bairmair/db';
+import type { Database, Json, PaymentCheckout } from '@bairmair/db';
 import { createClient } from '@supabase/supabase-js';
 import type { AccountStore } from './delete-account';
+import type { PaymentRecord, PaymentStore } from './payments';
 import type { ScanStore } from './process-scan';
 
 /**
@@ -76,6 +77,127 @@ export function supabaseAccountStore(client: TypedSupabaseClient): AccountStore 
       const { error } = await client.auth.admin.deleteUser(userId);
       // Already gone (a repeated request): the goal is reached.
       if (error && error.status !== 404) throw error;
+    },
+  };
+}
+
+type PaymentRow = Database['public']['Tables']['payments']['Row'];
+
+const PAYMENT_COLUMNS =
+  'id, user_id, product, subject_id, amount, description, status, qpay_invoice_id, checkout, paid_at, fulfilled_at, checked_at, created_at';
+
+function paymentRecord(
+  row: Omit<
+    PaymentRow,
+    'currency' | 'qpay_payment_id' | 'paid_amount' | 'closed_at' | 'updated_at'
+  >,
+): PaymentRecord {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    product: row.product,
+    subjectId: row.subject_id,
+    amount: Number(row.amount),
+    description: row.description,
+    status: row.status,
+    qpayInvoiceId: row.qpay_invoice_id,
+    checkout: row.checkout as unknown as PaymentCheckout,
+    paidAt: row.paid_at,
+    fulfilledAt: row.fulfilled_at,
+    checkedAt: row.checked_at,
+    createdAt: row.created_at,
+  };
+}
+
+export function supabasePaymentStore(client: TypedSupabaseClient): PaymentStore {
+  const table = () => client.from('payments');
+
+  return {
+    async find(id) {
+      const { data, error } = await table().select(PAYMENT_COLUMNS).eq('id', id).maybeSingle();
+      if (error) throw error;
+      return data ? paymentRecord(data) : null;
+    },
+
+    async findOpen(userId, product, subjectId, since) {
+      let query = table()
+        .select(PAYMENT_COLUMNS)
+        .eq('user_id', userId)
+        .eq('product', product)
+        .eq('status', 'pending')
+        .gt('created_at', since.toISOString());
+      query = subjectId ? query.eq('subject_id', subjectId) : query.is('subject_id', null);
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? paymentRecord(data) : null;
+    },
+
+    async countSince(userId, since) {
+      const { count, error } = await table()
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gt('created_at', since.toISOString());
+      if (error) throw error;
+      return count ?? 0;
+    },
+
+    async insert(payment) {
+      const { data, error } = await table()
+        .insert({
+          id: payment.id,
+          user_id: payment.userId,
+          product: payment.product,
+          subject_id: payment.subjectId,
+          amount: payment.amount,
+          description: payment.description,
+          qpay_invoice_id: payment.qpayInvoiceId,
+          checkout: payment.checkout as unknown as Json,
+        })
+        .select(PAYMENT_COLUMNS)
+        .single();
+      if (error) throw error;
+      return paymentRecord(data);
+    },
+
+    async markChecked(id, at) {
+      const { error } = await table().update({ checked_at: at.toISOString() }).eq('id', id);
+      if (error) throw error;
+    },
+
+    async markPaid(id, fields) {
+      const { data, error } = await table()
+        .update({
+          status: 'paid',
+          paid_amount: fields.paidAmount,
+          qpay_payment_id: fields.qpayPaymentId,
+          paid_at: fields.paidAt.toISOString(),
+        })
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select('id');
+      if (error) throw error;
+      return data.length > 0;
+    },
+
+    async markClosed(id, status, at) {
+      const { data, error } = await table()
+        .update({ status, closed_at: at.toISOString() })
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select('id');
+      if (error) throw error;
+      return data.length > 0;
+    },
+
+    async markFulfilled(id, at) {
+      const { error } = await table()
+        .update({ fulfilled_at: at.toISOString() })
+        .eq('id', id)
+        .is('fulfilled_at', null);
+      if (error) throw error;
     },
   };
 }
