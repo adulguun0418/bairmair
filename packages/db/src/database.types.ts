@@ -633,6 +633,7 @@ export type Database = {
         Args: { p_listing_id: string };
         Returns: undefined;
       };
+      release_alert: { Args: { p_alert_id: number }; Returns: undefined };
       release_sms_alert: { Args: { p_alert_id: number }; Returns: undefined };
       reveal_listing_contact: {
         Args: { p_listing_id: string };
@@ -691,6 +692,15 @@ export type Database = {
           total_count: number;
           total_floors: number;
           type: Database['public']['Enums']['listing_type'];
+        }[];
+      };
+      take_alerts: {
+        Args: never;
+        Returns: {
+          created_at: string;
+          details: Json;
+          id: number;
+          kind: string;
         }[];
       };
     };

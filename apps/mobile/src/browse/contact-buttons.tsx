@@ -1,7 +1,9 @@
 import { dbErrorKey } from '@bairmair/db';
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { formatMongolianPhone } from '@bairmair/browse';
+import { useAuth } from '@/auth/auth-provider';
 import { useI18n } from '@/i18n/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/ui/button';
@@ -13,7 +15,10 @@ type State =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'shown'; phone: string }
-  | { kind: 'error'; message: 'rateLimited' | 'unavailable' | 'notAvailable' | 'failed' };
+  | {
+      kind: 'error';
+      message: 'rateLimited' | 'signIn' | 'unavailable' | 'notAvailable' | 'failed';
+    };
 
 /**
  * Tap to reveal the seller's number (rate-limited by `reveal_listing_contact`, like the web
@@ -23,7 +28,13 @@ type State =
 export function ContactButtons({ listingId }: { listingId: string }) {
   const { t } = useI18n();
   const colors = useColors();
-  const [state, setState] = useState<State>({ kind: 'idle' });
+  const { session } = useAuth();
+  const [current, setState] = useState<State>({ kind: 'idle' });
+  // Signed in since "sign in to see the number": the button is back.
+  const state: State =
+    current.kind === 'error' && current.message === 'signIn' && session
+      ? { kind: 'idle' }
+      : current;
 
   const reveal = async () => {
     setState({ kind: 'loading' });
@@ -40,11 +51,13 @@ export function ContactButtons({ listingId }: { listingId: string }) {
       message:
         key === 'rate_limited'
           ? 'rateLimited'
-          : key === 'contact_unavailable'
-            ? 'unavailable'
-            : key === 'listing_not_available'
-              ? 'notAvailable'
-              : 'failed',
+          : key === 'reveal_requires_sign_in'
+            ? 'signIn'
+            : key === 'contact_unavailable'
+              ? 'unavailable'
+              : key === 'listing_not_available'
+                ? 'notAvailable'
+                : 'failed',
     });
   };
 
@@ -85,6 +98,15 @@ export function ContactButtons({ listingId }: { listingId: string }) {
         <Text style={[styles.note, { color: colors.danger }]} accessibilityRole="alert">
           {t(`listingPage.contact.errors.${state.message}`)}
         </Text>
+      )}
+      {state.kind === 'error' && state.message === 'signIn' && (
+        // Anonymous reveals of everyone reached the hourly budget; signed in, the person has
+        // their own. Sign-in comes back to this listing.
+        <Button
+          title={t('listingPage.contact.signIn')}
+          variant="secondary"
+          onPress={() => router.push('/sign-in')}
+        />
       )}
       <Button
         title={

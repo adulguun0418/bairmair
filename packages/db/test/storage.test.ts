@@ -44,6 +44,7 @@ describe('dbErrorKey', () => {
   it('recognizes keys raised by our SQL and nothing else', () => {
     expect(dbErrorKey({ message: 'publish_requires_photo' })).toBe('publish_requires_photo');
     expect(dbErrorKey({ message: 'rate_limited' })).toBe('rate_limited');
+    expect(dbErrorKey({ message: 'reveal_requires_sign_in' })).toBe('reveal_requires_sign_in');
     expect(dbErrorKey({ message: 'duplicate key value violates unique constraint' })).toBeNull();
     expect(dbErrorKey(null)).toBeNull();
   });

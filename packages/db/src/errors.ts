@@ -15,8 +15,10 @@ export const DB_ERROR_KEYS = [
   'listing_not_available',
   /** The seller has no verified phone (HTTP 404). */
   'contact_unavailable',
-  /** Too many phone reveals in the last hour (HTTP 429). */
+  /** Too many phone reveals in the last hour, or by this IP in the last day (HTTP 429). */
   'rate_limited',
+  /** Anonymous reveals of all visitors together reached the hourly budget: sign in (HTTP 429). */
+  'reveal_requires_sign_in',
 ] as const;
 
 export type DbErrorKey = (typeof DB_ERROR_KEYS)[number];

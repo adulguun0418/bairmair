@@ -3,6 +3,8 @@
 import { dbErrorKey } from '@bairmair/db';
 import { createTranslator, type Locale } from '@bairmair/i18n';
 import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { currentPath, signInHref } from '@/components/auth/sign-in-href';
 import { CheckIcon, CopyIcon, MessageIcon, PhoneIcon } from '@/components/icons';
 import { track } from '@/lib/analytics';
 import { browserClient } from '@/lib/supabase-browser';
@@ -11,12 +13,17 @@ type State =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'shown'; phone: string }
-  | { kind: 'error'; message: 'rateLimited' | 'unavailable' | 'notAvailable' | 'failed' };
+  | {
+      kind: 'error';
+      message: 'rateLimited' | 'signIn' | 'unavailable' | 'notAvailable' | 'failed';
+    };
 
 /** `+97699112233` → `{ prefix: '+976', local: '9911 2233' }`; other numbers whole in `local`. */
 export function formatPhone(e164: string): { prefix: string | null; local: string } {
   const match = /^\+976(\d{4})(\d{4})$/.exec(e164);
-  return match ? { prefix: '+976', local: `${match[1]} ${match[2]}` } : { prefix: null, local: e164 };
+  return match
+    ? { prefix: '+976', local: `${match[1]} ${match[2]}` }
+    : { prefix: null, local: e164 };
 }
 
 /**
@@ -83,8 +90,14 @@ export function ContactButtons({
     () => readCached(listingId),
     () => null,
   );
+  const { session } = useAuth();
   const state: State =
-    revealed.kind === 'idle' && cached ? { kind: 'shown', phone: cached } : revealed;
+    revealed.kind === 'idle' && cached
+      ? { kind: 'shown', phone: cached }
+      : // Signed in since "sign in to see the number": the button is back.
+        revealed.kind === 'error' && revealed.message === 'signIn' && session
+        ? { kind: 'idle' }
+        : revealed;
 
   const reveal = async () => {
     setState({ kind: 'loading' });
@@ -103,11 +116,13 @@ export function ContactButtons({
       message:
         key === 'rate_limited'
           ? 'rateLimited'
-          : key === 'contact_unavailable'
-            ? 'unavailable'
-            : key === 'listing_not_available'
-              ? 'notAvailable'
-              : 'failed',
+          : key === 'reveal_requires_sign_in'
+            ? 'signIn'
+            : key === 'contact_unavailable'
+              ? 'unavailable'
+              : key === 'listing_not_available'
+                ? 'notAvailable'
+                : 'failed',
     });
   };
 
@@ -206,6 +221,19 @@ export function ContactButtons({
           }
         >
           {t(`listingPage.contact.errors.${state.message}`)}
+          {state.message === 'signIn' && (
+            <>
+              {' '}
+              {/* Anonymous reveals of all visitors reached the hourly budget; signed-in visitors
+                  have their own. Comes back to this listing afterwards. */}
+              <a
+                href={signInHref(locale, currentPath())}
+                className="font-medium text-fg underline underline-offset-2"
+              >
+                {t('listingPage.contact.signIn')}
+              </a>
+            </>
+          )}
         </p>
       )}
     </div>

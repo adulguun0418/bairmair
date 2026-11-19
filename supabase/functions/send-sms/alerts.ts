@@ -4,7 +4,8 @@
  * through Resend, so captcha can be switched on. No Deno APIs here, so Vitest can run it.
  */
 
-import { serviceCredentials } from './limits.ts';
+import { alertMailerFromEnv, type Mailer } from '../_shared/resend.ts';
+import { serviceCredentials } from '../_shared/service.ts';
 
 export interface SmsSpike {
   codesLastHour: number;
@@ -17,13 +18,6 @@ export interface SmsAlertStore {
   claim(threshold: number, signal: AbortSignal): Promise<({ id: number } & SmsSpike) | null>;
   /** Forgets an alert whose email failed, so the next code tries again. */
   release(id: number, signal: AbortSignal): Promise<void>;
-}
-
-export interface Mailer {
-  send(
-    email: { subject: string; text: string; idempotencyKey: string },
-    signal: AbortSignal,
-  ): Promise<void>;
 }
 
 /** Codes per hour that trigger an alert. Supabase's project cap is 30 per hour. */
@@ -139,40 +133,6 @@ export function supabaseAlertStore(
 }
 
 /**
- * Resend's email API. Without a verified domain, Resend sends only from `onboarding@resend.dev`
- * and only to the address the Resend account was made with, which is enough for an alert to
- * the owner.
- */
-export function resendMailer(
-  apiKey: string,
-  to: string,
-  from: string,
-  fetchImpl: typeof fetch = fetch,
-): Mailer {
-  return {
-    async send({ subject, text, idempotencyKey }, signal) {
-      const response = await fetchImpl('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${apiKey}`,
-          'content-type': 'application/json',
-          'idempotency-key': idempotencyKey,
-        },
-        body: JSON.stringify({ from, to: [to], subject, text }),
-        signal,
-      });
-      if (!response.ok) {
-        // Resend's error body is `{ name, message }`; it never echoes the key.
-        const body = await response.text().catch(() => '');
-        throw new Error(`resend ${response.status} ${body.slice(0, 200)}`);
-      }
-    },
-  };
-}
-
-export const DEFAULT_ALERT_FROM = 'bairmair <onboarding@resend.dev>';
-
-/**
  * The spike check from the Edge Function's environment: `RESEND_API_KEY` and `SMS_ALERT_EMAIL`
  * (both required), `SMS_ALERT_PER_HOUR` (optional, default 15), `SMS_ALERT_FROM` (optional), and
  * the project's own URL and secret key. Null when something required is missing.
@@ -183,12 +143,10 @@ export function smsSpikeCheckFromEnv(
   fetchImpl: typeof fetch = fetch,
 ): (() => Promise<void>) | null {
   const credentials = serviceCredentials(env);
-  const apiKey = env('RESEND_API_KEY');
-  const to = env('SMS_ALERT_EMAIL');
-  if (!credentials || !apiKey || !to) return null;
+  const mailer = alertMailerFromEnv(env, fetchImpl);
+  if (!credentials || !mailer) return null;
   const threshold = parseThreshold(env('SMS_ALERT_PER_HOUR'));
   const store = supabaseAlertStore(credentials.url, credentials.key, fetchImpl);
-  const mailer = resendMailer(apiKey, to, env('SMS_ALERT_FROM') || DEFAULT_ALERT_FROM, fetchImpl);
   return () => checkSmsSpike({ store, mailer, threshold, log });
 }
 

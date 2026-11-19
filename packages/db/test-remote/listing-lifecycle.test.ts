@@ -33,6 +33,9 @@ let bob: TestUser; // buyer
 const anon = anonClient();
 
 const listingId = randomUUID();
+/** This network's IP hash and a draft listing to pad reveal budgets with (set by the per-IP test). */
+let networkIpHash = '';
+let padId = '';
 const photoId = randomUUID();
 const scan1 = randomUUID();
 const scan2 = randomUUID();
@@ -453,7 +456,8 @@ describe('contact and views', () => {
       .single();
     const ipHash = first.data?.ip_hash;
     expect(ipHash).toMatch(/^[0-9a-f]{64}$/);
-    const padId = randomUUID();
+    networkIpHash = ipHash!;
+    padId = randomUUID();
     const pad = await admin.from('listings').insert({ ...draft, id: padId, owner_id: alice.id });
     expect(pad.error).toBeNull();
 
@@ -481,6 +485,62 @@ describe('contact and views', () => {
       .eq('listing_id', listingId)
       .is('viewer_id', null);
     expect(count).toBe(0);
+  });
+
+  it('caps anonymous reveals per IP at 30 a day', async () => {
+    expect(networkIpHash).not.toBe('');
+    // Nothing from this network in the last hour, 30 reveals three hours ago: the day is full.
+    await admin.from('contact_reveals').delete().eq('ip_hash', networkIpHash);
+    const earlier = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    const rows = Array.from({ length: 30 }, () => ({
+      listing_id: padId,
+      ip_hash: networkIpHash,
+      created_at: earlier,
+    }));
+    expect((await admin.from('contact_reveals').insert(rows)).error).toBeNull();
+
+    const full = await anon.rpc('reveal_listing_contact', { p_listing_id: listingId });
+    expect(full.error?.message).toBe('rate_limited');
+
+    await admin.from('contact_reveals').delete().eq('ip_hash', networkIpHash);
+    const fresh = await anon.rpc('reveal_listing_contact', { p_listing_id: listingId });
+    expect(fresh.error).toBeNull();
+    expect(fresh.data).toBe(alice.phone);
+  });
+
+  it('asks anonymous callers to sign in once all of them used the hourly budget (150)', async () => {
+    // Other networks' anonymous reveals of the last hour count too: fill up to 150 with rows of
+    // made-up IP hashes (removed again below; no signed-in reveal runs meanwhile, so the reveal
+    // spike alert is not triggered).
+    await admin.from('contact_reveals').delete().eq('ip_hash', networkIpHash);
+    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const used = await admin
+      .from('contact_reveals')
+      .select('*', { count: 'exact', head: true })
+      .is('viewer_id', null)
+      .gt('created_at', since);
+    const missing = Math.max(0, 150 - (used.count ?? 0));
+    const rows = Array.from({ length: missing }, () => ({
+      listing_id: padId,
+      ip_hash: createHash('sha256').update(randomUUID()).digest('hex'),
+    }));
+    const padded = await admin.from('contact_reveals').insert(rows).select('id');
+    expect(padded.error).toBeNull();
+    try {
+      const { error } = await anon.rpc('reveal_listing_contact', { p_listing_id: listingId });
+      expect(error?.message).toBe('reveal_requires_sign_in');
+      expect(error?.code).toBe('PT429');
+    } finally {
+      const ids = (padded.data ?? []).map((r) => r.id);
+      for (let i = 0; i < ids.length; i += 100) {
+        await admin
+          .from('contact_reveals')
+          .delete()
+          .in('id', ids.slice(i, i + 100));
+      }
+    }
+    const after = await anon.rpc('reveal_listing_contact', { p_listing_id: listingId });
+    expect(after.error).toBeNull();
   });
 
   it('counts views from others, not the owner; only the owner reads them', async () => {
