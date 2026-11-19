@@ -3,6 +3,8 @@
  * asks the database before texting. No Deno APIs here, so Vitest can run it.
  */
 
+import { serviceCredentials } from '../_shared/service.ts';
+
 export interface SmsLimiter {
   /** Records one code for `phone` (E.164) and resolves true, or false when over its limit.
    * Throws when the check itself fails. */
@@ -30,27 +32,6 @@ export function supabaseSmsLimiter(
       return result;
     },
   };
-}
-
-/**
- * The project's URL and secret key from the Edge Function's environment: `SUPABASE_URL` and the
- * default key in `SUPABASE_SECRET_KEYS` (JSON `{ "default": "sb_secret_..." }`, set by Supabase),
- * else the legacy `SUPABASE_SERVICE_ROLE_KEY`. Null when either is missing.
- */
-export function serviceCredentials(
-  env: (name: string) => string | undefined,
-): { url: string; key: string } | null {
-  const url = env('SUPABASE_URL');
-  if (!url) return null;
-  let key: string | undefined;
-  try {
-    const keys = JSON.parse(env('SUPABASE_SECRET_KEYS') ?? '{}') as Record<string, unknown>;
-    if (typeof keys.default === 'string' && keys.default !== '') key = keys.default;
-  } catch {
-    // Malformed: fall back to the legacy key.
-  }
-  key ??= env('SUPABASE_SERVICE_ROLE_KEY') || undefined;
-  return key ? { url, key } : null;
 }
 
 /** The limiter from the Edge Function's environment (`serviceCredentials`), or null. */

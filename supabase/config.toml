@@ -427,6 +427,11 @@ deno_version = 2
 [functions.send-sms]
 verify_jwt = false
 
+# Called by the database through pg_net (private.note_reveal_spike) without a token; it only
+# emails alerts that are really pending in private.alerts.
+[functions.alerts]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

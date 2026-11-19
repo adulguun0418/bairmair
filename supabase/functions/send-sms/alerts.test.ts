@@ -2,15 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   alertEmail,
   checkSmsSpike,
-  DEFAULT_ALERT_FROM,
   DEFAULT_ALERT_PER_HOUR,
   parseThreshold,
-  resendMailer,
   smsSpikeCheckFromEnv,
   supabaseAlertStore,
-  type Mailer,
   type SmsAlertStore,
 } from './alerts.ts';
+import type { Mailer } from '../_shared/resend.ts';
 
 const URL_ = 'https://ref.supabase.co';
 const spike = { codesLastHour: 18, numbersLastHour: 17, codesLastDay: 42 };
@@ -137,34 +135,6 @@ describe('supabaseAlertStore', () => {
     const [url, init] = fetchImpl.mock.calls[0]!;
     expect(url).toBe(`${URL_}/rest/v1/rpc/release_sms_alert`);
     expect(JSON.parse(init?.body as string)).toEqual({ p_alert_id: 3 });
-  });
-});
-
-describe('resendMailer', () => {
-  it('posts the email with the key and an idempotency key', async () => {
-    const fetchImpl = fakeFetch([200, { id: 'e1' }]);
-    await resendMailer('re_x', 'me@example.com', DEFAULT_ALERT_FROM, fetchImpl).send(
-      { subject: 's', text: 't', idempotencyKey: 'sms-alert-1' },
-      AbortSignal.timeout(1000),
-    );
-    const [url, init] = fetchImpl.mock.calls[0]!;
-    expect(url).toBe('https://api.resend.com/emails');
-    const headers = init?.headers as Record<string, string>;
-    expect(headers.authorization).toBe('Bearer re_x');
-    expect(headers['idempotency-key']).toBe('sms-alert-1');
-    expect(JSON.parse(init?.body as string)).toEqual({
-      from: DEFAULT_ALERT_FROM,
-      to: ['me@example.com'],
-      subject: 's',
-      text: 't',
-    });
-  });
-
-  it('throws with the status on failure', async () => {
-    const mailer = resendMailer('re_x', 'me@example.com', DEFAULT_ALERT_FROM, fakeFetch([403, {}]));
-    await expect(
-      mailer.send({ subject: 's', text: 't', idempotencyKey: 'k' }, AbortSignal.timeout(1000)),
-    ).rejects.toThrow('resend 403');
   });
 });
 

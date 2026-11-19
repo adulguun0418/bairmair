@@ -833,8 +833,10 @@ export const en: Messages = {
       sms: 'Send SMS',
       copy: 'Copy number',
       mention: 'Mention that you found the listing on bairmair.',
+      signIn: 'Sign in',
       errors: {
         rateLimited: 'Too many numbers viewed. Wait a while and try again.',
+        signIn: 'Sign in to see the number.',
         unavailable: "The seller's number is not available.",
         notAvailable: 'This listing is no longer active.',
         failed: 'Could not show the number. Try again.',
