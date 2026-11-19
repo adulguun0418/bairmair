@@ -1,6 +1,11 @@
-import { captchaPath, isCaptchaNavigation, parseCaptchaMessage } from '@bairmair/browse';
+import {
+  captchaPath,
+  isCaptchaMessageSource,
+  isCaptchaNavigation,
+  parseCaptchaMessage,
+} from '@bairmair/browse';
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Platform, StyleSheet, useColorScheme, View } from 'react-native';
+import { Linking, StyleSheet, useColorScheme, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useI18n } from '@/i18n/i18n';
 import { env } from '@/lib/env';
@@ -13,8 +18,7 @@ export type CaptchaState =
   /** Waiting for Turnstile (at most `GIVE_UP_MS` while it stays invisible). */
   | { status: 'checking' }
   | { status: 'ready'; token: string }
-  /** No token: the screen sends without one and Supabase decides (`captcha_failed` when
-   * captcha is on). */
+  /** No token (an error, or no result in time): the screen says so; "Дахин шалгах" retries. */
   | { status: 'failed' };
 
 /** How long the check may take before the screen stops waiting for it (not counting time
@@ -24,31 +28,21 @@ const GIVE_UP_MS = 20_000;
  * always on screen: in an iOS WebView a hidden or tiny one never finished (error 300031). */
 const WIDGET_HEIGHT = 72;
 
-/**
- * iOS: the end of the WebView's user agent, so it reads exactly like Safari's ("… Version/26.1
- * Mobile/15E148 Safari/604.1"). A WKWebView's own ends at "Mobile/15E148", without Safari's
- * version and name, and Turnstile stayed on "Verifying…" with it while Safari passes. Set once,
- * when the WebView is made (Cloudflare: never change the agent during a session).
- */
-const SAFARI_APPLICATION_NAME =
-  Platform.OS === 'ios'
-    ? `Version/${String(Platform.Version).split('.').slice(0, 2).join('.')} Mobile/15E148 Safari/604.1`
-    : undefined;
-
 class CaptchaError extends Error {
   override name = 'CaptchaError';
 }
 
 /**
- * Cloudflare Turnstile for phone sign-in: the website's `/embed/captcha` page in a WebView (see
- * `@bairmair/browse` `captcha.ts`). Supabase Auth refuses to text a code without a token.
+ * Cloudflare Turnstile for phone sign-in on Android: the website's `/embed/captcha` page in a
+ * WebView (see `@bairmair/browse` `captcha.ts`), shown only after Supabase asked for a captcha
+ * (`useSendCode`). iOS uses the system browser sheet instead (`captcha-browser.ts`).
  *
  * The widget is on screen ("Verifying…", then "Success!"; a checkbox when Cloudflare wants a
  * click) and the WebView follows its height. A token is single use: remount this component
  * (change its `key`) after each attempt to get a new one.
  *
- * It never blocks sign-in for long: after an error, or `GIVE_UP_MS` without a token, it reports
- * `failed` and shows how far the page got (for diagnosis), and the screen sends without a token.
+ * After an error, or `GIVE_UP_MS` without a token, it reports `failed` and shows how far the
+ * page got (for diagnosis), with "Дахин шалгах".
  */
 export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => void }) {
   const { t, locale } = useI18n();
@@ -114,9 +108,8 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
           containerStyle={styles.webview}
           onLoadEnd={() => note('load')}
           onMessage={(event) => {
-            // Only the captcha page speaks; Turnstile's frames post nothing we read.
-            const url = event.nativeEvent.url ?? '';
-            if (url && !isCaptchaNavigation(url, pageUrl, true)) return;
+            // Only our site speaks (iOS reports the page's address, Android only its origin).
+            if (!isCaptchaMessageSource(event.nativeEvent.url ?? '', pageUrl)) return;
             const message = parseCaptchaMessage(event.nativeEvent.data);
             if (!message) return;
             switch (message.type) {
@@ -151,7 +144,6 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
             if (request.url.startsWith('https://')) void Linking.openURL(request.url);
             return false;
           }}
-          applicationNameForUserAgent={SAFARI_APPLICATION_NAME}
           // Cloudflare's React Native example for Turnstile.
           javaScriptEnabled
           domStorageEnabled

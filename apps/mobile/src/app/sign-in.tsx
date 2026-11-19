@@ -3,16 +3,13 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, useColorScheme, View } from 'react-native';
 import {
-  needsCaptcha,
-  sendPhoneCode,
   signInWithApple,
   signInWithGoogle,
   type PhoneMode,
   type SignInResult,
 } from '@/auth/actions';
 import { useAuth } from '@/auth/auth-provider';
-import { CAPTCHA_BROWSER_FALLBACK, captchaTokenFromBrowser } from '@/auth/captcha-browser';
-import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
+import { useSendCode } from '@/auth/use-send-code';
 import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { openSitePage } from '@/lib/site-pages';
@@ -39,14 +36,10 @@ export default function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
-  /** Turnstile inline in a WebView; on iOS, if it fails there, the system browser sheet. */
-  const captcha = needsCaptcha(mode);
-  const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
-  const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
-  /** Waiting for the check (it gives up by itself; then the code goes without a token). */
-  const captchaPending = captcha && captchaState.status === 'checking';
-  /** Remounts the captcha after each attempt: a token is single use. */
-  const [captchaKey, setCaptchaKey] = useState(0);
+  // Captcha only when Supabase asks for it (see useSendCode).
+  const code = useSendCode(mode, (phone) =>
+    router.push({ pathname: '/verify', params: { phone, mode } }),
+  );
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -59,25 +52,9 @@ export default function SignInScreen() {
       setInputError(t('auth.invalidPhone'));
       return;
     }
-    if (captchaPending) return;
     setInputError(null);
     setError(null);
-    setBusy(true);
-    try {
-      let token = captchaToken;
-      if (captcha && !token && captchaState.status === 'failed' && CAPTCHA_BROWSER_FALLBACK) {
-        token = await captchaTokenFromBrowser(locale, scheme === 'dark' ? 'dark' : 'light');
-        // The person closed the sheet: nothing sent, nothing to say.
-        if (!token) return;
-      }
-      await sendPhoneCode(phone, mode, token);
-      router.push({ pathname: '/verify', params: { phone, mode } });
-    } catch (cause) {
-      setError(t(`auth.errors.${authErrorKey(cause)}`));
-    } finally {
-      setBusy(false);
-      if (captcha) setCaptchaKey((n) => n + 1);
-    }
+    await code.send(phone);
   };
 
   const runProvider = async (signIn: () => Promise<SignInResult>) => {
@@ -125,14 +102,16 @@ export default function SignInScreen() {
         error={inputError}
         autoFocus
       />
-      {captcha && <CaptchaView key={captchaKey} onChange={setCaptchaState} />}
+      {code.captcha}
       <Button
         title={t('auth.sendCode')}
         onPress={() => void submitPhone()}
-        disabled={busy || captchaPending}
+        disabled={busy || code.busy}
       />
 
-      {error && <Text style={[styles.body, { color: colors.danger }]}>{error}</Text>}
+      {(code.error ?? error) && (
+        <Text style={[styles.body, { color: colors.danger }]}>{code.error ?? error}</Text>
+      )}
 
       {showProviders && (
         <>

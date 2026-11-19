@@ -6,6 +6,17 @@ export type AuthErrorKey = keyof Messages['auth']['errors'];
 export const SMS_RATE_LIMITED = 'sms_rate_limited';
 
 /**
+ * Whether Auth refused because captcha protection is on and the request had no valid token
+ * (`captcha_failed`, "captcha protection: request disallowed (…)"). The apps send codes without a
+ * token and run the check only after this answer, so captcha can be switched on in Supabase
+ * alone, without an app update.
+ */
+export function isCaptchaRequired(error: unknown): boolean {
+  const { code, message } = (error ?? {}) as { code?: unknown; message?: unknown };
+  return code === 'captcha_failed' || (typeof message === 'string' && /captcha/i.test(message));
+}
+
+/**
  * Maps a supabase-js Auth error to a message key under `auth.errors`.
  * Auth sends a stable `code` (https://supabase.com/docs/guides/auth/debugging/error-codes);
  * network failures arrive as `AuthRetryableFetchError` without one.

@@ -1,9 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, useColorScheme } from 'react-native';
-import { needsCaptcha, sendPhoneCode, verifyPhoneCode, type PhoneMode } from '@/auth/actions';
-import { CAPTCHA_BROWSER_FALLBACK, captchaTokenFromBrowser } from '@/auth/captcha-browser';
-import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
+import { ScrollView, StyleSheet } from 'react-native';
+import { verifyPhoneCode, type PhoneMode } from '@/auth/actions';
+import { useSendCode } from '@/auth/use-send-code';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@/i18n/i18n';
 import { Button } from '@/ui/button';
@@ -20,8 +19,7 @@ export default function VerifyScreen() {
   const params = useLocalSearchParams<{ phone: string; mode?: string }>();
   const phone = params.phone;
   const mode: PhoneMode = params.mode === 'add-phone' ? 'add-phone' : 'sign-in';
-  const { t, locale } = useI18n();
-  const scheme = useColorScheme();
+  const { t } = useI18n();
   const colors = useColors();
   const router = useRouter();
 
@@ -30,14 +28,8 @@ export default function VerifyScreen() {
   const [busy, setBusy] = useState(false);
   const [resendAt, setResendAt] = useState(() => Date.now() + RESEND_SECONDS * 1000);
   const [now, setNow] = useState(() => Date.now());
-  /** Turnstile inline in a WebView; on iOS, if it fails there, the system browser sheet. */
-  const captcha = needsCaptcha(mode);
-  const [captchaState, setCaptchaState] = useState<CaptchaState>({ status: 'checking' });
-  const captchaToken = captchaState.status === 'ready' ? captchaState.token : null;
-  /** Waiting for the check (it gives up by itself; then the code goes without a token). */
-  const captchaPending = captcha && captchaState.status === 'checking';
-  /** Remounts the captcha after each resend: a token is single use. */
-  const [captchaKey, setCaptchaKey] = useState(0);
+  // "Send again", with captcha only when Supabase asks for it (see useSendCode).
+  const resendCode = useSendCode(mode, () => setResendAt(Date.now() + RESEND_SECONDS * 1000));
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -68,24 +60,8 @@ export default function VerifyScreen() {
   };
 
   const resend = async () => {
-    if (captchaPending) return;
     setError(null);
-    setBusy(true);
-    try {
-      let token = captchaToken;
-      if (captcha && !token && captchaState.status === 'failed' && CAPTCHA_BROWSER_FALLBACK) {
-        token = await captchaTokenFromBrowser(locale, scheme === 'dark' ? 'dark' : 'light');
-        // The person closed the sheet: nothing sent, nothing to say.
-        if (!token) return;
-      }
-      await sendPhoneCode(phone, mode, token);
-      setResendAt(Date.now() + RESEND_SECONDS * 1000);
-    } catch (cause) {
-      setError(t(`auth.errors.${authErrorKey(cause)}`));
-    } finally {
-      setBusy(false);
-      if (captcha) setCaptchaKey((n) => n + 1);
-    }
+    await resendCode.send(phone);
   };
 
   return (
@@ -110,7 +86,9 @@ export default function VerifyScreen() {
         style={styles.code}
         autoFocus
       />
-      {error && <Text style={[styles.body, { color: colors.danger }]}>{error}</Text>}
+      {(error ?? resendCode.error) && (
+        <Text style={[styles.body, { color: colors.danger }]}>{error ?? resendCode.error}</Text>
+      )}
       <Button
         title={t('auth.verify')}
         onPress={() => void submit(code)}
@@ -120,10 +98,9 @@ export default function VerifyScreen() {
         title={secondsLeft > 0 ? t('auth.resendIn', { seconds: secondsLeft }) : t('auth.resend')}
         variant="secondary"
         onPress={() => void resend()}
-        disabled={busy || secondsLeft > 0 || captchaPending}
+        disabled={busy || resendCode.busy || secondsLeft > 0}
       />
-      {/* A token ready for "send again". */}
-      {captcha && <CaptchaView key={captchaKey} onChange={setCaptchaState} />}
+      {resendCode.captcha}
     </ScrollView>
   );
 }

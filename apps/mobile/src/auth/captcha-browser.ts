@@ -5,13 +5,11 @@ import { Platform } from 'react-native';
 import { env } from '@/lib/env';
 
 /**
- * iOS falls back to the system browser when the inline check fails: up to 0.1.21 Turnstile
- * stayed on "Verifying…" inside the WKWebView, while Safari passes (0.1.22). The inline view now
- * identifies as Safari (`CaptchaView`), so the sheet should be the exception. Android has no
- * fallback: a deep link back into the app would also reach the router; there a failed check
- * sends without a token.
+ * iOS runs the captcha in the system browser sheet: Turnstile never finishes inside a WKWebView
+ * (tested up to 0.1.23, also with Safari's user agent), while Safari passes. Android runs it
+ * inline (`CaptchaView`). Either only when Supabase asks for it (`useSendCode`).
  */
-export const CAPTCHA_BROWSER_FALLBACK = Platform.OS === 'ios';
+export const CAPTCHA_IN_BROWSER = Platform.OS === 'ios';
 
 /**
  * Opens the website's captcha page (`?return=app`) in the system browser sheet

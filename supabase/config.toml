@@ -213,15 +213,16 @@ token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
 web3 = 30
 
-# Captcha (Cloudflare Turnstile) before Auth texts a code, for every client: Auth's endpoints are
-# reachable with the public key, so without it a bot could use up the hourly SMS cap or text
-# any number. Covers /otp, /resend, /signup and password sign-in; not Apple sign-in (id_token),
-# token refresh, /verify, or requests made with the secret key (server code, remote tests).
-# The website's form and the app's /embed/captcha page (WebView) send the token. Turning it on
-# breaks sign-in for app versions older than 0.1.19 (they send no token).
+# Captcha (Cloudflare Turnstile) before Auth texts a code: on standby. Auth's endpoints are
+# reachable with the public key, so a bot could use up the hourly SMS cap or text any number;
+# turn this on when that happens (enabled = true, `pnpm auth:push --yes`), and off again later.
+# No app update is needed either way: the apps send codes without a token and run the check only
+# when Auth answers captcha_failed (iOS: Safari sheet, Android: inline; app 0.1.24+); the website
+# always sends a token. Covers /otp, /resend, /signup and password sign-in; not Apple sign-in
+# (id_token), token refresh, /verify, or requests made with the secret key (server code, tests).
 # Secret: the Turnstile widget's secret key, TURNSTILE_SECRET_KEY in supabase/.env.
 [auth.captcha]
-enabled = true
+enabled = false
 provider = "turnstile"
 secret = "env(TURNSTILE_SECRET_KEY)"
 
