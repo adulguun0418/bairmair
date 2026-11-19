@@ -7,6 +7,7 @@ import {
   otpMessage,
   parseOtpRequest,
   SMS_RATE_LIMITED,
+  type SendSmsDeps,
   type SmsGateway,
 } from './handler.ts';
 import type { SmsLimiter } from './limits.ts';
@@ -32,7 +33,11 @@ function signedRequest(payload: unknown, opts: { secret?: Webhook; at?: Date } =
   });
 }
 
-function setup(gateway?: SmsGateway, limiter?: SmsLimiter) {
+function setup(
+  gateway?: SmsGateway,
+  limiter?: SmsLimiter,
+  extra: Pick<SendSmsDeps, 'afterClaim' | 'background'> = {},
+) {
   const sent: { to: string; text: string }[] = [];
   const logs: { event: string; fields?: Record<string, unknown> }[] = [];
   const handler = createSendSmsHandler({
@@ -43,6 +48,7 @@ function setup(gateway?: SmsGateway, limiter?: SmsLimiter) {
       },
     },
     limiter,
+    ...extra,
     log: (event, fields) => logs.push({ event, fields }),
   });
   return { handler, sent, logs };
@@ -145,6 +151,39 @@ describe('send-sms hook', () => {
     expect(await res.json()).toEqual({});
     expect(sent).toHaveLength(1);
     expect(logs.map((l) => l.event)).toEqual(['sms_limit_check_failed', 'sms_sent']);
+  });
+
+  it('runs the spike check in the background after a recorded code', async () => {
+    const afterClaim = vi.fn(async () => {});
+    const background = vi.fn<(task: Promise<void>) => void>();
+    const { handler, sent } = setup(
+      undefined,
+      { claim: async () => true },
+      { afterClaim, background },
+    );
+    await handler(signedRequest(payload));
+    expect(sent).toHaveLength(1);
+    expect(afterClaim).toHaveBeenCalledTimes(1);
+    expect(background).toHaveBeenCalledWith(expect.any(Promise));
+  });
+
+  it('does not wait for the spike check before answering', async () => {
+    let finish: () => void = () => {};
+    const afterClaim = () => new Promise<void>((resolve) => (finish = resolve));
+    const { handler } = setup(undefined, { claim: async () => true }, { afterClaim });
+    expect(await (await handler(signedRequest(payload))).json()).toEqual({});
+    finish();
+  });
+
+  it('runs no spike check for a refused number or a failed limit check', async () => {
+    const afterClaim = vi.fn(async () => {});
+    await setup(undefined, { claim: async () => false }, { afterClaim }).handler(
+      signedRequest(payload),
+    );
+    await setup(undefined, { claim: () => Promise.reject(new Error('x')) }, { afterClaim }).handler(
+      signedRequest(payload),
+    );
+    expect(afterClaim).not.toHaveBeenCalled();
   });
 
   it('does not count numbers it refuses anyway', async () => {

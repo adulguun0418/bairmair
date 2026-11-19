@@ -33,14 +33,13 @@ export function supabaseSmsLimiter(
 }
 
 /**
- * The limiter from the Edge Function's environment: `SUPABASE_URL` and the default key in
- * `SUPABASE_SECRET_KEYS` (JSON `{ "default": "sb_secret_..." }`, set by Supabase), else the
- * legacy `SUPABASE_SERVICE_ROLE_KEY`. Null when neither is there.
+ * The project's URL and secret key from the Edge Function's environment: `SUPABASE_URL` and the
+ * default key in `SUPABASE_SECRET_KEYS` (JSON `{ "default": "sb_secret_..." }`, set by Supabase),
+ * else the legacy `SUPABASE_SERVICE_ROLE_KEY`. Null when either is missing.
  */
-export function smsLimiterFromEnv(
+export function serviceCredentials(
   env: (name: string) => string | undefined,
-  fetchImpl: typeof fetch = fetch,
-): SmsLimiter | null {
+): { url: string; key: string } | null {
   const url = env('SUPABASE_URL');
   if (!url) return null;
   let key: string | undefined;
@@ -51,5 +50,14 @@ export function smsLimiterFromEnv(
     // Malformed: fall back to the legacy key.
   }
   key ??= env('SUPABASE_SERVICE_ROLE_KEY') || undefined;
-  return key ? supabaseSmsLimiter(url, key, fetchImpl) : null;
+  return key ? { url, key } : null;
+}
+
+/** The limiter from the Edge Function's environment (`serviceCredentials`), or null. */
+export function smsLimiterFromEnv(
+  env: (name: string) => string | undefined,
+  fetchImpl: typeof fetch = fetch,
+): SmsLimiter | null {
+  const credentials = serviceCredentials(env);
+  return credentials ? supabaseSmsLimiter(credentials.url, credentials.key, fetchImpl) : null;
 }

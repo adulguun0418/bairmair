@@ -19,7 +19,8 @@
     "db:types": "supabase gen types typescript --schema public --remote > packages/db/src/database.types.ts && prettier --write packages/db/src/database.types.ts",
     "auth:diff": "node supabase/scripts/auth-config.mjs diff",
     "auth:push": "node supabase/scripts/auth-config.mjs push",
-    "functions:deploy": "supabase functions deploy send-sms --use-api --no-verify-jwt"
+    "functions:deploy": "supabase functions deploy send-sms --use-api --no-verify-jwt",
+    "alerts:secrets": "node supabase/scripts/alert-secrets.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

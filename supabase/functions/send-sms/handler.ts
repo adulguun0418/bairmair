@@ -23,6 +23,11 @@ export interface SendSmsDeps {
    * must finish sooner. */
   limiterTimeoutMs?: number;
   gatewayTimeoutMs?: number;
+  /** Runs after the limiter recorded a code (the SMS spike alert). Must not throw. */
+  afterClaim?: (() => Promise<void>) | null;
+  /** Keeps `afterClaim` running after the response (Supabase's `EdgeRuntime.waitUntil`), so
+   * Auth never waits for it. Without one, the task is simply left running. */
+  background?: (task: Promise<void>) => void;
   log?: (event: string, fields?: Record<string, unknown>) => void;
 }
 
@@ -119,6 +124,10 @@ export function createSendSmsHandler(deps: SendSmsDeps): (req: Request) => Promi
       let allowed = true;
       try {
         allowed = await deps.limiter.claim(request.phone, AbortSignal.timeout(limiterTimeoutMs));
+        if (allowed && deps.afterClaim) {
+          const task = deps.afterClaim().catch(() => {});
+          if (deps.background) deps.background(task);
+        }
       } catch (error) {
         // Fail open: a database hiccup must not stop people from signing in. Auth's own limits
         // (one code per number per minute, the project's hourly cap) still apply.
