@@ -615,6 +615,15 @@ export type Database = {
       };
     };
     Functions: {
+      claim_sms_alert: {
+        Args: { p_quiet_minutes?: number; p_threshold: number };
+        Returns: {
+          alert_id: number;
+          codes_last_day: number;
+          codes_last_hour: number;
+          numbers_last_hour: number;
+        }[];
+      };
       claim_sms_send: { Args: { p_phone: string }; Returns: boolean };
       confirm_listing_available: {
         Args: { p_listing_id: string };
@@ -624,6 +633,7 @@ export type Database = {
         Args: { p_listing_id: string };
         Returns: undefined;
       };
+      release_sms_alert: { Args: { p_alert_id: number }; Returns: undefined };
       reveal_listing_contact: {
         Args: { p_listing_id: string };
         Returns: string;
