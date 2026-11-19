@@ -3,6 +3,7 @@ import {
   captchaMessage,
   captchaPath,
   captchaReturnUrl,
+  isCaptchaMessageSource,
   isCaptchaNavigation,
   isCaptchaReturnMode,
   parseCaptchaMessage,
@@ -117,5 +118,20 @@ describe('isCaptchaNavigation', () => {
       false,
     );
     expect(isCaptchaNavigation('https://bairmair.vercel.app/', page, true)).toBe(false);
+  });
+});
+
+describe('isCaptchaMessageSource', () => {
+  const page = 'https://bairmair.vercel.app/embed/captcha';
+  it('accepts the page (iOS: full address) and its origin (Android)', () => {
+    expect(isCaptchaMessageSource(`${page}?theme=dark`, page)).toBe(true);
+    expect(isCaptchaMessageSource('https://bairmair.vercel.app', page)).toBe(true);
+    expect(isCaptchaMessageSource('https://BAIRMAIR.vercel.app/', page)).toBe(true);
+  });
+  it('refuses other sites', () => {
+    expect(isCaptchaMessageSource('https://challenges.cloudflare.com', page)).toBe(false);
+    expect(isCaptchaMessageSource('https://bairmair.vercel.app.evil.example', page)).toBe(false);
+    expect(isCaptchaMessageSource('http://bairmair.vercel.app', page)).toBe(false);
+    expect(isCaptchaMessageSource('', page)).toBe(false);
   });
 });

@@ -252,7 +252,7 @@ export const en: Messages = {
     signedIn: 'Signed in.',
     resendIn: 'You can resend in {{seconds}} s',
     captchaChecking: 'Checking that you are not a robot…',
-    captchaFailed: 'The robot check did not work. Check again, or send the code anyway.',
+    captchaFailed: 'The robot check did not work. Check again.',
     captchaRetry: 'Check again',
     captchaPageTitle: 'Confirm that you are not a robot',
     captchaReturning: 'Going back to the app…',

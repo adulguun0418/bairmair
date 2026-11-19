@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { authErrorKey } from '../src/auth-errors';
+import { authErrorKey, isCaptchaRequired } from '../src/auth-errors';
 import { formatMongolianPhone, normalizeMongolianPhone } from '../src/phone';
 
 describe('normalizeMongolianPhone', () => {
@@ -52,5 +52,21 @@ describe('authErrorKey', () => {
     [null, 'generic'],
   ])('%j → %s', (error, key) => {
     expect(authErrorKey(error)).toBe(key);
+  });
+});
+
+describe('isCaptchaRequired', () => {
+  it('recognises Auth captcha refusals', () => {
+    expect(isCaptchaRequired({ code: 'captcha_failed' })).toBe(true);
+    expect(
+      isCaptchaRequired({
+        message: 'captcha protection: request disallowed (no captcha_token found)',
+      }),
+    ).toBe(true);
+  });
+  it('ignores other errors', () => {
+    expect(isCaptchaRequired({ code: 'over_sms_send_rate_limit' })).toBe(false);
+    expect(isCaptchaRequired({ message: 'sms_rate_limited' })).toBe(false);
+    expect(isCaptchaRequired(null)).toBe(false);
   });
 });

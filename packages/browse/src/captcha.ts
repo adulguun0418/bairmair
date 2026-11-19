@@ -115,3 +115,16 @@ export function isCaptchaNavigation(url: string, pageUrl: string, isTopFrame: bo
   if (!isTopFrame) return true;
   return url.split(/[?#]/, 1)[0] === pageUrl;
 }
+
+const ORIGIN = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]+/i;
+
+/**
+ * Whether a message came from the captcha page's site. iOS reports the page's full address;
+ * Android (WebMessageListener) only its origin, `https://bairmair.vercel.app`, so the path cannot
+ * be compared: until 0.1.23 every Android message was dropped that way, the token included.
+ * Turnstile's frames are on challenges.cloudflare.com and never call the app's bridge.
+ */
+export function isCaptchaMessageSource(url: string, pageUrl: string): boolean {
+  const origin = ORIGIN.exec(url)?.[0].toLowerCase();
+  return origin !== undefined && origin === ORIGIN.exec(pageUrl)?.[0].toLowerCase();
+}
