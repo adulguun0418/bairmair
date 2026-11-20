@@ -24,9 +24,13 @@ export function sharedScanPath(slug: string, locale: 'mn' | 'en' = 'mn'): string
 
 /**
  * Scans a free bairmair scan user may keep (not counting scans turned into listings). Mirrors
- * `private.scan_limit()` in the database, which enforces it.
+ * `private.scan_limit()` in the database, which enforces it; the apps read the caller's actual
+ * limit with the `scan_plan` RPC.
  */
 export const USER_SCAN_FREE_LIMIT = 2;
+
+/** Scans a bairmair scan Pro user may keep (a fair-use cap). Mirrors `private.scan_limit()`. */
+export const USER_SCAN_PRO_LIMIT = 100;
 
 /** Whether a string can be a share slug (12 letters and digits, as the database makes them). */
 export function isShareSlug(value: unknown): value is string {

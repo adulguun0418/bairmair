@@ -672,6 +672,66 @@ export type Database = {
           },
         ];
       };
+      scan_subscriptions: {
+        Row: {
+          apple_environment: string | null;
+          apple_original_transaction_id: string | null;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          payment_id: string | null;
+          product_id: string;
+          source: Database['public']['Enums']['scan_subscription_source'];
+          starts_at: string;
+          status: Database['public']['Enums']['scan_subscription_status'];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          apple_environment?: string | null;
+          apple_original_transaction_id?: string | null;
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          payment_id?: string | null;
+          product_id: string;
+          source: Database['public']['Enums']['scan_subscription_source'];
+          starts_at: string;
+          status?: Database['public']['Enums']['scan_subscription_status'];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          apple_environment?: string | null;
+          apple_original_transaction_id?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          payment_id?: string | null;
+          product_id?: string;
+          source?: Database['public']['Enums']['scan_subscription_source'];
+          starts_at?: string;
+          status?: Database['public']['Enums']['scan_subscription_status'];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'scan_subscriptions_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: true;
+            referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'scan_subscriptions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       user_scans: {
         Row: {
           app_version: string | null;
@@ -767,6 +827,34 @@ export type Database = {
       };
     };
     Functions: {
+      add_scan_pro_period: {
+        Args: {
+          p_days: number;
+          p_payment_id: string;
+          p_product_id: string;
+          p_user_id: string;
+        };
+        Returns: {
+          apple_environment: string | null;
+          apple_original_transaction_id: string | null;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          payment_id: string | null;
+          product_id: string;
+          source: Database['public']['Enums']['scan_subscription_source'];
+          starts_at: string;
+          status: Database['public']['Enums']['scan_subscription_status'];
+          updated_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'scan_subscriptions';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       claim_sms_alert: {
         Args: { p_quiet_minutes?: number; p_threshold: number };
         Returns: {
@@ -797,6 +885,14 @@ export type Database = {
           accuracy_m: number;
           lat: number;
           lng: number;
+        }[];
+      };
+      scan_plan: {
+        Args: never;
+        Returns: {
+          pro_until: string;
+          scan_limit: number;
+          scans_kept: number;
         }[];
       };
       search_listings: {
@@ -868,6 +964,8 @@ export type Database = {
       report_reason: 'fake' | 'wrong_info' | 'unavailable' | 'duplicate' | 'offensive' | 'other';
       report_status: 'open' | 'resolved' | 'dismissed';
       scan_status: 'uploaded' | 'ready' | 'failed';
+      scan_subscription_source: 'apple' | 'qpay';
+      scan_subscription_status: 'active' | 'refunded' | 'revoked';
       user_role: 'owner' | 'agent' | 'admin';
     };
     CompositeTypes: {
@@ -1001,6 +1099,8 @@ export const Constants = {
       report_reason: ['fake', 'wrong_info', 'unavailable', 'duplicate', 'offensive', 'other'],
       report_status: ['open', 'resolved', 'dismissed'],
       scan_status: ['uploaded', 'ready', 'failed'],
+      scan_subscription_source: ['apple', 'qpay'],
+      scan_subscription_status: ['active', 'refunded', 'revoked'],
       user_role: ['owner', 'agent', 'admin'],
     },
   },

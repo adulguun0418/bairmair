@@ -1,3 +1,4 @@
+import { fetchScanPlan, formatProUntil, type ScanPlan } from '@bairmair/browse';
 import { USER_SCAN_FREE_LIMIT } from '@bairmair/db';
 import { formatArea } from '@bairmair/i18n';
 import { useAuth } from '@bairmair/native-auth';
@@ -10,7 +11,7 @@ import { radius, useColors } from '@bairmair/native-ui/theme';
 import { canStartScan, formatScanTime, supportMessage } from '@bairmair/scanner';
 import { scanSupport } from '@bairmair/scanner/native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -21,14 +22,18 @@ import {
   View,
 } from 'react-native';
 import { env } from '@/lib/env';
+import { supabase } from '@/lib/supabase';
 import { fetchMyScans, scanArea, type ServerScan } from '@/scans/server-scans';
 import { pendingLocalCount, uploadStatus } from '@/uploads/upload-model';
 import { retryUpload, useLocalScans } from '@/uploads/uploads';
 
 /**
- * "Миний сканууд": the free-scan count and "Шинэ скан", scans still on their way to the server,
- * and the scans on the server (each with its link). An iPhone without LiDAR is sent to the
- * website instead; signed out, the first step is signing in.
+ * "Миний сканууд": the plan (free-scan count, or "Pro until …") and "Шинэ скан", scans still on
+ * their way to the server, and the scans on the server (each with its link). An iPhone without
+ * LiDAR is sent to the website instead; signed out, the first step is signing in.
+ *
+ * App Store rule 3.1.3: Pro may have been bought on the website, and the app shows it, but never
+ * mentions where or how to buy it there.
  */
 export default function HomeScreen() {
   const { t, locale } = useI18n();
@@ -38,11 +43,17 @@ export default function HomeScreen() {
   const local = useLocalScans();
   const userId = session?.user.id ?? null;
   const [server, setServer] = useState<ServerScan[] | null>(null);
+  const [plan, setPlan] = useState<ScanPlan | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const mine = local.filter((entry) => entry.record?.ownerId === userId);
   const records = mine.flatMap((entry) => (entry.record ? [entry.record] : []));
+  // The latest records for `load`, which must not reload whenever they change.
+  const recordsRef = useRef(records);
+  useEffect(() => {
+    recordsRef.current = records;
+  });
   const drafts = local.filter((entry) => entry.record === null);
   const pending = mine.filter((entry) => entry.record && entry.record.step !== 'done');
   // Reload the server list whenever an upload finishes.
@@ -51,8 +62,21 @@ export default function HomeScreen() {
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      setServer(await fetchMyScans(userId));
+      const [scans, nextPlan] = await Promise.all([
+        fetchMyScans(userId),
+        // Without the plan the screen falls back to the free limit.
+        fetchScanPlan(supabase).catch(() => null),
+      ]);
+      setServer(scans);
+      setPlan(nextPlan);
       setLoadFailed(false);
+      // Pro since the last look (bought on the website, say): scans the server refused over the
+      // free limit are sent again.
+      if (nextPlan?.proUntil) {
+        for (const record of recordsRef.current) {
+          if (record.blocked === 'limit') retryUpload(record.localId);
+        }
+      }
     } catch {
       setLoadFailed(true);
     }
@@ -146,7 +170,9 @@ export default function HomeScreen() {
   const serverScans = (server ?? []).filter((scan) => !uploading.has(scan.id));
   const kept = (server ?? []).filter((scan) => scan.listing_id === null).length;
   const used = server === null ? null : kept + pendingLocalCount(drafts.length, records, userId);
-  const atLimit = used !== null && used >= USER_SCAN_FREE_LIMIT;
+  const limit = plan?.limit ?? USER_SCAN_FREE_LIMIT;
+  const proUntil = plan?.proUntil ?? null;
+  const atLimit = used !== null && used >= limit;
   const empty = server !== null && serverScans.length === 0 && pending.length === 0;
 
   const startScan = () => router.push('/scan');
@@ -165,10 +191,10 @@ export default function HomeScreen() {
       ) : atLimit ? (
         <View style={[styles.notice, { backgroundColor: colors.warningSoft }]}>
           <Text style={[styles.heading, { color: colors.onWarningSoft }]}>
-            {t('scanApp.limitTitle')}
+            {proUntil ? t('scanApp.proLimitTitle') : t('scanApp.limitTitle')}
           </Text>
           <Text style={[styles.small, { color: colors.onWarningSoft }]}>
-            {t('scanApp.limitBody', { limit: USER_SCAN_FREE_LIMIT })}
+            {proUntil ? t('scanApp.proLimitBody', { limit }) : t('scanApp.limitBody', { limit })}
           </Text>
         </View>
       ) : (
@@ -177,10 +203,9 @@ export default function HomeScreen() {
 
       {used !== null && (
         <Text style={[styles.small, styles.center, { color: colors.textMuted }]}>
-          {t('scanApp.freeCount', {
-            used: Math.min(used, USER_SCAN_FREE_LIMIT),
-            limit: USER_SCAN_FREE_LIMIT,
-          })}
+          {proUntil
+            ? t('scanApp.proCount', { date: formatProUntil(proUntil, locale) })
+            : t('scanApp.freeCount', { used: Math.min(used, limit), limit })}
         </Text>
       )}
       {loadFailed && (

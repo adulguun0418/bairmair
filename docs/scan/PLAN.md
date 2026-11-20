@@ -123,9 +123,9 @@ of the scan app.
    with a Mongolian text, copy, link on/off, rename, delete), account (sign-out, delete, terms,
    privacy). Scanner code used by both apps moves into a shared place rather than being copied.
    You: scan, share the link, open it on another phone and on a computer.
-4. **Subscriptions on the server + QPay on the website.** `scan_subscriptions`, the real limit,
-   QPay products and `/scan-pro`, plan on `/account`; the app shows "Pro until …". Tests incl.
-   a real small test payment.
+4. **Subscriptions on the server + QPay on the website.** Done (see `docs/scan/PROGRESS.md`;
+   the real test payment is yours). Was: `scan_subscriptions`, the real limit, QPay products and
+   `/scan-pro`, plan on `/account`; the app shows "Pro until …".
 5. **Apple IAP.** App Store Connect: app record, Paid Apps Agreement, bank and tax (NEXUS
    KAIROS), subscription group and product, sandbox tester. Server verification and
    notifications, paywall, restore, "manage subscription". You: buy, renew (sandbox renews in
@@ -140,12 +140,12 @@ of the scan app.
    explanation); TestFlight, then submission.
 
 ## Open questions for you
-1. **Price and period**: monthly only, or monthly + yearly? Price in ₮ for QPay; Apple uses its
-   own price points (I check what the Mongolia storefront charges in).
-2. **What Pro gives**: unlimited scans (with a fair-use cap such as 100), or a fixed number?
-3. **When Pro ends**: proposed: links of existing scans keep working; no new scan until the user
-   is back under 2 (by deleting) or renews. Alternative: links of scans beyond 2 stop working.
-4. **"2 free"**: 2 scans saved at once (delete one to scan again; proposed) or 2 ever?
+1. **Price and period**: answered 2026-11-20: monthly 19,900₮ (30 days) and yearly 199,000₮
+   (365 days) on QPay. Apple uses its own price points (step 5 picks the nearest).
+2. **What Pro gives**: answered 2026-11-20: unlimited, with a fair-use cap of 100 scans kept.
+3. **When Pro ends**: answered 2026-11-20: links of existing scans keep working; no new scan until
+   the user is back under 2 (by deleting) or renews.
+4. **"2 free"**: 2 scans kept at once (delete one to scan again; decided in step 3).
 5. **Review scope in the app**: room names and front door (proposed for the MVP); room dividers
    and photos later?
 6. **Phones without LiDAR**: answered 2026-11-20: "this iPhone cannot scan" and a button to

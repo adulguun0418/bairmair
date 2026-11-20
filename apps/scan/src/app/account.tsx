@@ -1,4 +1,9 @@
-import { formatMongolianPhone } from '@bairmair/browse';
+import {
+  fetchScanPlan,
+  formatMongolianPhone,
+  formatProUntil,
+  type ScanPlan,
+} from '@bairmair/browse';
 import { ACCOUNT_PATH } from '@bairmair/db';
 import { openSitePage, signOut, useAuth } from '@bairmair/native-auth';
 import { Button } from '@bairmair/native-ui/button';
@@ -8,9 +13,9 @@ import { Text } from '@bairmair/native-ui/text';
 import { radius, useColors } from '@bairmair/native-ui/theme';
 import { formatScanTime } from '@bairmair/scanner';
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
@@ -40,8 +45,24 @@ export default function AccountScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const [deleting, setDeleting] = useState(false);
+  const [plan, setPlan] = useState<ScanPlan | null>(null);
 
   const user = session?.user;
+  const userId = user?.id ?? null;
+
+  // The plan (free, or Pro bought in any way). Never where to buy it (App Store rule 3.1.3).
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+      let active = true;
+      fetchScanPlan(supabase)
+        .then((next) => active && setPlan(next))
+        .catch(() => undefined);
+      return () => {
+        active = false;
+      };
+    }, [userId]),
+  );
   const who = user?.phone
     ? formatMongolianPhone(user.phone)
     : (user?.email ?? t('account.methods.apple'));
@@ -93,6 +114,32 @@ export default function AccountScreen() {
           <Text style={[styles.small, { color: colors.textMuted }]}>
             {t('scanApp.accountNote')}
           </Text>
+          {plan && (
+            <>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <View style={styles.planRow}>
+                <Text style={[styles.small, { color: colors.textMuted }]}>{t('scanApp.plan')}</Text>
+                <View style={styles.planText}>
+                  <Text
+                    style={[
+                      styles.body,
+                      styles.strong,
+                      { color: plan.proUntil ? colors.brand : colors.text },
+                    ]}
+                  >
+                    {plan.proUntil
+                      ? t('scanApp.planPro', { date: formatProUntil(plan.proUntil, locale) })
+                      : t('scanApp.planFree', { kept: plan.kept, limit: plan.limit })}
+                  </Text>
+                  {plan.proUntil && (
+                    <Text style={[styles.small, { color: colors.textMuted }]}>
+                      {t('scanApp.planProKept', { kept: plan.kept })}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
         </View>
       ) : (
         <View style={group}>
@@ -186,6 +233,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
   grow: { flex: 1 },
   divider: { height: StyleSheet.hairlineWidth },
+  planRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  planText: { alignItems: 'flex-end', flexShrink: 1 },
+  strong: { fontWeight: '600' },
   deleteRow: {
     flexDirection: 'row',
     alignItems: 'center',
