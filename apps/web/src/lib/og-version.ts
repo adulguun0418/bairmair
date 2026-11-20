@@ -35,3 +35,8 @@ function fnv1a(text: string): number {
   }
   return hash >>> 0;
 }
+
+/** A short code that changes with `content`, for the `?v=` of other preview images. */
+export function contentVersion(content: unknown): string {
+  return fnv1a(JSON.stringify(content)).toString(36);
+}

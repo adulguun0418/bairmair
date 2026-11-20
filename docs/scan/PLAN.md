@@ -111,7 +111,7 @@ of the scan app.
 
 1. **App shell — EAS development build 1.** Done in code (see `docs/scan/PROGRESS.md`); the
    build itself is yours.
-2. **Backend.** Migration (`user_scans`, buckets, RLS, limit trigger with a stub entitlement),
+2. **Backend.** Done (see `docs/scan/PROGRESS.md`). Was: migration (`user_scans`, buckets, RLS, limit trigger with a stub entitlement),
    the process route, `/s/[slug]`, the embed, the OG image, captcha return URL per app (it is
    hard-coded to `bairmair://captcha` today), Apple client id `mn.bairmair.scan` added to
    Supabase Auth, account deletion covering scans. Unit + integration tests on the dev project.

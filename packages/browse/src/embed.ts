@@ -11,6 +11,15 @@ export function listingEmbedPath(locale: Locale, listingId: string): string {
   return localePath(locale, `/embed/listings/${listingId}`);
 }
 
+/**
+ * Path of a bairmair scan's embed page (`/embed/s/<slug>`), shown by the scan app. Its messages
+ * carry the slug in `listingId`, and it never sends `no-model` (a link exists only once the scan
+ * is processed).
+ */
+export function sharedScanEmbedPath(locale: Locale, slug: string): string {
+  return localePath(locale, `/embed/s/${encodeURIComponent(slug)}`);
+}
+
 export const EMBED_EVENTS = [
   /** The 3D view is on screen (WebGL may still turn out to be unavailable; the page says so). */
   'ready',
@@ -25,6 +34,7 @@ export interface EmbedMessage {
   source: 'bairmair-embed';
   version: 1;
   event: EmbedEvent;
+  /** The listing id, or the share slug on a bairmair scan's embed. */
   listingId: string;
 }
 

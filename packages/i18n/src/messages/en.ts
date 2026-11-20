@@ -251,6 +251,16 @@ export const en: Messages = {
       check: 'Check again',
     },
   },
+  sharedScan: {
+    title: '3D scan',
+    description:
+      'A 3D model and floor plan measured with an iPhone’s LiDAR sensor. {{area}} in total, approximately.',
+    scannedOn: 'Scanned {{date}}',
+    privateNote: 'Only people with the link can see this page. It is not in search results.',
+    madeWith: 'Made with bairmair scan',
+    notAvailable:
+      'This scan is not available: it does not exist, or its owner turned the link off.',
+  },
   auth: {
     title: 'Sign in',
     intro: 'Sign in with your phone number. We will text you a 6-digit code.',

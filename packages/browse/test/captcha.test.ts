@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   captchaMessage,
   captchaPath,
+  captchaReturnTarget,
   captchaReturnUrl,
+  CAPTCHA_RETURN_URLS,
   isCaptchaMessageSource,
   isCaptchaNavigation,
   isCaptchaReturnMode,
@@ -27,8 +29,21 @@ describe('captcha in the system browser (iOS)', () => {
 
   it('knows return mode', () => {
     expect(isCaptchaReturnMode('app')).toBe(true);
+    expect(isCaptchaReturnMode('scan')).toBe(true);
     expect(isCaptchaReturnMode(null)).toBe(false);
     expect(isCaptchaReturnMode('https://evil.example')).toBe(false);
+  });
+
+  it('returns to the app that asked, and to no other address', () => {
+    expect(captchaReturnTarget('scan')).toBe('scan');
+    expect(captchaReturnTarget('bairmairscan://captcha')).toBeNull();
+    const token = 'tok-1';
+    const url = captchaReturnUrl(token, 'scan');
+    expect(url).toBe('bairmairscan://captcha#token=tok-1');
+    expect(parseCaptchaReturn(url, CAPTCHA_RETURN_URLS.scan)).toBe(token);
+    // Each app reads only its own address.
+    expect(parseCaptchaReturn(url)).toBeNull();
+    expect(parseCaptchaReturn(captchaReturnUrl(token), CAPTCHA_RETURN_URLS.scan)).toBeNull();
   });
 });
 

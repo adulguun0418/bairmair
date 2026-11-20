@@ -19,35 +19,39 @@ interface ReactNativeWindow {
   ReactNativeWebView?: { postMessage(message: string): void };
 }
 
-/** Tells the mobile app's WebView how the page went. Does nothing in a normal browser. */
-export function useEmbedSignal(event: EmbedEvent, listingId: string) {
+/**
+ * Tells the app's WebView how the page went. Does nothing in a normal browser. `id` is the
+ * listing id, or the share slug on a bairmair scan's embed.
+ */
+export function useEmbedSignal(event: EmbedEvent, id: string) {
   useEffect(() => {
-    (window as ReactNativeWindow).ReactNativeWebView?.postMessage(embedMessage(event, listingId));
-  }, [event, listingId]);
+    (window as ReactNativeWindow).ReactNativeWebView?.postMessage(embedMessage(event, id));
+  }, [event, id]);
 }
 
-/** Sends a signal for pages that render no viewer (missing listing, no model). */
-export function EmbedSignal({ event, listingId }: { event: EmbedEvent; listingId: string }) {
-  useEmbedSignal(event, listingId);
+/** Sends a signal for pages that render no viewer (missing listing or scan, no model). */
+export function EmbedSignal({ event, id }: { event: EmbedEvent; id: string }) {
+  useEmbedSignal(event, id);
   return null;
 }
 
 /**
- * A listing's 3D view filling the screen, for the mobile app's WebView: 3D or floor plan, a
- * strip of rooms with their areas underneath, and photos opening from their hotspots.
+ * A model's 3D view filling the screen, for an app's WebView: 3D or floor plan, a strip of rooms
+ * with their areas underneath, and photos opening from their hotspots. Used for listings
+ * (bairmair) and shared scans (bairmair scan); `id` goes into the messages to the app.
  */
 export function ListingEmbed({
-  listingId,
+  id,
   locale,
   model,
   photos,
 }: {
-  listingId: string;
+  id: string;
   locale: Locale;
   model: RoomModelV1;
   photos: ScenePhoto[];
 }) {
-  useEmbedSignal('ready', listingId);
+  useEmbedSignal('ready', id);
   const { t, text } = useViewerText(locale);
   const metrics = useMemo(() => computeMetrics(model), [model]);
   const { rooms, selectedRoomId, toggleRoom, showPhoto, dialog } = useSceneState(

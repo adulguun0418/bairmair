@@ -6,11 +6,18 @@ import {
   isLocale,
   type Locale,
 } from '@bairmair/i18n';
-import { renderFloorPlanSvg, type RoomModelV1 } from '@bairmair/room-model';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import { CARD_PLAN_THEME } from '@/lib/listing-plan';
+import {
+  badge,
+  fill,
+  HEADERS,
+  loadFonts,
+  MUTED,
+  NAVY,
+  OG_SIZE,
+  planImage,
+  Wordmark,
+} from '@/lib/og-image';
 import { getListingPage } from '@/server/listing-page';
 
 // The preview Facebook and messengers show for a shared listing link. The cover photo leads
@@ -22,43 +29,9 @@ import { getListingPage } from '@/server/listing-page';
 // /api, so the image URL has no `/mn` prefix (which the proxy would answer with a redirect).
 // `?lang=en` picks English; Mongolian is the default.
 
-/** Size Facebook recommends for link previews (1.91:1). */
-const OG_SIZE = { width: 1200, height: 630 };
 const MEDIA = { width: 720, height: 630 };
 const INSET = 250;
 const INSET_PADDING = 16;
-
-const NAVY = '#1a2b60';
-const SKY = '#199ed6';
-const MUTED = '#55607a';
-
-/**
- * Noto Sans (from @fontsource/noto-sans 5.3.0, OFL), one family per subset: Latin, Latin
- * Extended (₮), Cyrillic and Cyrillic Extended (Ө, Ү). Satori keeps one font per name and
- * weight, so subsets sharing a name would replace each other; with distinct names, the font
- * stack falls back per glyph.
- *
- * The files live in the app (`assets/og-fonts`, listed in `outputFileTracingIncludes`), not in
- * node_modules: on Vercel the package is deployed under pnpm's `.pnpm` store path only, without
- * the `node_modules/@fontsource` link, so reading it there failed with ENOENT.
- */
-const SUBSETS = ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext'] as const;
-const FONT_STACK = SUBSETS.map((subset) => `Noto Sans ${subset}`).join(', ');
-
-async function loadFonts() {
-  const dir = join(process.cwd(), 'assets', 'og-fonts');
-  const weights = [400, 700] as const;
-  return Promise.all(
-    weights.flatMap((weight) =>
-      SUBSETS.map(async (subset) => ({
-        name: `Noto Sans ${subset}`,
-        data: await readFile(join(dir, `noto-sans-${subset}-${weight}-normal.woff`)),
-        weight,
-        style: 'normal' as const,
-      })),
-    ),
-  );
-}
 
 /**
  * The cover photo as a data URL, or null when it cannot be loaded in time. Fetched here rather
@@ -76,22 +49,6 @@ async function loadPhoto(src: string): Promise<string | null> {
     return null;
   }
 }
-
-/** The floor plan without labels (room names would need fonts inside the nested SVG). */
-function planImage(model: RoomModelV1, size: number): string {
-  const svg = renderFloorPlanSvg(model, {
-    theme: CARD_PLAN_THEME,
-    size: { width: size, height: size },
-    showHotspots: false,
-    showObjects: false,
-    paddingM: 0.3,
-    wallThicknessM: 0.16,
-  });
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
-}
-
-/** Crawlers fetch the image once per share; a CDN may keep it for an hour. */
-const HEADERS = { 'Cache-Control': 'public, max-age=300, s-maxage=3600' };
 
 export async function GET(request: Request, { params }: RouteContext<'/api/og/listings/[id]'>) {
   const { id } = await params;
@@ -229,28 +186,3 @@ export async function GET(request: Request, { params }: RouteContext<'/api/og/li
     options,
   );
 }
-
-/** "bairmair" in the logo's two colours. */
-function Wordmark({ size }: { size: number }) {
-  return (
-    <div style={{ display: 'flex', fontSize: size, fontWeight: 700, letterSpacing: -1 }}>
-      <span style={{ color: NAVY }}>bair</span>
-      <span style={{ color: SKY }}>mair</span>
-    </div>
-  );
-}
-
-const fill = {
-  display: 'flex',
-  width: '100%',
-  height: '100%',
-  background: '#f7f8fb',
-  color: '#0e1733',
-  fontFamily: FONT_STACK,
-} as const;
-
-const badge = {
-  display: 'flex',
-  padding: '6px 18px',
-  borderRadius: 999,
-} as const;

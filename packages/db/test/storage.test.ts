@@ -7,6 +7,8 @@ import {
   publicObjectUrl,
   scanModelPaths,
   scanRawPaths,
+  userScanModelPath,
+  userScanRawPaths,
 } from '../src/storage';
 
 const LISTING = '0b6f3c1e-8a52-4c1f-9f0e-2d7b5a9c4e11';
@@ -24,6 +26,16 @@ describe('storage paths', () => {
       floorPlanPng: `${LISTING}/${OTHER}/floorplan.png`,
     });
     expect(avatarPath(OTHER)).toBe(`${OTHER}/avatar.jpg`);
+  });
+
+  it("puts the owner's id first for bairmair scan files, as the storage policies expect", () => {
+    expect(userScanRawPaths(OTHER, LISTING)).toEqual({
+      json: `${OTHER}/${LISTING}/capture.json`,
+      usdz: `${OTHER}/${LISTING}/capture.usdz`,
+    });
+    expect(userScanModelPath(OTHER, LISTING)).toBe(`${OTHER}/${LISTING}/model.json`);
+    expect(() => userScanRawPaths('../x', LISTING)).toThrow(/ownerId/);
+    expect(() => userScanModelPath(OTHER, 'scan-1')).toThrow(/scanId/);
   });
 
   it('rejects ids that would break the path checks', () => {

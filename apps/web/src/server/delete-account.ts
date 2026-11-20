@@ -3,7 +3,8 @@ import { BUCKETS, type BucketName, type DeleteAccountResponse } from '@bairmair/
 /**
  * Deletes a user's account for good: first their Storage files, then the Auth user. Deleting the
  * Auth user cascades in the database: profile → agent profile, favorites, reports they filed,
- * listings → private location, photos, scans, views, reports and reveals of those listings.
+ * bairmair scans (`user_scans`), listings → private location, photos, scans, views, reports and
+ * reveals of those listings.
  * Phone reveals they made on other listings stay (rate-limit counts), with the viewer cleared.
  *
  * Storage objects have no foreign keys, so they are removed here, before the user: once the
@@ -40,6 +41,9 @@ export async function deleteAccount(
   const folders: { bucket: BucketName; prefix: string }[] = [
     ...LISTING_BUCKETS.flatMap((bucket) => listingIds.map((prefix) => ({ bucket, prefix }))),
     { bucket: BUCKETS.avatars, prefix: userId },
+    // bairmair scan: raw exports and models under the user's own folder.
+    { bucket: BUCKETS.userScanRaw, prefix: userId },
+    { bucket: BUCKETS.userScanModels, prefix: userId },
   ];
 
   let removedFiles = 0;

@@ -45,7 +45,7 @@ async function EmbedContent({ params }: Pick<PageProps<'/[lang]/embed/listings/[
     return (
       <div className="fixed inset-0 grid place-items-center bg-surface-2 p-6 text-center text-fg-2">
         <p>{page ? t('viewer.noModel') : t('browse.notFound')}</p>
-        <EmbedSignal event={page ? 'no-model' : 'missing'} listingId={id} />
+        <EmbedSignal event={page ? 'no-model' : 'missing'} id={id} />
       </div>
     );
   }
@@ -53,5 +53,5 @@ async function EmbedContent({ params }: Pick<PageProps<'/[lang]/embed/listings/[
   const photos = page.photos.flatMap((photo) =>
     photo.roomId ? [{ id: photo.id, roomId: photo.roomId, src: photo.src }] : [],
   );
-  return <ListingEmbed listingId={id} locale={locale} model={page.model} photos={photos} />;
+  return <ListingEmbed id={id} locale={locale} model={page.model} photos={photos} />;
 }

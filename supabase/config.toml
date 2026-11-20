@@ -162,8 +162,9 @@ site_url = "http://localhost:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-# bairmair://** is the mobile app (Google browser OAuth ends at bairmair://auth/callback).
-additional_redirect_urls = ["http://localhost:3000/**", "bairmair://**"]
+# bairmair://** is the mobile app (Google browser OAuth ends at bairmair://auth/callback);
+# bairmairscan://** is bairmair scan (apps/scan).
+additional_redirect_urls = ["http://localhost:3000/**", "bairmair://**", "bairmairscan://**"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -354,9 +355,10 @@ max_frequency = "5s"
 # `twitter`, `x`, `slack_oidc`, `spotify`, `workos`, `zoom`.
 # Native Sign in with Apple only (expo-apple-authentication + signInWithIdToken): the client id is
 # the iOS bundle id, and no Services ID or secret key is needed. The web OAuth flow would need both.
+# Comma-separated: bairmair (mn.bairmair.app) and bairmair scan (mn.bairmair.scan).
 [auth.external.apple]
 enabled = true
-client_id = "mn.bairmair.app"
+client_id = "mn.bairmair.app,mn.bairmair.scan"
 secret = ""
 # Overrides the default auth callback URL derived from auth.external_url.
 redirect_uri = ""
