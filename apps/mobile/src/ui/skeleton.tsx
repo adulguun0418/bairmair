@@ -14,7 +14,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { radius, useColors } from './theme';
+import { radius, useColors } from '@bairmair/native-ui/theme';
 
 /**
  * A placeholder block that breathes softly while content loads (still under reduced motion).

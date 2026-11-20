@@ -9,11 +9,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { env } from '@/lib/env';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 type State = { kind: 'loading' } | { kind: EmbedEvent } | { kind: 'failed' };
 

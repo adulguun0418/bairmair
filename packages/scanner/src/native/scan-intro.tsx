@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useI18n } from '@/i18n/i18n';
-import { BlueprintGrid } from '@/ui/blueprint';
-import { PAPER_BRAND, PAPER_INK, PAPER_INK_MUTED } from '@/ui/blueprint-panel';
-import { Button } from '@/ui/button';
-import { Icon, type IconName } from '@/ui/icon';
-import { Text } from '@/ui/text';
-import { PAPER, PAPER_GRID, radius } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { BlueprintGrid } from '@bairmair/native-ui/blueprint';
+import { PAPER_BRAND, PAPER_INK, PAPER_INK_MUTED } from '@bairmair/native-ui/blueprint-panel';
+import { Button } from '@bairmair/native-ui/button';
+import { Icon, type IconName } from '@bairmair/native-ui/icon';
+import { Text } from '@bairmair/native-ui/text';
+import { PAPER, PAPER_GRID, radius } from '@bairmair/native-ui/theme';
 
 const NAVY = '#1a2b60';
 

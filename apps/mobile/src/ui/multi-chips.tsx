@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { Choice } from './choice-chips';
-import { useColors } from './theme';
-import { Text } from './text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 /** Several choices from a few options, as wrapping chips (none selected = no filter). */
 export function MultiChips<T extends string | number>({

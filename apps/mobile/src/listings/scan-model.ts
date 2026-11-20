@@ -9,7 +9,7 @@ import {
 } from '@bairmair/room-model';
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { env } from '@/lib/env';
-import { analyzeExport } from '@/scanner/analyze';
+import { analyzeExport } from '@bairmair/scanner';
 import { readListingText } from './files';
 import type { LocalListing, LocalScan } from './model';
 

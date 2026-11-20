@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ScanSession } from '@/scanner/scan-session';
+import { ScanSession } from '@bairmair/scanner/native';
 
 export default function ScanScreen() {
   const router = useRouter();

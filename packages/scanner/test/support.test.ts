@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canStartScan, getScanSupport, type DeviceFacts } from '../src/scanner/support';
+import { canStartScan, getScanSupport, type DeviceFacts } from '../src/support';
 
 const iphone = (modelId: string, osVersion = '18.2'): DeviceFacts => ({
   os: 'ios',

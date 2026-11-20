@@ -3,15 +3,12 @@ import * as Device from 'expo-device';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
-import { deviceFacts, scanSupport } from '@/scanner/device';
-import { formatScanTime } from '@/scanner/scan-meta';
-import { listScans, type SavedScan } from '@/scanner/storage';
-import { supportMessage } from '@/scanner/support-message';
-import { canStartScan } from '@/scanner/support';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { canStartScan, formatScanTime, supportMessage } from '@bairmair/scanner';
+import { deviceFacts, listScans, scanSupport, type SavedScan } from '@bairmair/scanner/native';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 /** Step 4 test screen: device check, start a scan, list the scans saved on this phone. */
 export default function ScanTestScreen() {

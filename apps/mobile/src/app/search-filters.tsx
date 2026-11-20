@@ -4,14 +4,14 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { clearSearchFilters, setSearchFilters, useSearchFilters } from '@/browse/search-store';
-import { useI18n } from '@/i18n/i18n';
-import { Button } from '@/ui/button';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
 import { MultiChips } from '@/ui/multi-chips';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
+import { useColors } from '@bairmair/native-ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 type RangeKey = 'priceMin' | 'priceMax' | 'areaMin' | 'areaMax';
 

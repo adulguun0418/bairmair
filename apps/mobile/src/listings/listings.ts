@@ -6,8 +6,8 @@ import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
-import { analyzeExport } from '@/scanner/analyze';
-import { deleteScan as deleteScannerFolder, getScan } from '@/scanner/storage';
+import { analyzeExport } from '@bairmair/scanner';
+import { deleteScan as deleteScannerFolder, getScan } from '@bairmair/scanner/native';
 import type { ListingStatus } from '@bairmair/browse';
 import {
   deleteListingFile,

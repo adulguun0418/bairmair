@@ -21,13 +21,13 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, useColorScheme, View } from 'react-native';
 import { AuthProvider } from '@/auth/auth-provider';
 import { startFavorites } from '@/browse/favorites';
-import { I18nProvider, useI18n } from '@/i18n/i18n';
+import { I18nProvider, useI18n } from '@bairmair/native-ui/i18n';
 import { UpdateBanner } from '@/lib/app-update';
 import { startListingSync } from '@/listings/listings';
 import { loadThemePreference } from '@/ui/appearance';
-import { Button } from '@/ui/button';
-import { Text } from '@/ui/text';
-import { FONT_FAMILIES, useColors, type Colors } from '@/ui/theme';
+import { Button } from '@bairmair/native-ui/button';
+import { Text } from '@bairmair/native-ui/text';
+import { FONT_FAMILIES, useColors, type Colors } from '@bairmair/native-ui/theme';
 
 // Kept up until the fonts are loaded (a moment: they ship inside the app or the update).
 void SplashScreen.preventAutoHideAsync();

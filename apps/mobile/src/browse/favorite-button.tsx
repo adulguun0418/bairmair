@@ -10,10 +10,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAuth } from '@/auth/auth-provider';
-import { useI18n } from '@/i18n/i18n';
-import { useColors } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { useColors } from '@bairmair/native-ui/theme';
 import { SignedOutError, toggleFavorite, useIsFavorite } from './favorites';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 /** A heart that saves the listing; signed out, it opens sign-in. */
 export function FavoriteButton({

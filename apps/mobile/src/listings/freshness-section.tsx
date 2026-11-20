@@ -2,12 +2,12 @@ import { daysLeftInSearch, LISTING_FRESHNESS } from '@bairmair/db';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
 import { confirmAvailable, fetchLastConfirmed } from './server-listings';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 /** The last confirmation as read from the server, and when it was read. */
 interface Confirmation {

@@ -4,11 +4,11 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { verifyPhoneCode, type PhoneMode } from '@/auth/actions';
 import { useSendCode } from '@/auth/use-send-code';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
-import { useI18n } from '@/i18n/i18n';
-import { Button } from '@/ui/button';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Button } from '@bairmair/native-ui/button';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 const CODE_LENGTH = 6;
 /** Matches `[auth.sms] max_frequency` in supabase/config.toml. */

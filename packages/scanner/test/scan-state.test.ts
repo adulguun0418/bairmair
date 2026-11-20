@@ -5,7 +5,7 @@ import {
   scanReducer,
   type ScanEvent,
   type ScanState,
-} from '../src/scanner/scan-state';
+} from '../src/scan-state';
 
 const run = (...events: ScanEvent[]): ScanState => events.reduce(scanReducer, initialScanState);
 const ok: ScanEvent = { type: 'status', status: 'OK' };

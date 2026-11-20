@@ -11,15 +11,15 @@ import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Alert, PanResponder, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { editListing, useLocalListing } from '@/listings/listings';
 import { addRoomDivider, removeRoomDividers, type LocalListing } from '@/listings/model';
 import { useScanModel } from '@/listings/scan-model';
 import { ScanModelMessage } from '@/listings/scan-model-message';
-import { Button } from '@/ui/button';
-import { ScanFloorPlan } from '@/ui/scan-floor-plan';
-import { Text } from '@/ui/text';
-import { useColors } from '@/ui/theme';
+import { Button } from '@bairmair/native-ui/button';
+import { ScanFloorPlan } from '@bairmair/native-ui/scan-floor-plan';
+import { Text } from '@bairmair/native-ui/text';
+import { useColors } from '@bairmair/native-ui/theme';
 
 /**
  * Dividing rooms the walls did not separate (an open kitchen, a doorway RoomPlan missed): the

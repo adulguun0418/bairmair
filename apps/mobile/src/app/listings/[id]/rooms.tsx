@@ -3,17 +3,17 @@ import { formatArea, roomDisplayName } from '@bairmair/i18n';
 import { findEntrance, ROOM_LABELS } from '@bairmair/room-model';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { editListing, useLocalListing } from '@/listings/listings';
 import { setRoomLabel, type LocalListing } from '@/listings/model';
 import { useScanModel } from '@/listings/scan-model';
 import { ScanModelMessage } from '@/listings/scan-model-message';
-import { Button } from '@/ui/button';
+import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
-import { ScanFloorPlan } from '@/ui/scan-floor-plan';
+import { ScanFloorPlan } from '@bairmair/native-ui/scan-floor-plan';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 /**
  * Room review after a scan: the floor plan, and per room its type (RoomPlan's guess, which the

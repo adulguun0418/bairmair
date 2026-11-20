@@ -11,12 +11,12 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { env } from '@/lib/env';
-import { BlueprintGrid } from '@/ui/blueprint';
-import { Icon, type IconName } from '@/ui/icon';
-import { Text } from '@/ui/text';
-import { PAPER, PAPER_GRID, radius, useColors } from '@/ui/theme';
+import { BlueprintGrid } from '@bairmair/native-ui/blueprint';
+import { Icon, type IconName } from '@bairmair/native-ui/icon';
+import { Text } from '@bairmair/native-ui/text';
+import { PAPER, PAPER_GRID, radius, useColors } from '@bairmair/native-ui/theme';
 import { rememberCover } from './cover-cache';
 import { FavoriteButton } from './favorite-button';
 import { LabelledPlan, listingPlanUrl } from './plan-image';

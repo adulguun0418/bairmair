@@ -4,15 +4,15 @@ import { ExportType, RoomPlanView, useRoomPlanView } from 'expo-roomplan';
 import { useReducer, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useI18n } from '@/i18n/i18n';
-import { Button } from '@/ui/button';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Button } from '@bairmair/native-ui/button';
 import { deviceFacts } from './device';
 import { ScanFailure, ScanIntro } from './scan-intro';
-import { initialScanState, scanReducer, type NativeStatus, type ScanError } from './scan-state';
-import { newScanId } from './scan-meta';
+import { initialScanState, scanReducer, type NativeStatus, type ScanError } from '../scan-state';
+import { newScanId } from '../scan-meta';
 import type { ScanSessionProps } from './scan-session.types';
 import { saveExport } from './storage';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 /**
  * One whole-apartment scan with expo-roomplan's embedded `RoomPlanView` and our own localized

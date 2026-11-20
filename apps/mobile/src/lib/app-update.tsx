@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { captureError } from '@/lib/error-tracking';
-import { Icon } from '@/ui/icon';
-import { Text } from '@/ui/text';
-import { radius, useColors } from '@/ui/theme';
+import { Icon } from '@bairmair/native-ui/icon';
+import { Text } from '@bairmair/native-ui/text';
+import { radius, useColors } from '@bairmair/native-ui/theme';
 import { shouldCheckOnForeground, shouldShowBanner } from './app-update-logic';
 
 /**

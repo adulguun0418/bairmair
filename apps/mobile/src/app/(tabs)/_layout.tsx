@@ -1,6 +1,6 @@
 import { NativeTabs } from 'expo-router/native-tabs';
-import { useI18n } from '@/i18n/i18n';
-import { FONT_FAMILIES, useColors } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { FONT_FAMILIES, useColors } from '@bairmair/native-ui/theme';
 
 /** The app's tabs: search (buyers' home), saved listings, the seller's listings, account. */
 export default function TabsLayout() {

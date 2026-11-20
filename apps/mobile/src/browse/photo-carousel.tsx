@@ -2,9 +2,9 @@ import type { ListingPhoto } from '@bairmair/browse';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 /** The listing's photos, swiped one by one, with "Зураг 2 / 9". */
 export function PhotoCarousel({

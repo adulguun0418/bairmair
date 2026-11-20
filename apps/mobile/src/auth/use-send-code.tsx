@@ -4,7 +4,7 @@ import { useColorScheme } from 'react-native';
 import { needsCaptcha, sendPhoneCode, type PhoneMode } from '@/auth/actions';
 import { CAPTCHA_IN_BROWSER, captchaTokenFromBrowser } from '@/auth/captcha-browser';
 import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 
 export interface SendCode {
   /** Texts a code to `phone` (E.164); `onSent` follows on success. */

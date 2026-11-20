@@ -17,7 +17,7 @@ import {
   type LayoutChangeEvent,
   type TextInputProps,
 } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { formToFields, parseNumberInput, type FormField, type ListingForm } from '@bairmair/browse';
 import { StepCard, StepMarker } from '@/listings/editor-step';
 import {
@@ -51,15 +51,15 @@ import { ScanSection } from '@/listings/scan-section';
 import { StatusPill } from '@/listings/status-pill';
 import { StatusSection } from '@/listings/status-section';
 import { SyncStatusLine } from '@/listings/sync-status-line';
-import { Button } from '@/ui/button';
+import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
-import { Icon } from '@/ui/icon';
+import { Icon } from '@bairmair/native-ui/icon';
 import { ProgressBar } from '@/ui/progress-bar';
 import { ScrollLockHost } from '@/ui/scroll-lock';
 import { TextField } from '@/ui/text-field';
-import { radius, useColors } from '@/ui/theme';
+import { radius, useColors } from '@bairmair/native-ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 const nowIso = () => new Date().toISOString();
 

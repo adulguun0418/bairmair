@@ -1,6 +1,6 @@
 import { StyleSheet, Switch, View } from 'react-native';
-import { useColors } from './theme';
-import { Text } from './text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 interface ToggleRowProps {
   label: string;

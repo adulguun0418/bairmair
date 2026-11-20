@@ -229,6 +229,29 @@ export const mn = {
     savedScans: 'Хадгалсан скан',
     noScans: 'Одоогоор скан алга.',
   },
+  /** bairmair scan, the standalone scanning app (`apps/scan`). */
+  scanApp: {
+    name: 'bairmair scan',
+    homeTitle: 'Миний сканууд',
+    newScan: 'Шинэ скан',
+    emptyEyebrow: '3D скан',
+    emptyTitle: 'Байраа 3D-ээр скан хийгээрэй',
+    emptyBody:
+      'iPhone-ийн LiDAR мэдрэгч өрөө бүрийг хэмжиж, 3D загвар, төлөвлөлт, өрөө бүрийн талбайг гаргана.',
+    cannotScanTitle: 'Энэ iPhone скан хийх боломжгүй',
+    savedOnPhone: 'Энэ утсанд хадгалсан',
+    testNote: 'Туршилтын хувилбар: скан одоохондоо зөвхөн энэ утсанд хадгалагдана.',
+    diagnostics: {
+      title: 'Туршилт',
+      device: 'Төхөөрөмж',
+      scan: '3D скан',
+      store: 'App Store-ын төлбөр',
+      storeChecking: 'Шалгаж байна…',
+      storeConnected: 'Холбогдлоо',
+      storeFailed: 'Холбогдсонгүй',
+      check: 'Дахин шалгах',
+    },
+  },
   auth: {
     title: 'Нэвтрэх',
     intro: 'Утасны дугаараараа нэвтэрнэ үү. Бид SMS-ээр 6 оронтой код илгээнэ.',

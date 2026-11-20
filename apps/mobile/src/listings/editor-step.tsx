@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
-import { Icon } from '@/ui/icon';
-import { Text } from '@/ui/text';
-import { radius, useColors } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Icon } from '@bairmair/native-ui/icon';
+import { Text } from '@bairmair/native-ui/text';
+import { radius, useColors } from '@bairmair/native-ui/theme';
 import type { EditorStep, StepState } from './editor-steps';
 
 /** A step's number in a circle: outlined while to do, green with a tick when done, amber "!" to fix. */

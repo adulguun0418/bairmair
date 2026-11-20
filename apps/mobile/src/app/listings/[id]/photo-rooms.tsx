@@ -2,15 +2,15 @@ import { roomDisplayName } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { editListing, photoUri, useLocalListing } from '@/listings/listings';
 import { assignPhotoRoom, type LocalListing } from '@/listings/model';
 import { useScanModel } from '@/listings/scan-model';
 import { ScanModelMessage } from '@/listings/scan-model-message';
-import { Button } from '@/ui/button';
+import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 /** "No room" as a chip value (ChoiceChips values are strings here). */
 const NO_ROOM = '';

@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { useColors } from './theme';
+import { useColors } from '@bairmair/native-ui/theme';
 
 /** A thin measured bar: `value` from 0 to 1, in sky blue unless `color` says otherwise. */
 export function ProgressBar({ value, color }: { value: number; color?: string }) {
