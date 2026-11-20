@@ -341,7 +341,11 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Config: `QPAY_BASE_URL`, `QPAY_USERNAME`, `QPAY_PASSWORD`, `QPAY_INVOICE_CODE`, `QPAY_CALLBACK_SECRET` set on Vercel **Production only** (2026-11-19); any missing → every payment request answers 503 (previews, local without them). `PAYMENT_TESTERS` = your account. All six are Vercel "sensitive" variables: the dashboard shows no value, but the server reads them.
   - **Real payment verified on the live site (2026-11-19):** you paid 100₮; QPay called `GET /api/qpay/callback` (user agent `node-fetch/1.0`, from MN) ~1 s later and that request marked the payment paid (before the page's polling); product delivered once; a second invoice cancelled from the page. `paid_at` is our confirmation time: QPay's check rows seem to lack `payment_date` under that name (look at the real row before e-barimt).
   - Verified: typecheck, lint, unit tests (QPay client 10, flow 19), production build; integration test `apps/web/test-remote/payments.test.ts` against the dev project and the live merchant (skipped without `QPAY_*` in `.env.local`): 401/403/400, invoice with QR and bank apps, reuse, check, other user 404, RLS (own row visible, others' not, writes refused), forged and valid callback, cancel confirmed by QPay as `CANCELED`.
-- Tests: 657 unit (room-model 232, browse 139, mobile 118, web 79, edge functions 53, i18n 29, db 7) + 99 integration tests against the dev project (db 70, web 17, mobile 12).
+- QPay test in the app (your request, 2026-11-20; app 0.1.26, OTA, JS only):
+  - Бүртгэл → ТУРШИЛТ → "QPay туршилт" (`src/app/payment-test.tsx`, under the RoomPlan test): the same 100₮ `test` product as the website. Bank apps first (logo + name; `Linking.openURL` with QPay's deep link, no URL-scheme list needed in the build; "not installed" alert if it fails), "QPay хуудсаар төлөх" (in-app browser), the QR code for paying from another phone, cancel, recent payments. Polls every 4 s while the app is in front and at once when it comes back from the bank app. Signed out: sign-in button; non-testers: "testers only" + their id.
+  - Shared with the website through `@bairmair/browse` `payments.ts`: `paymentsApi(apiBase)` (create, get with check, cancel), `PaymentRequestError`, `paymentErrorKey`, `fetchPaymentHistory`. The web's `lib/payments.ts` now wraps it.
+  - Verified: typecheck, lint, tests (browse +4), `expo export` for iOS. Not verified: on a phone.
+- Tests: 661 unit (room-model 232, browse 143, mobile 118, web 79, edge functions 53, i18n 29, db 7) + 99 integration tests against the dev project (db 70, web 17, mobile 12).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples
@@ -480,6 +484,11 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Front-door picker copy (`entrance` in `mn.ts`), e.g. "Автоматаар таамаглах", and `viewer.plainView` "Цэвэр харагдац".
 
 ## Next
+- To do, remove the QPay test once payments are proven (before launch, or with the first real product):
+  - Website: `app/[lang]/(site)/payments/test/` and `components/payments/PaymentTestView.tsx` (keep `QPayCheckout`).
+  - App: `src/app/payment-test.tsx`, its `Stack.Screen` in `src/app/_layout.tsx`, and the "QPay туршилт" row in Бүртгэл (`(account)/account.tsx`, marked "Temporary").
+  - Shared: the `test` product in `PAYMENT_PRODUCTS` (only if no tester flow is wanted any more), the `payments.test*`/`notTester`/`yourId`/`signInNeeded` copy, `PAYMENT_TESTERS` on Vercel. The test payments stay in the `payments` table (accounting records).
+- You, QPay in the app (after `pnpm update:preview` from `main`; Бүртгэл shows 0.1.26): Бүртгэл → ТУРШИЛТ → "QPay туршилт" → "100 ₮ төлөх" → tap your bank → pay → back in bairmair the screen shows "Төлбөр төлөгдлөө" within a few seconds. Also try a bank you do not have (an alert), and "Цуцлах".
 - Payments, next (your call on the order): e-barimt (`/v2/ebarimt_v3/create` after each paid payment; needs to know whether NEXUS KAIROS is VAT-registered and what buyers give as receiver), refunds (`/v2/payment/refund`, admin only), the first real product (boosts or agent plans), privacy policy and terms (QPay as processor, what is sold, refunds) before anyone but testers can pay, then the app.
 - Security: the QPay password was pasted into a chat on 2026-11-19; ask QPay to rotate it before real sales, then update Vercel and `.env.local`.
 - Captcha on standby (app 0.1.24):

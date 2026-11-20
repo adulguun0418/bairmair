@@ -161,6 +161,7 @@ function RootStack() {
       <Stack.Screen name="listings/[id]/entrance" options={{ title: t('entrance.title') }} />
       <Stack.Screen name="listings/[id]/photo-rooms" options={{ title: t('photoRooms.title') }} />
       <Stack.Screen name="scan-test" options={{ title: t('scanTest.title') }} />
+      <Stack.Screen name="payment-test" options={{ title: t('payments.testTitle') }} />
       <Stack.Screen
         name="scan"
         options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }}
