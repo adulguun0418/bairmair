@@ -1,6 +1,12 @@
 'use client';
 
-import { fetchScanPlan, formatProUntil, type ScanPlan } from '@bairmair/browse';
+import {
+  fetchAppleSubscription,
+  fetchScanPlan,
+  formatProUntil,
+  type AppleProSubscription,
+  type ScanPlan,
+} from '@bairmair/browse';
 import {
   PAYMENT_PRODUCTS,
   SCAN_PRO_PLANS,
@@ -49,6 +55,7 @@ export function ScanProView({ locale }: { locale: Locale }) {
   const showTest = useShowTest();
   const [plan, setPlan] = useState<ScanPlan | null>(null);
   const [planFailed, setPlanFailed] = useState(false);
+  const [apple, setApple] = useState<AppleProSubscription | null>(null);
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
   const [busy, setBusy] = useState<ScanProProductKey | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +82,9 @@ export function ScanProView({ locale }: { locale: Locale }) {
     fetchScanPlan(browserClient())
       .then((next) => active && setPlan(next))
       .catch(() => active && setPlanFailed(true));
+    fetchAppleSubscription(browserClient())
+      .then((next) => active && setApple(next))
+      .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -186,6 +196,11 @@ export function ScanProView({ locale }: { locale: Locale }) {
               />
             ))}
           </div>
+          {apple && apple.autoRenew !== false && (
+            <p role="note" className="rounded-2xl bg-surface-2 p-4 text-sm">
+              {t('scanPro.appleNote')}
+            </p>
+          )}
           {pro && <p className="text-sm text-fg-muted">{t('scanPro.extendNote')}</p>}
           <p className="text-sm text-fg-muted">{t('scanPro.noRenewal')}</p>
         </section>

@@ -126,10 +126,10 @@ of the scan app.
 4. **Subscriptions on the server + QPay on the website.** Done (see `docs/scan/PROGRESS.md`;
    the real test payment is yours). Was: `scan_subscriptions`, the real limit, QPay products and
    `/scan-pro`, plan on `/account`; the app shows "Pro until …".
-5. **Apple IAP.** App Store Connect: app record, Paid Apps Agreement, bank and tax (NEXUS
-   KAIROS), subscription group and product, sandbox tester. Server verification and
-   notifications, paywall, restore, "manage subscription". You: buy, renew (sandbox renews in
-   minutes), cancel, and restore on the iPhone.
+5. **Apple IAP.** Done in code (see `docs/scan/PROGRESS.md`); App Store Connect setup and the
+   sandbox purchase are yours. Was: app record, Paid Apps Agreement, bank and tax (NEXUS
+   KAIROS), subscription group and products, sandbox tester; server verification and
+   notifications, paywall, restore, "manage subscription".
 6. **Scan → listing.** "Зар болгох": the server copies the raw files into a new draft listing's
    scan and processes it; then opens the website editor (or the bairmair app). Proposed: a
    published scan stops counting toward the limit.

@@ -196,17 +196,33 @@ export default function HomeScreen() {
           <Text style={[styles.small, { color: colors.onWarningSoft }]}>
             {proUntil ? t('scanApp.proLimitBody', { limit }) : t('scanApp.limitBody', { limit })}
           </Text>
+          {!proUntil && (
+            <Button
+              title={t('scanApp.upgrade')}
+              icon="sparkle"
+              size="small"
+              onPress={() => router.push('/pro')}
+            />
+          )}
         </View>
       ) : (
         <Button title={t('scanApp.newScan')} icon="camera" onPress={startScan} />
       )}
 
       {used !== null && (
-        <Text style={[styles.small, styles.center, { color: colors.textMuted }]}>
-          {proUntil
-            ? t('scanApp.proCount', { date: formatProUntil(proUntil, locale) })
-            : t('scanApp.freeCount', { used: Math.min(used, limit), limit })}
-        </Text>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/pro')} hitSlop={8}>
+          <Text style={[styles.small, styles.center, { color: colors.textMuted }]}>
+            {proUntil
+              ? t('scanApp.proCount', { date: formatProUntil(proUntil, locale) })
+              : t('scanApp.freeCount', { used: Math.min(used, limit), limit })}
+            {!proUntil && (
+              <Text style={[styles.small, { color: colors.accent }]}>
+                {' · '}
+                {t('scanApp.upgrade')}
+              </Text>
+            )}
+          </Text>
+        </Pressable>
       )}
       {loadFailed && (
         <Text style={[styles.small, styles.center, { color: colors.danger }]}>

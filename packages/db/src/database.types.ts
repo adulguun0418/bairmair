@@ -674,8 +674,12 @@ export type Database = {
       };
       scan_subscriptions: {
         Row: {
+          apple_auto_renew: boolean | null;
           apple_environment: string | null;
           apple_original_transaction_id: string | null;
+          apple_renewal_signed_at: string | null;
+          apple_signed_at: string | null;
+          apple_transaction_id: string | null;
           created_at: string;
           expires_at: string;
           id: string;
@@ -688,8 +692,12 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          apple_auto_renew?: boolean | null;
           apple_environment?: string | null;
           apple_original_transaction_id?: string | null;
+          apple_renewal_signed_at?: string | null;
+          apple_signed_at?: string | null;
+          apple_transaction_id?: string | null;
           created_at?: string;
           expires_at: string;
           id?: string;
@@ -702,8 +710,12 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          apple_auto_renew?: boolean | null;
           apple_environment?: string | null;
           apple_original_transaction_id?: string | null;
+          apple_renewal_signed_at?: string | null;
+          apple_signed_at?: string | null;
+          apple_transaction_id?: string | null;
           created_at?: string;
           expires_at?: string;
           id?: string;
@@ -835,8 +847,12 @@ export type Database = {
           p_user_id: string;
         };
         Returns: {
+          apple_auto_renew: boolean | null;
           apple_environment: string | null;
           apple_original_transaction_id: string | null;
+          apple_renewal_signed_at: string | null;
+          apple_signed_at: string | null;
+          apple_transaction_id: string | null;
           created_at: string;
           expires_at: string;
           id: string;
@@ -854,6 +870,22 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      apply_apple_subscription: {
+        Args: {
+          p_auto_renew: boolean;
+          p_environment: string;
+          p_expires_at: string;
+          p_original_transaction_id: string;
+          p_product_id: string;
+          p_renewal_signed_at: string;
+          p_signed_at: string;
+          p_starts_at: string;
+          p_status: Database['public']['Enums']['scan_subscription_status'];
+          p_transaction_id: string;
+          p_user_id: string;
+        };
+        Returns: string;
       };
       claim_sms_alert: {
         Args: { p_quiet_minutes?: number; p_threshold: number };
