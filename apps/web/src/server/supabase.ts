@@ -10,6 +10,7 @@ import {
 } from '@bairmair/db';
 import type { Database, Json, PaymentCheckout } from '@bairmair/db';
 import { createClient } from '@supabase/supabase-js';
+import type { AppleSubscriptionStore } from './apple-iap';
 import type { AccountStore } from './delete-account';
 import type { PaymentRecord, PaymentStore } from './payments';
 import type { ScanStore } from './process-scan';
@@ -378,6 +379,40 @@ export function supabaseSharedScanSource(client: TypedSupabaseClient): SharedSca
         return null;
       }
       return JSON.parse(await data.text()) as unknown;
+    },
+  };
+}
+
+/** Applies verified App Store data (`apply_apple_subscription`, service role only). */
+export function supabaseAppleStore(client: TypedSupabaseClient): AppleSubscriptionStore {
+  return {
+    async apply(update) {
+      const tx = update.transaction;
+      // Every parameter may be SQL null (see the migration); the generated types say otherwise.
+      const args = {
+        p_user_id: update.userId,
+        p_original_transaction_id: update.originalTransactionId,
+        p_environment: update.environment,
+        p_transaction_id: tx?.transactionId ?? null,
+        p_product_id: tx?.productId ?? null,
+        p_starts_at: tx?.startsAt.toISOString() ?? null,
+        p_expires_at: tx?.expiresAt.toISOString() ?? null,
+        p_status: tx?.status ?? null,
+        p_signed_at: tx?.signedAt.toISOString() ?? null,
+        p_auto_renew: update.renewal?.autoRenew ?? null,
+        p_renewal_signed_at: update.renewal?.signedAt.toISOString() ?? null,
+      } as Database['public']['Functions']['apply_apple_subscription']['Args'];
+      const { data, error } = await client.rpc('apply_apple_subscription', args);
+      if (error) throw error;
+      if (
+        data !== 'applied' &&
+        data !== 'stale' &&
+        data !== 'other_account' &&
+        data !== 'unknown_user'
+      ) {
+        throw new Error(`apply_apple_subscription returned ${String(data)}`);
+      }
+      return data;
     },
   };
 }

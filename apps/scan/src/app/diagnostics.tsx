@@ -6,10 +6,10 @@ import { formatScanTime, supportMessage } from '@bairmair/scanner';
 import { deviceFacts, scanSupport } from '@bairmair/scanner/native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import { endConnection, initConnection } from 'expo-iap';
 import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { connectStore } from '@/pro/purchases';
 
 type StoreState =
   { status: 'checking' } | { status: 'connected' } | { status: 'failed'; message: string };
@@ -28,11 +28,10 @@ export default function DiagnosticsScreen() {
 
   useEffect(() => {
     let active = true;
-    initConnection().then(
-      (connected) => {
-        if (active) {
-          setStore(connected ? { status: 'connected' } : { status: 'failed', message: 'false' });
-        }
+    // The app's shared connection (purchases use it too), so it is not ended here.
+    connectStore().then(
+      () => {
+        if (active) setStore({ status: 'connected' });
       },
       (error: unknown) => {
         if (active) {
@@ -45,7 +44,6 @@ export default function DiagnosticsScreen() {
     );
     return () => {
       active = false;
-      void endConnection().catch(() => undefined);
     };
   }, [attempt]);
 

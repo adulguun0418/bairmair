@@ -4,7 +4,7 @@ import { Onest_600SemiBold } from '@expo-google-fonts/onest/600SemiBold';
 import { Onest_700Bold } from '@expo-google-fonts/onest/700Bold';
 import { Onest_800ExtraBold } from '@expo-google-fonts/onest/800ExtraBold';
 import { createTranslator, DEFAULT_LOCALE } from '@bairmair/i18n';
-import { AuthProvider, type AuthConfig } from '@bairmair/native-auth';
+import { AuthProvider, useAuth, type AuthConfig } from '@bairmair/native-auth';
 import { Button } from '@bairmair/native-ui/button';
 import { I18nProvider, useI18n } from '@bairmair/native-ui/i18n';
 import { Text } from '@bairmair/native-ui/text';
@@ -24,6 +24,7 @@ import { useEffect } from 'react';
 import { StyleSheet, useColorScheme, View } from 'react-native';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
+import { startPurchases, syncEntitlements } from '@/pro/purchases';
 import { startUploads } from '@/uploads/uploads';
 
 /** The shared sign-in, set up for this app (the captcha page returns to bairmairscan://). */
@@ -102,11 +103,27 @@ export default function RootLayout() {
       <AuthProvider config={AUTH_CONFIG}>
         <ThemeProvider value={navigationTheme(colors, dark, fontsLoaded)}>
           <StatusBar style="auto" />
+          <ProPurchases />
           <RootStack />
         </ThemeProvider>
       </AuthProvider>
     </I18nProvider>
   );
+}
+
+/**
+ * App Store purchases for the app's life: new ones and the unfinished ones StoreKit hands over
+ * at launch go to the server; after sign-in, this Apple ID's current Pro subscription is sent
+ * for the account (so a purchase made while signed out, or on another device, is picked up).
+ */
+function ProPurchases() {
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
+  useEffect(startPurchases, []);
+  useEffect(() => {
+    if (userId) void syncEntitlements().catch(() => undefined);
+  }, [userId]);
+  return null;
 }
 
 function RootStack() {
@@ -134,6 +151,7 @@ function RootStack() {
       <Stack.Screen name="verify" options={{ title: t('auth.codeTitle') }} />
       <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       <Stack.Screen name="diagnostics" options={{ title: t('scanApp.diagnostics.title') }} />
+      <Stack.Screen name="pro" options={{ presentation: 'modal', title: '' }} />
     </Stack>
   );
 }

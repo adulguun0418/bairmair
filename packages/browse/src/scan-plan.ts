@@ -39,3 +39,34 @@ export function localDay(iso: string): string {
 export function formatProUntil(iso: string, locale: Locale): string {
   return formatDate(localDay(iso), locale);
 }
+
+/** The user's current App Store subscription (bairmair scan Pro), from their own rows (RLS). */
+export interface AppleProSubscription {
+  productId: string;
+  expiresAt: string;
+  /** Renews at `expiresAt` (null when Apple has not told us yet). */
+  autoRenew: boolean | null;
+}
+
+/**
+ * The signed-in user's active App Store subscription, or null. Used for "manage subscription",
+ * the account-deletion warning (deleting the account does not cancel Apple billing) and the
+ * website's note before paying with QPay on top of an auto-renewing subscription.
+ */
+export async function fetchAppleSubscription(
+  client: TypedSupabaseClient,
+): Promise<AppleProSubscription | null> {
+  const { data, error } = await client
+    .from('scan_subscriptions')
+    .select('product_id, expires_at, apple_auto_renew')
+    .eq('source', 'apple')
+    .eq('status', 'active')
+    .gt('expires_at', new Date().toISOString())
+    .order('expires_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data
+    ? { productId: data.product_id, expiresAt: data.expires_at, autoRenew: data.apple_auto_renew }
+    : null;
+}

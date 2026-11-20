@@ -127,3 +127,43 @@ export interface PaymentResponse {
   expiresAt: string;
   paidAt: string | null;
 }
+
+// Apple In-App Purchase (bairmair scan Pro) ---------------------------------------------------
+
+/**
+ * The App Store auto-renewing subscriptions (one subscription group, "bairmair scan Pro"), as
+ * created in App Store Connect. Prices come from StoreKit at runtime, never from here.
+ */
+export const APPLE_SCAN_PRO_PRODUCTS = {
+  'mn.bairmair.scan.pro.monthly': { period: 'month' },
+  'mn.bairmair.scan.pro.yearly': { period: 'year' },
+} as const satisfies Record<string, { period: 'month' | 'year' }>;
+
+export type AppleScanProProductId = keyof typeof APPLE_SCAN_PRO_PRODUCTS;
+
+export function isAppleScanProProduct(value: unknown): value is AppleScanProProductId {
+  return typeof value === 'string' && Object.hasOwn(APPLE_SCAN_PRO_PRODUCTS, value);
+}
+
+/** The scan app's bundle id: Apple's signed data must name it. */
+export const SCAN_APP_BUNDLE_ID = 'mn.bairmair.scan';
+
+/**
+ * `POST` with `Authorization: Bearer <access token>` and an `AppleTransactionRequest` body: after
+ * a purchase or a restore, the app hands over StoreKit's signed transaction. Finish the
+ * transaction only after a 200 (or a 4xx: nothing to retry); keep it on network errors and 5xx.
+ */
+export const APPLE_TRANSACTIONS_PATH = '/api/iap/apple/transactions';
+
+/** App Store Server Notifications v2 (`POST { signedPayload }`), set in App Store Connect. */
+export const APPLE_NOTIFICATIONS_PATH = '/api/iap/apple/notifications';
+
+export interface AppleTransactionRequest {
+  /** StoreKit 2 `jwsRepresentation` (expo-iap: `purchase.purchaseToken` on iOS). */
+  signedTransaction: string;
+}
+
+export interface AppleTransactionResponse {
+  /** `applied`: the subscription is up to date now; `stale`: the server already had newer data. */
+  outcome: 'applied' | 'stale';
+}

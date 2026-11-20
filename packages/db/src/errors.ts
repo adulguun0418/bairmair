@@ -50,6 +50,13 @@ export const API_ERROR_KEYS = [
   'payment_rate_limited',
   /** Payments are not configured on this server, or QPay did not answer (HTTP 503). */
   'payment_unavailable',
+  /**
+   * Apple data that does not verify, is for another app, or is not a scan Pro product (HTTP 400).
+   * Do not finish the transaction on 5xx; on this one there is nothing to retry.
+   */
+  'iap_invalid',
+  /** This App Store subscription belongs to another bairmair account (HTTP 409). */
+  'iap_other_account',
   /** Anything else; safe to retry (HTTP 500). */
   'server_error',
 ] as const;

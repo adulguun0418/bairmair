@@ -1,7 +1,9 @@
 import {
+  fetchAppleSubscription,
   fetchScanPlan,
   formatMongolianPhone,
   formatProUntil,
+  type AppleProSubscription,
   type ScanPlan,
 } from '@bairmair/browse';
 import { ACCOUNT_PATH } from '@bairmair/db';
@@ -46,6 +48,7 @@ export default function AccountScreen() {
   const { session } = useAuth();
   const [deleting, setDeleting] = useState(false);
   const [plan, setPlan] = useState<ScanPlan | null>(null);
+  const [apple, setApple] = useState<AppleProSubscription | null>(null);
 
   const user = session?.user;
   const userId = user?.id ?? null;
@@ -57,6 +60,9 @@ export default function AccountScreen() {
       let active = true;
       fetchScanPlan(supabase)
         .then((next) => active && setPlan(next))
+        .catch(() => undefined);
+      fetchAppleSubscription(supabase)
+        .then((next) => active && setApple(next))
         .catch(() => undefined);
       return () => {
         active = false;
@@ -74,20 +80,27 @@ export default function AccountScreen() {
     ]);
 
   const confirmDelete = () =>
-    Alert.alert(t('account.deleteTitle'), t('account.deleteBody'), [
-      { text: t('account.cancel'), style: 'cancel' },
-      {
-        text: t('account.deleteConfirm'),
-        style: 'destructive',
-        onPress: () => {
-          setDeleting(true);
-          deleteAccount()
-            .then(() => Alert.alert(t('account.deleted')))
-            .catch(() => Alert.alert(t('account.deleteFailed')))
-            .finally(() => setDeleting(false));
+    Alert.alert(
+      t('account.deleteTitle'),
+      // Apple keeps billing a subscription whose account is gone (App Store rule 5.1.1(v)).
+      apple && apple.autoRenew !== false
+        ? `${t('account.deleteBody')}\n\n${t('scanApp.pro.deleteNote')}`
+        : t('account.deleteBody'),
+      [
+        { text: t('account.cancel'), style: 'cancel' },
+        {
+          text: t('account.deleteConfirm'),
+          style: 'destructive',
+          onPress: () => {
+            setDeleting(true);
+            deleteAccount()
+              .then(() => Alert.alert(t('account.deleted')))
+              .catch(() => Alert.alert(t('account.deleteFailed')))
+              .finally(() => setDeleting(false));
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   const version = Constants.expoConfig?.version ?? '?';
   const created = !Updates.isEmbeddedLaunch && Updates.createdAt ? Updates.createdAt : null;
@@ -117,7 +130,11 @@ export default function AccountScreen() {
           {plan && (
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <View style={styles.planRow}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/pro')}
+                style={({ pressed }) => [styles.planRow, { opacity: pressed ? 0.6 : 1 }]}
+              >
                 <Text style={[styles.small, { color: colors.textMuted }]}>{t('scanApp.plan')}</Text>
                 <View style={styles.planText}>
                   <Text
@@ -131,13 +148,18 @@ export default function AccountScreen() {
                       ? t('scanApp.planPro', { date: formatProUntil(plan.proUntil, locale) })
                       : t('scanApp.planFree', { kept: plan.kept, limit: plan.limit })}
                   </Text>
-                  {plan.proUntil && (
+                  {plan.proUntil ? (
                     <Text style={[styles.small, { color: colors.textMuted }]}>
                       {t('scanApp.planProKept', { kept: plan.kept })}
                     </Text>
+                  ) : (
+                    <Text style={[styles.small, { color: colors.accent }]}>
+                      {t('scanApp.upgrade')}
+                    </Text>
                   )}
                 </View>
-              </View>
+                <Icon name="chevron" size={14} color={colors.textSubtle} />
+              </Pressable>
             </>
           )}
         </View>
