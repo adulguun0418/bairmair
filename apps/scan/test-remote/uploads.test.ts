@@ -15,6 +15,7 @@ import {
 } from '../../../packages/db/test-remote/helpers';
 import { processScan } from '../../web/src/server/process-scan';
 import { supabaseUserScanStore } from '../../web/src/server/supabase';
+import { loadScanModel } from '../src/scans/scan-model';
 import { UploadEngine, type UploadRecordStore } from '../src/uploads/engine';
 import { createUploadRemote, type UploadFile } from '../src/uploads/remote';
 import { newUploadRecord, uploadStatus, type UploadRecord } from '../src/uploads/upload-model';
@@ -131,6 +132,21 @@ describe('scan uploads against the dev project', () => {
     });
     expect(data?.share_slug).toMatch(/^[A-Za-z0-9]{12}$/);
     expect((data?.metrics as { totalAreaM2: number }).totalAreaM2).toBeGreaterThan(0);
+  });
+
+  it("loads the processed model for its owner (the scan screen's plan), and for nobody else", async () => {
+    const { data: row, error } = await admin
+      .from('user_scans')
+      .select('id, owner_id, room_labels, room_dividers, entrance_door_id')
+      .eq('id', store.get('scan-a')!.remoteId)
+      .single();
+    expect(error).toBeNull();
+
+    const model = await loadScanModel(alice.client, row!);
+    expect(model?.rooms.length).toBeGreaterThan(0);
+
+    const bob = await createUser('scan-other');
+    expect(await loadScanModel(bob.client, row!)).toBeNull();
   });
 
   it('stops a third scan at the free limit, and sends it once a slot is free', async () => {

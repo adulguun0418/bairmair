@@ -127,6 +127,11 @@ website), which needs the plan's open questions on price and plan.
     row with a slug, the third stopped at the limit and sent after a delete, a repeated insert
     makes no second row; processing runs this branch's `processScan`), `expo export` for iOS of
     both apps (scan bundle: one copy of every package). Not verified: anything on the iPhone.
+  - Fix after the first iPhone test: opening a saved scan always said "Сканыг ачаалж чадсангүй".
+    The plan model was read with `storage.download()` + `Blob.text()`, and React Native's Blob has
+    no `text()`. Now `loadScanModel` (`src/scans/scan-model.ts`) reads it through a 60-second
+    signed URL and `fetch`, and never throws (the screen works without its plan). Integration test:
+    the owner gets the model, another user gets nothing.
 
 ## Decisions
 - `expo-iap` for Apple In-App Purchase, our own server verification (see the plan).

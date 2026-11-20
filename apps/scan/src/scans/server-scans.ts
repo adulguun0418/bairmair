@@ -1,13 +1,7 @@
 import { BUCKETS, userScanModelPath, userScanRawPaths, type Tables } from '@bairmair/db';
-import {
-  applyAnnotations,
-  parseEntranceDoorId,
-  parseRoomDividers,
-  parseRoomLabelOverrides,
-  safeParseRoomModel,
-  type RoomModelV1,
-} from '@bairmair/room-model';
+import type { RoomModelV1 } from '@bairmair/room-model';
 import { supabase } from '@/lib/supabase';
+import { loadScanModel } from './scan-model';
 
 /** The signed-in user's scans on the server (`user_scans`, readable only by their owner). */
 
@@ -56,19 +50,9 @@ export async function fetchScan(id: string): Promise<ServerScan | null> {
   return data;
 }
 
-/** The processed model with the owner's room names, dividers and front door, or null. */
-export async function fetchScanModel(scan: ServerScan): Promise<RoomModelV1 | null> {
-  const { data, error } = await supabase.storage
-    .from(BUCKETS.userScanModels)
-    .download(userScanModelPath(scan.owner_id, scan.id));
-  if (error) return null;
-  const parsed = safeParseRoomModel(JSON.parse(await data.text()));
-  if (!parsed.success) return null;
-  return applyAnnotations(parsed.data, {
-    dividers: parseRoomDividers(scan.room_dividers),
-    entranceDoorId: parseEntranceDoorId(scan.entrance_door_id),
-    roomLabels: parseRoomLabelOverrides(scan.room_labels),
-  });
+/** The processed model with the owner's annotations, or null (see `loadScanModel`). */
+export function fetchScanModel(scan: ServerScan): Promise<RoomModelV1 | null> {
+  return loadScanModel(supabase, scan);
 }
 
 export async function renameScan(id: string, title: string): Promise<void> {
