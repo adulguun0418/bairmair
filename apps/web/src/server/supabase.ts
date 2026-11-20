@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { AccountStore } from './delete-account';
 import type { PaymentRecord, PaymentStore } from './payments';
 import type { ScanStore } from './process-scan';
+import type { AddScanProPeriod } from './scan-pro';
 import type { SharedScanSource } from './shared-scan';
 
 /**
@@ -209,6 +210,19 @@ export function supabasePaymentStore(client: TypedSupabaseClient): PaymentStore 
         .is('fulfilled_at', null);
       if (error) throw error;
     },
+  };
+}
+
+/** Adds a paid bairmair scan Pro period (`add_scan_pro_period`, service role only). */
+export function supabaseAddScanProPeriod(client: TypedSupabaseClient): AddScanProPeriod {
+  return async ({ userId, paymentId, product, days }) => {
+    const { error } = await client.rpc('add_scan_pro_period', {
+      p_user_id: userId,
+      p_payment_id: paymentId,
+      p_product_id: product,
+      p_days: days,
+    });
+    if (error) throw error;
   };
 }
 

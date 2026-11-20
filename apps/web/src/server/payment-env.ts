@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { reportServerError } from './error-reporting';
 import type { PaymentDeps } from './payments';
 import { qpayFromEnv } from './qpay';
-import { adminClient, supabasePaymentStore } from './supabase';
+import { scanProFulfilments } from './scan-pro';
+import { adminClient, supabaseAddScanProPeriod, supabasePaymentStore } from './supabase';
 
 /**
  * The payment flow wired to this server: Supabase (secret key), QPay from `QPAY_*`, the callback
@@ -13,8 +14,9 @@ import { adminClient, supabasePaymentStore } from './supabase';
 export function paymentDeps(): PaymentDeps {
   const secret = process.env.QPAY_CALLBACK_SECRET ?? '';
   const qpay = secret ? qpayFromEnv() : null;
+  const admin = adminClient();
   return {
-    store: supabasePaymentStore(adminClient()),
+    store: supabasePaymentStore(admin),
     qpay,
     callback: {
       origin: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
@@ -26,8 +28,8 @@ export function paymentDeps(): PaymentDeps {
         .map((id) => id.trim().toLowerCase())
         .filter(Boolean),
     ),
-    // What each product delivers once paid. `test` delivers nothing.
-    fulfil: {},
+    // What each product delivers once paid: scan Pro products add a Pro period; `test` nothing.
+    fulfil: scanProFulfilments(supabaseAddScanProPeriod(admin)),
     now: () => new Date(),
     newId: randomUUID,
     report: (error, context) => reportServerError(error, { route: 'payments', ...context }),

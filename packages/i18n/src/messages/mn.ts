@@ -249,6 +249,14 @@ export const mn = {
     limitTitle: 'Үнэгүй скан дууссан',
     limitBody:
       'Та {{limit}} скан хадгалж болно. Шинээр скан хийхийн тулд хуучин сканаа устгана уу.',
+    proCount: 'Pro · {{date}} хүртэл',
+    proLimitTitle: 'Скан хадгалах дээд хэмжээнд хүрлээ',
+    proLimitBody:
+      'Pro багцаар нэг дор {{limit}} хүртэл скан хадгална. Шинээр скан хийхийн тулд хуучин сканаа устгана уу.',
+    plan: 'Багц',
+    planFree: 'Үнэгүй · {{kept}} / {{limit}} скан',
+    planPro: 'Pro · {{date}} хүртэл',
+    planProKept: '{{kept}} скан хадгалсан',
     untitled: '3D скан',
     myScans: 'Сканууд',
     status: {
@@ -352,6 +360,13 @@ export const mn = {
   },
   account: {
     title: 'Миний бүртгэл',
+    scanPlan: {
+      title: 'bairmair scan',
+      free: 'Үнэгүй багц: {{kept}} / {{limit}} скан',
+      pro: 'Pro: {{date}} хүртэл · {{kept}} скан',
+      upgrade: 'Pro болох',
+      extend: 'Pro сунгах',
+    },
     signedOut: 'Зар оруулахын тулд нэвтэрнэ үү.',
     signIn: 'Нэвтрэх',
     displayName: 'Нэр',
@@ -1119,6 +1134,34 @@ export const mn = {
     },
     details: 'Бүх мэдээлэл',
     callNumber: '{{phone}} руу залгах',
+  },
+  scanPro: {
+    title: 'bairmair scan Pro',
+    lead: 'Байраа хязгааргүй скан хийж, 3D загвар, төлөвлөлтийг нь холбоосоор хуваалцаарай.',
+    benefits: {
+      scans: 'Хязгааргүй скан: үнэгүй багцад {{free}} скан хадгална',
+      links: 'Скан бүрт хувийн холбоос: 3D загвар, төлөвлөлт, өрөө бүрийн талбай',
+      keep: 'Pro дууссан ч хуваалцсан холбоосууд ажилласаар байна',
+      app: 'bairmair scan апп-д таны бүртгэлээр шууд идэвхжинэ',
+    },
+    fairUse: 'Шударга хэрэглээ: нэг дор {{limit}} хүртэл скан хадгална.',
+    current: 'Таны багц',
+    currentFree: 'Үнэгүй: {{kept}} / {{limit}} скан',
+    currentPro: 'Pro: {{date}} хүртэл',
+    currentKept: '{{kept}} скан хадгалсан',
+    plans: {
+      scan_pro_30d: { name: 'Сарын', period: '30 хоног' },
+      scan_pro_365d: { name: 'Жилийн', period: '1 жил', note: '2 сар үнэгүй' },
+      scan_pro_test: { name: 'Туршилт', period: '1 өдөр' },
+    },
+    buy: 'Төлөх',
+    extend: 'Сунгах',
+    extendNote: 'Шинэ хугацаа одоогийн Pro дуусахаас эхэлнэ.',
+    noRenewal: 'QPay-ээр төлсөн хугацаа автоматаар сунгагдахгүй: дуусахад дахин төлнө.',
+    activated: 'Pro идэвхжлээ: {{date}} хүртэл.',
+    choose: 'Багц руу буцах',
+    notYet: 'Pro удахгүй нээгдэнэ. Одоогоор зөвхөн туршигчид худалдан авах боломжтой.',
+    loadFailed: 'Багцын мэдээллийг ачаалж чадсангүй. Хуудсаа дахин ачаална уу.',
   },
   payments: {
     testTitle: 'QPay туршилт',

@@ -28,12 +28,45 @@ export interface PaymentProduct {
 export const PAYMENT_PRODUCTS = {
   /** A small real payment to check the whole QPay flow on production. */
   test: { amount: 100, invoiceDescription: 'bairmair: туршилтын төлбөр', testersOnly: true },
+  // bairmair scan Pro, prepaid periods (QPay has no automatic renewal; see SCAN_PRO_PLANS).
+  // Testers only until the release step: terms, privacy and hosting are not ready for sales.
+  scan_pro_30d: {
+    amount: 19_900,
+    invoiceDescription: 'bairmair scan Pro: 30 хоног',
+    testersOnly: true,
+  },
+  scan_pro_365d: {
+    amount: 199_000,
+    invoiceDescription: 'bairmair scan Pro: 1 жил',
+    testersOnly: true,
+  },
+  /** A real payment for one day of Pro, to check the whole Pro flow cheaply. */
+  scan_pro_test: {
+    amount: 100,
+    invoiceDescription: 'bairmair scan Pro: туршилт, 1 өдөр',
+    testersOnly: true,
+  },
 } as const satisfies Record<string, PaymentProduct>;
 
 export type PaymentProductKey = keyof typeof PAYMENT_PRODUCTS;
 
 export function isPaymentProduct(value: unknown): value is PaymentProductKey {
   return typeof value === 'string' && Object.hasOwn(PAYMENT_PRODUCTS, value);
+}
+
+/** The products that make a user bairmair scan Pro, and for how long. */
+export const SCAN_PRO_PLANS = {
+  scan_pro_30d: { days: 30, period: 'month' },
+  scan_pro_365d: { days: 365, period: 'year' },
+  scan_pro_test: { days: 1, period: 'test' },
+} as const satisfies Partial<
+  Record<PaymentProductKey, { days: number; period: 'month' | 'year' | 'test' }>
+>;
+
+export type ScanProProductKey = keyof typeof SCAN_PRO_PLANS;
+
+export function isScanProProduct(value: unknown): value is ScanProProductKey {
+  return typeof value === 'string' && Object.hasOwn(SCAN_PRO_PLANS, value);
 }
 
 export const PAYMENT_LIMITS = {

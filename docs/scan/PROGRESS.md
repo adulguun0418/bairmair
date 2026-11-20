@@ -3,10 +3,10 @@
 Plan: `docs/scan/PLAN.md`. Marketplace progress stays in `docs/PROGRESS.md`.
 
 ## Current state (2026-11-20)
-Steps 1–3 are done: the app signs in, uploads scans, and shows each scan's link. Development
-build 1 is on your iPhone and passed its checks (StoreKit "Холбогдлоо"). Step 3 is JS only:
-test it with `pnpm dev:scan` (below). Next: step 4 (subscriptions on the server + QPay on the
-website), which needs the plan's open questions on price and plan.
+Steps 1–4 are done: the app signs in, uploads scans, shows each scan's link and the user's plan;
+Pro is sold with QPay on the website (`/scan-pro`, testers only until the release step).
+Development build 1 is on your iPhone; steps 3 and 4 are JS only (`pnpm dev:scan`). Your part of
+step 4: one real 100₮ test payment (below). Next: step 5 (Apple In-App Purchase).
 
 ## Done
 - Step 1, app shell:
@@ -133,6 +133,48 @@ website), which needs the plan's open questions on price and plan.
     signed URL and `fetch`, and never throws (the screen works without its plan). Integration test:
     the owner gets the model, another user gets nothing.
 
+- Step 4, subscriptions on the server + QPay on the website (your answers, 2026-11-20: monthly
+  19,900₮ and yearly 199,000₮; unlimited with a fair-use cap of 100 scans kept; links keep
+  working after Pro ends):
+  - Migration 23 (`20261126100000_scan_subscriptions.sql`, pushed with your OK):
+    `scan_subscriptions` (one row per purchase: `source` qpay | apple, product, `starts_at`,
+    `expires_at`, `status` active | refunded | revoked, the QPay `payment_id` or Apple's
+    `original_transaction_id` + environment). Users read their own rows; only the server writes.
+    `private.scan_pro_until(user)` (end of Pro, or null), `private.scan_limit` now 2 free / 100 Pro
+    (the insert trigger already used it). `scan_plan()` (signed in): limit, scans kept, Pro end.
+    `add_scan_pro_period(user, payment, product, days)` (service role only): starts now, or when
+    the current Pro ends; the same payment twice returns the first row (no double time); a
+    per-user lock keeps two payments from starting at the same moment. Expiry is a time, not a
+    status: a row counts only between its start and end.
+  - Products (`PAYMENT_PRODUCTS` + `SCAN_PRO_PLANS` in `@bairmair/db`): `scan_pro_30d` 19,900₮ /
+    30 days, `scan_pro_365d` 199,000₮ / 365 days, `scan_pro_test` 100₮ / 1 day (your real-money
+    check). All **testers only** (`PAYMENT_TESTERS`) until the release step: terms, privacy and
+    hosting are not ready for sales. `USER_SCAN_PRO_LIMIT` = 100.
+  - Server: `server/scan-pro.ts` (`scanProFulfilments`): a paid scan Pro payment adds its period
+    through the existing payment delivery (`fulfil`, retried on the next read if it failed); a
+    payment whose account was deleted adds nothing.
+  - Website: `/scan-pro` (and `/en/...`, `noindex` for now; signed out → sign-in): the plan
+    ("Үнэгүй: 1 / 2 скан" or "Pro: … хүртэл"), what Pro gives (with the fair-use line), monthly and
+    yearly cards ("2 сар үнэгүй"), "Төлөх" / "Сунгах" → the existing `QPayCheckout` → "Pro
+    идэвхжлээ: … хүртэл". `?test=1` adds the 100₮ test card. A non-tester gets "Pro удахгүй
+    нээгдэнэ…". `/account` has a "bairmair scan" card (plan + "Pro болох" / "Pro сунгах"), shown only
+    to accounts with a scan or Pro.
+  - App (JS only): home reads `scan_plan` with the scan list: "Pro · … хүртэл" instead of the free
+    count, the Pro limit message at 100; becoming Pro resends uploads the server had refused over
+    the free limit. Бүртгэл shows "Багц: Үнэгүй · n / 2 скан" or "Pro · … хүртэл". No word about
+    where Pro is sold (App Store rule 3.1.3).
+  - `@bairmair/browse` `scan-plan.ts`: `fetchScanPlan`, `scanFits`, `formatProUntil` (the end
+    day in the device's time zone). Copy: `scanPro`, `account.scanPlan`, `scanApp.pro*`/`plan*`.
+  - Verified: typecheck, lint, unit tests (web 90: fulfilments; browse 148: plan), integration
+    tests on the dev project (db 11 new: rights, stacking, repeat delivery, limit 100 while Pro
+    and back to 2 with the scans kept, expired and future periods; web 2 new: a paid monthly then
+    yearly payment delivered through `GET /api/payments/{id}` with the real store; whole suite db
+    92, web 25, mobile 12, scan 4), production build + headless Chrome with a throwaway user:
+    `/scan-pro` free (desktop), "Төлөх" as a non-tester → "Pro удахгүй нээгдэнэ…", Pro after a
+    delivered period (desktop, 390 px without sideways scroll, English with `?test=1`), the
+    account card; test data deleted. `expo export` for iOS of the scan app. Not verified: a real
+    QPay payment for a Pro product (yours), the app screens on the iPhone.
+
 ## Decisions
 - `expo-iap` for Apple In-App Purchase, our own server verification (see the plan).
 - Shared React Native code lives in packages with native modules as peer dependencies (see the
@@ -142,6 +184,9 @@ website), which needs the plan's open questions on price and plan.
 - Scanning needs sign-in first (the scan is uploaded to the account; the limit is the account's).
 - "2 free" is counted as scans kept (delete one to scan again), the plan's proposal; the
   database enforces it. Step 4 adds the subscription.
+- Pro bought with QPay is a prepaid period (QPay cannot renew); periods stack. One table holds
+  both sources, so a refund at one never cancels time bought at the other.
+- Pro products stay testers only until the release step (production project, Vercel Pro, terms).
 - Room names and the front door are not editable in the scan app yet (the server and the link
   pages already apply them); a later step, together with the paywall screens.
 
@@ -169,5 +214,17 @@ website), which needs the plan's open questions on price and plan.
      work (they now come from the shared package); a listing's "3D-ээр үзэх" still opens.
 - Before the next bairmair OTA update: it would carry this refactor of its sign-in; publish only
   after check 6.
-- Step 4 (subscriptions on the server + QPay on the website). Needs the plan's open questions:
-  price and period, what Pro gives, what happens when it ends, App Store name.
+- You, step 4 (website after Vercel deploys `main`; app with `pnpm dev:scan`, no new build):
+  1. https://bairmair.vercel.app/scan-pro?test=1 signed in with your tester account: "Таны багц"
+     shows your free count. Pay the 100₮ "Туршилт" card → the page says "Pro идэвхжлээ: <tomorrow>
+     хүртэл". `/account` shows the bairmair scan card with the same date.
+  2. In bairmair scan (pull down on Миний сканууд): "Pro · <date> хүртэл" instead of "Үнэгүй скан",
+     and "Шинэ скан" even with 2 scans kept. Бүртгэл shows the plan. Make a third scan: it uploads.
+  3. The next day (Pro over): the scans and their links stay; home shows "Үнэгүй скан: 2 / 2" and
+     the limit notice until you delete down to one.
+  4. Do not buy the 19,900₮ card unless you want 30 days of Pro on the dev project.
+- Step 5 (Apple IAP): start the App Store Connect paperwork early (Paid Apps Agreement, bank, tax
+  for NEXUS KAIROS). Open: Apple's price points for the Mongolia storefront; App Store name.
+- Before release: `testersOnly: false` for `scan_pro_30d`/`scan_pro_365d`, remove
+  `scan_pro_test` (and the `?test=1` card), index `/scan-pro`, terms and privacy for
+  subscriptions.
