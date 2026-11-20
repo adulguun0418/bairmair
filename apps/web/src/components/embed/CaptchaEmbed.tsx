@@ -2,8 +2,9 @@
 
 import {
   captchaMessage,
+  captchaReturnTarget,
   captchaReturnUrl,
-  isCaptchaReturnMode,
+  type CaptchaReturnTarget,
   parseCaptchaTheme,
   type CaptchaEvent,
 } from '@bairmair/browse';
@@ -32,15 +33,16 @@ function readQuery(): string {
  * modes:
  * - In the Android app's WebView: tokens, expiry, failures, steps and the widget's height go to
  *   the app through `postMessage`; the app reloads the page for a new token after each use.
- * - `?return=app`, in the iPhone app's system browser sheet: a page of its own; on success it
- *   navigates to `bairmair://captcha#token=…`, which closes the sheet and hands the token over.
+ * - `?return=app` (bairmair) or `?return=scan` (bairmair scan), in the iPhone app's system
+ *   browser sheet: a page of its own; on success it navigates to that app's address
+ *   (`bairmair://captcha#token=…`), which closes the sheet and hands the token over.
  */
 export function CaptchaEmbed({ siteKey, locale }: { siteKey: string; locale: Locale }) {
   const box = useRef<HTMLDivElement>(null);
   const query = useSyncExternalStore(noSubscription, readQuery, () => null);
   const params = query === null ? null : new URLSearchParams(query);
   const theme = params ? parseCaptchaTheme(params.get('theme')) : null;
-  const returnMode = params ? isCaptchaReturnMode(params.get('return')) : false;
+  const returnTarget = params ? captchaReturnTarget(params.get('return')) : null;
 
   // React is running: the app knows the page itself loaded. Whether the browser counts the page
   // as visible matters: Turnstile may not finish on a page it considers hidden.
@@ -71,8 +73,8 @@ export function CaptchaEmbed({ siteKey, locale }: { siteKey: string; locale: Loc
     return () => observer.disconnect();
   }, []);
 
-  if (theme && returnMode) {
-    return <ReturnPage siteKey={siteKey} locale={locale} theme={theme} />;
+  if (theme && returnTarget) {
+    return <ReturnPage siteKey={siteKey} locale={locale} theme={theme} target={returnTarget} />;
   }
 
   return (
@@ -99,10 +101,12 @@ function ReturnPage({
   siteKey,
   locale,
   theme,
+  target,
 }: {
   siteKey: string;
   locale: Locale;
   theme: 'auto' | 'light' | 'dark';
+  target: CaptchaReturnTarget;
 }) {
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [state, setState] = useState<'checking' | 'returning' | 'failed'>('checking');
@@ -120,7 +124,7 @@ function ReturnPage({
           onToken={(token) => {
             if (!token) return;
             setState('returning');
-            window.location.replace(captchaReturnUrl(token));
+            window.location.replace(captchaReturnUrl(token, target));
           }}
           onError={() => setState('failed')}
         />

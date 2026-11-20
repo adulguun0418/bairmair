@@ -3,8 +3,9 @@
 Plan: `docs/scan/PLAN.md`. Marketplace progress stays in `docs/PROGRESS.md`.
 
 ## Current state (2026-11-20)
-Step 1 (app shell) is done in code. Next: you make EAS development build 1 and check it on the
-iPhone (below), then step 2 (backend).
+Steps 1 (app shell) and 2 (backend) are done. Development build 1 is installed on your iPhone
+(checks below not reported yet). Next: step 3 (the app signs in, uploads scans and shows their
+links), which needs your answer on non-LiDAR iPhones.
 
 ## Done
 - Step 1, app shell:
@@ -41,6 +42,53 @@ iPhone (below), then step 2 (backend).
     React, expo-modules-core, roomplan, …) and the iOS scan screen; `expo config --type
     introspect`: deployment target 17.0, Mongolian permission prompts, Sign in with Apple
     entitlement, updates URL and runtime 1.0.0. Not verified: anything on the iPhone.
+- Step 2, backend (website + dev Supabase project; nothing in the app yet):
+  - Migration 21 (`20261125100000_user_scans.sql`, pushed): `user_scans` (id from the app,
+    `owner_id` defaults to the caller, `title`, `share_slug`, `link_enabled`, server-written
+    `status`/`metrics`/versions/`processing_error`, owner-written `room_labels`/`room_dividers`/
+    `entrance_door_id`, device info, `listing_id` for step 6). Owner-only RLS; column grants keep
+    server fields away from clients. The insert trigger (security definer) sets a random
+    12-character slug (from `gen_random_uuid`, ~71 bits) and enforces `private.scan_limit()`
+    (returns 2 for now; step 4 adds subscriptions): `scan_limit_reached`; a per-user advisory lock
+    stops parallel inserts slipping past; a repeated insert of the same id stays a duplicate
+    (23505, which the app treats as success). Scans with `listing_id` do not count.
+    Migration 22 (`20261125100100_user_scans_slug_default.sql`): `share_slug` default `''`
+    (always replaced by the trigger), so the generated types do not require it on insert.
+  - Storage: private `user-scan-raw` (`{owner}/{scan}/capture.json|usdz`; uploads need the
+    scan row; delete needs only the own folder, so files can go after the row) and private
+    `user-scan-models` (server writes; owner reads and deletes their own).
+  - `POST /api/user-scans/{id}/process`: the listing route's logic, now generic. `processScan`
+    takes the raw and model paths from the store (`supabaseScanStore` for listings,
+    `supabaseUserScanStore` for scans; both rebuild paths from ids); both routes share
+    `server/process-route.ts`.
+  - The private link `/s/<slug>` (and `/en/s/<slug>`): title (or the area), scan date, 3D +
+    plan + rooms (the samples' `ListingScene`), "only people with the link…", "made with
+    bairmair scan". `noindex, nofollow`; no owner data. Not available (unknown slug, link off,
+    not processed): a message, still 200 + noindex. `/embed/s/<slug>` for the app's WebView
+    (`ListingEmbed`, whose `listingId` prop is now `id`; messages carry the slug). Preview
+    image `/api/og/s/<slug>` (plan + title + area + date; the OG helpers moved to
+    `lib/og-image.tsx`). Data via `getSharedScan` (secret key, cached 1 minute: turning the
+    link off or deleting takes up to a minute).
+  - `@bairmair/db`: buckets `userScanRaw`/`userScanModels`, `userScanRawPaths`,
+    `userScanModelPath`, `processUserScanPath`, `sharedScanPath`, `isShareSlug`, error key
+    `scan_limit_reached`. `@bairmair/browse`: `sharedScanEmbedPath`; captcha return per app
+    (`?return=scan` → `bairmairscan://captcha`; `?return=app` unchanged for installed bairmair
+    builds; `parseCaptchaReturn(url, base)`).
+  - Auth (pushed): Apple client ids `mn.bairmair.app,mn.bairmair.scan`; redirect
+    `bairmairscan://**`.
+  - Account deletion also removes the user's `user-scan-raw` and `user-scan-models` folders
+    (rows cascade).
+  - Copy: `sharedScan` in `mn.ts` / `en.ts`.
+  - Verified: typecheck, lint, prettier, unit tests (web 86 incl. the loader and generic
+    processing, browse 145, db 8); integration tests on the dev project: db 11 new (insert, slug,
+    server columns refused, limit + duplicate, listing scans not counted, owner-only reads and
+    writes, shape check, every storage rule), web 6 new (401/409/200/404/422 on the route, the link
+    with room names, link off), and the whole suite (db 81, web 23, mobile 12); production build +
+    a real processed scan (the 58 m² apartment) through the local server: `/s` mn and en, embed,
+    unknown and malformed slugs, preview images (200 PNG; 404 wordmark), screenshots of the page,
+    the image and the phone embed. Demo data deleted.
+  - Noticed, not fixed: at 390 px the embed's "Анхны харагдац" button runs past the right edge
+    (shared viewer, so bairmair's listing embed too).
 
 ## Decisions
 - `expo-iap` for Apple In-App Purchase, our own server verification (see the plan).
@@ -55,7 +103,7 @@ iPhone (below), then step 2 (backend).
   preview build exists).
 
 ## Next
-- You, EAS development build 1. In `apps/scan`:
+- You, if not done yet, the build 1 checks (you installed it on 2026-11-20). In `apps/scan`:
   1. `pnpm eas build --profile development --platform ios`. It is the first build for
      `mn.bairmair.scan`: sign in to Apple when asked, let EAS create the bundle id (with Sign in
      with Apple) and the ad hoc profile, and pick your registered iPhone.
@@ -75,6 +123,7 @@ iPhone (below), then step 2 (backend).
 - Optional, `apps/mobile` (its scanner and UI code moved into packages; JS only, no OTA published):
   with `pnpm dev:mobile`, open Бүртгэл → RoomPlan туршилт, scan once, and open a listing's
   "3D скан". Everything should look as before.
-- Then step 2 (backend: `user_scans`, the private link page, processing).
+- Step 3 (JS only): sign-in, upload with retry, processing, the link (share, copy, on/off),
+  "1 / 2 үнэгүй" and the limit message. Needs: what non-LiDAR iPhones see (plan question 6).
 - Open questions in the plan (price, what Pro gives, what happens when it ends, "2 free" meaning,
   non-LiDAR phones, store name) are needed by step 4, except non-LiDAR phones (step 3).

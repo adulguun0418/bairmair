@@ -46,13 +46,16 @@ describe('deleteAccount', () => {
         [BUCKETS.scanRaw]: [`${LISTING_A}/s1/capture.json`, `${LISTING_A}/s1/capture.usdz`],
         [BUCKETS.scanModels]: [`${LISTING_A}/s1/model.json`],
         [BUCKETS.avatars]: [`${USER}/avatar.jpg`],
+        // bairmair scan files sit under the user's own id.
+        [BUCKETS.userScanRaw]: [`${USER}/u1/capture.json`, `${USER}/u1/capture.usdz`],
+        [BUCKETS.userScanModels]: [`${USER}/u1/model.json`],
       },
       [LISTING_A, LISTING_B],
     );
 
     const result = await deleteAccount(store, USER);
 
-    expect(result).toEqual({ deleted: true, removedFiles: 7 });
+    expect(result).toEqual({ deleted: true, removedFiles: 10 });
     expect(remaining()).toBe(0);
     // The user goes last: until then, the listings say which folders are theirs.
     expect(calls.at(-1)).toBe(`delete ${USER}`);
@@ -64,11 +67,12 @@ describe('deleteAccount', () => {
       {
         [BUCKETS.listingPhotos]: [`${LISTING_A}/p1.jpg`, `${other}/p9.jpg`],
         [BUCKETS.avatars]: [`${other}/avatar.jpg`],
+        [BUCKETS.userScanRaw]: [`${other}/u9/capture.json`],
       },
       [LISTING_A],
     );
     await deleteAccount(store, USER);
-    expect(remaining()).toBe(2);
+    expect(remaining()).toBe(3);
   });
 
   it('deletes a user with no listings or files', async () => {

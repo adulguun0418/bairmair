@@ -26,24 +26,40 @@ export function parseCaptchaTheme(value: string | null | undefined): CaptchaThem
  * ASWebAuthenticationSession), and the page hands the token back by navigating to this address.
  * The session catches the navigation and closes; the address never reaches another app.
  */
-export const CAPTCHA_RETURN_URL = 'bairmair://captcha';
+export const CAPTCHA_RETURN_URLS = {
+  /** bairmair (`apps/mobile`), `?return=app`. */
+  app: 'bairmair://captcha',
+  /** bairmair scan (`apps/scan`), `?return=scan`. */
+  scan: 'bairmairscan://captcha',
+} as const;
 
-/** `?return=app`: the page was opened by the app in the system browser. */
+/** Which app opened the page in return mode: the value of `?return=`. Only these two exist, so
+ * the page never hands a token to any other address. */
+export type CaptchaReturnTarget = keyof typeof CAPTCHA_RETURN_URLS;
+
+/** bairmair's return address (the default). */
+export const CAPTCHA_RETURN_URL = CAPTCHA_RETURN_URLS.app;
+
+/** The app named by `?return=`, or null when the page was not opened in return mode. */
+export function captchaReturnTarget(value: string | null | undefined): CaptchaReturnTarget | null {
+  return value === 'app' || value === 'scan' ? value : null;
+}
+
+/** `?return=app` or `?return=scan`: an app opened the page in the system browser. */
 export function isCaptchaReturnMode(value: string | null | undefined): boolean {
-  return value === 'app';
+  return captchaReturnTarget(value) !== null;
 }
 
 /** Where the page sends a token in return mode. */
-export function captchaReturnUrl(token: string): string {
-  return `${CAPTCHA_RETURN_URL}#token=${encodeURIComponent(token)}`;
+export function captchaReturnUrl(token: string, target: CaptchaReturnTarget = 'app'): string {
+  return `${CAPTCHA_RETURN_URLS[target]}#token=${encodeURIComponent(token)}`;
 }
 
-/** The token from the address the browser session ended on, or null. */
-export function parseCaptchaReturn(url: string): string | null {
-  if (!url.startsWith(`${CAPTCHA_RETURN_URL}#`) && !url.startsWith(`${CAPTCHA_RETURN_URL}?`)) {
-    return null;
-  }
-  const token = new URLSearchParams(url.slice(CAPTCHA_RETURN_URL.length + 1)).get('token');
+/** The token from the address the browser session ended on, or null. `base` is the app's own
+ * return address. */
+export function parseCaptchaReturn(url: string, base: string = CAPTCHA_RETURN_URL): string | null {
+  if (!url.startsWith(`${base}#`) && !url.startsWith(`${base}?`)) return null;
+  const token = new URLSearchParams(url.slice(base.length + 1)).get('token');
   return token && token.length <= 4096 ? token : null;
 }
 

@@ -252,6 +252,16 @@ export const mn = {
       check: 'Дахин шалгах',
     },
   },
+  /** The private link of a bairmair scan (`/s/<slug>`). */
+  sharedScan: {
+    title: '3D скан',
+    description:
+      'iPhone-ийн LiDAR мэдрэгчээр хэмжсэн 3D загвар, төлөвлөлт. Нийт {{area}}, ойролцоо.',
+    scannedOn: 'Скан хийсэн: {{date}}',
+    privateNote: 'Энэ хуудсыг зөвхөн холбоос авсан хүн үзнэ. Хайлтад гарахгүй.',
+    madeWith: 'bairmair scan-аар хийсэн',
+    notAvailable: 'Энэ скан олдсонгүй, эсвэл эзэмшигч нь холбоосыг хаасан байна.',
+  },
   auth: {
     title: 'Нэвтрэх',
     intro: 'Утасны дугаараараа нэвтэрнэ үү. Бид SMS-ээр 6 оронтой код илгээнэ.',

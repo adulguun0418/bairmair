@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { scanModelPaths, scanRawPaths } from '@bairmair/db';
+import { scanModelPaths, scanRawPaths, userScanModelPath, userScanRawPaths } from '@bairmair/db';
 import { CONVERTER_VERSION, RoomModelV1Schema } from '@bairmair/room-model';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -62,7 +62,12 @@ function upload(json: string, usdz = true) {
 
 beforeEach(() => {
   store = new MemoryStore();
-  store.scans.set(SCAN, { id: SCAN, listingId: LISTING, ownerId: OWNER });
+  store.scans.set(SCAN, {
+    id: SCAN,
+    ownerId: OWNER,
+    raw: paths,
+    modelPath: scanModelPaths(LISTING, SCAN).model,
+  });
 });
 
 describe('processScan', () => {
@@ -180,5 +185,37 @@ describe('processScan', () => {
 
     await expect(processScan(store, SCAN, OWNER)).rejects.toThrow('storage down');
     expect(store.ready.size + store.failed.size).toBe(0);
+  });
+});
+
+describe('processScan for a bairmair scan', () => {
+  it("reads the owner's folder and writes the model where the store says", async () => {
+    const raw = userScanRawPaths(OWNER, SCAN);
+    const modelPath = userScanModelPath(OWNER, SCAN);
+    store.scans.set(SCAN, { id: SCAN, ownerId: OWNER, raw, modelPath });
+    store.raw.set(raw.json, fixture('l-shaped-room-shelves.json'));
+    store.raw.set(raw.usdz, 'usdz bytes');
+
+    const outcome = await processScan(store, SCAN, OWNER);
+
+    expect(outcome).toMatchObject({ ok: true, body: { modelPath, status: 'ready' } });
+    expect(store.models.has(modelPath)).toBe(true);
+    expect(store.ready.get(SCAN)?.modelPath).toBe(modelPath);
+  });
+
+  it("refuses someone else's bairmair scan like a missing one", async () => {
+    const raw = userScanRawPaths(OWNER, SCAN);
+    store.scans.set(SCAN, {
+      id: SCAN,
+      ownerId: OWNER,
+      raw,
+      modelPath: userScanModelPath(OWNER, SCAN),
+    });
+
+    expect(await processScan(store, SCAN, STRANGER)).toEqual({
+      ok: false,
+      status: 404,
+      error: 'scan_not_found',
+    });
   });
 });

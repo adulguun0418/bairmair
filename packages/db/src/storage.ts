@@ -13,6 +13,10 @@ export const BUCKETS = {
   scanModels: 'scan-models',
   /** Public. `{userId}/avatar.jpg`, written by the user. */
   avatars: 'avatars',
+  /** Private. bairmair scan: `{ownerId}/{scanId}/capture.json|capture.usdz`, written by the owner. */
+  userScanRaw: 'user-scan-raw',
+  /** Private. bairmair scan: `{ownerId}/{scanId}/model.json`, written by the server only. */
+  userScanModels: 'user-scan-models',
 } as const;
 
 export type BucketName = (typeof BUCKETS)[keyof typeof BUCKETS];
@@ -64,6 +68,21 @@ export function scanModelPaths(listingId: string, scanId: string): ScanModelPath
   return { model: `${dir}/model.json`, floorPlanPng: `${dir}/floorplan.png` };
 }
 
+/** Raw export of a bairmair scan (`user_scans`), in the owner's folder of `user-scan-raw`. */
+export function userScanRawPaths(ownerId: string, scanId: string): ScanRawPaths {
+  assertUuid(ownerId, 'ownerId');
+  assertUuid(scanId, 'scanId');
+  const dir = `${ownerId}/${scanId}`;
+  return { json: `${dir}/capture.json`, usdz: `${dir}/capture.usdz` };
+}
+
+/** Converted model of a bairmair scan, in `user-scan-models` (private; read by the server). */
+export function userScanModelPath(ownerId: string, scanId: string): string {
+  assertUuid(ownerId, 'ownerId');
+  assertUuid(scanId, 'scanId');
+  return `${ownerId}/${scanId}/model.json`;
+}
+
 export function avatarPath(userId: string): string {
   assertUuid(userId, 'userId');
   return `${userId}/avatar.jpg`;
@@ -72,7 +91,10 @@ export function avatarPath(userId: string): string {
 /** Public URL of an object in a public bucket. Does not check that the object exists. */
 export function publicObjectUrl(
   supabaseUrl: string,
-  bucket: Exclude<BucketName, typeof BUCKETS.scanRaw>,
+  bucket: Exclude<
+    BucketName,
+    typeof BUCKETS.scanRaw | typeof BUCKETS.userScanRaw | typeof BUCKETS.userScanModels
+  >,
   path: string,
 ): string {
   const base = supabaseUrl.replace(/\/+$/, '');

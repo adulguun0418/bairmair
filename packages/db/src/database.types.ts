@@ -672,6 +672,87 @@ export type Database = {
           },
         ];
       };
+      user_scans: {
+        Row: {
+          app_version: string | null;
+          converter_version: string | null;
+          created_at: string;
+          device_model: string | null;
+          entrance_door_id: string | null;
+          id: string;
+          ios_version: string | null;
+          link_enabled: boolean;
+          listing_id: string | null;
+          metrics: Json | null;
+          owner_id: string;
+          processing_error: string | null;
+          room_dividers: Json;
+          room_labels: Json;
+          schema_version: number | null;
+          share_slug: string;
+          status: Database['public']['Enums']['scan_status'];
+          title: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          app_version?: string | null;
+          converter_version?: string | null;
+          created_at?: string;
+          device_model?: string | null;
+          entrance_door_id?: string | null;
+          id: string;
+          ios_version?: string | null;
+          link_enabled?: boolean;
+          listing_id?: string | null;
+          metrics?: Json | null;
+          owner_id?: string;
+          processing_error?: string | null;
+          room_dividers?: Json;
+          room_labels?: Json;
+          schema_version?: number | null;
+          share_slug?: string;
+          status?: Database['public']['Enums']['scan_status'];
+          title?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          app_version?: string | null;
+          converter_version?: string | null;
+          created_at?: string;
+          device_model?: string | null;
+          entrance_door_id?: string | null;
+          id?: string;
+          ios_version?: string | null;
+          link_enabled?: boolean;
+          listing_id?: string | null;
+          metrics?: Json | null;
+          owner_id?: string;
+          processing_error?: string | null;
+          room_dividers?: Json;
+          room_labels?: Json;
+          schema_version?: number | null;
+          share_slug?: string;
+          status?: Database['public']['Enums']['scan_status'];
+          title?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_scans_listing_id_fkey';
+            columns: ['listing_id'];
+            isOneToOne: false;
+            referencedRelation: 'listings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'user_scans_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       district_price_stats: {

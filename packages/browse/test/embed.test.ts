@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { embedMessage, isEmbedNavigation, listingEmbedPath, parseEmbedMessage } from '../src/embed';
+import {
+  embedMessage,
+  isEmbedNavigation,
+  listingEmbedPath,
+  parseEmbedMessage,
+  sharedScanEmbedPath,
+} from '../src/embed';
 
 const ID = '3f0c8a52-6b1e-4d7a-9c2f-1a2b3c4d5e6f';
 
@@ -7,6 +13,13 @@ describe('listingEmbedPath', () => {
   it('has no prefix in Mongolian and /en in English', () => {
     expect(listingEmbedPath('mn', ID)).toBe(`/embed/listings/${ID}`);
     expect(listingEmbedPath('en', ID)).toBe(`/en/embed/listings/${ID}`);
+  });
+});
+
+describe('sharedScanEmbedPath', () => {
+  it('puts the slug under /embed/s', () => {
+    expect(sharedScanEmbedPath('mn', 'Ab3dEf6hJk9m')).toBe('/embed/s/Ab3dEf6hJk9m');
+    expect(sharedScanEmbedPath('en', 'Ab3dEf6hJk9m')).toBe('/en/embed/s/Ab3dEf6hJk9m');
   });
 });
 

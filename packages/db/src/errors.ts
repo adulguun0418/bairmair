@@ -19,6 +19,8 @@ export const DB_ERROR_KEYS = [
   'rate_limited',
   /** Anonymous reveals of all visitors together reached the hourly budget: sign in (HTTP 429). */
   'reveal_requires_sign_in',
+  /** bairmair scan: the user already keeps as many scans as their plan allows. */
+  'scan_limit_reached',
 ] as const;
 
 export type DbErrorKey = (typeof DB_ERROR_KEYS)[number];
@@ -32,7 +34,7 @@ const KEYS: ReadonlySet<string> = new Set(DB_ERROR_KEYS);
 export const API_ERROR_KEYS = [
   /** No valid `Authorization: Bearer <access token>` header (HTTP 401). */
   'unauthorized',
-  /** The scan does not exist or its listing is not the caller's (HTTP 404). */
+  /** The scan does not exist or is not the caller's (HTTP 404). */
   'scan_not_found',
   /** The raw RoomPlan JSON or the USDZ is not in storage yet; upload, then retry (HTTP 409). */
   'scan_files_missing',
