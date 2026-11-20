@@ -1,5 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system';
-import { isScanId, type ScanMeta } from './scan-meta';
+import { isScanId, type ScanMeta } from '../scan-meta';
 
 /**
  * Scans saved on the phone, one folder each: `Documents/scans/<id>/`.

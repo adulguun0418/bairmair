@@ -8,10 +8,11 @@
   "scripts": {
     "dev:web": "pnpm --filter @bairmair/web dev",
     "dev:mobile": "pnpm --filter @bairmair/mobile dev",
+    "dev:scan": "pnpm --filter @bairmair/scan dev",
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "lint": "eslint . && pnpm --filter @bairmair/web --filter @bairmair/mobile lint",
+    "lint": "eslint . && pnpm --filter @bairmair/web --filter @bairmair/mobile --filter @bairmair/scan lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:remote": "pnpm --filter @bairmair/db test:remote && pnpm --filter @bairmair/web test:remote && pnpm --filter @bairmair/mobile test:remote",

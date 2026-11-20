@@ -345,7 +345,8 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
   - Бүртгэл → ТУРШИЛТ → "QPay туршилт" (`src/app/payment-test.tsx`, under the RoomPlan test): the same 100₮ `test` product as the website. Bank apps first (logo + name; `Linking.openURL` with QPay's deep link, no URL-scheme list needed in the build; "not installed" alert if it fails), "QPay хуудсаар төлөх" (in-app browser), the QR code for paying from another phone, cancel, recent payments. Polls every 4 s while the app is in front and at once when it comes back from the bank app. Signed out: sign-in button; non-testers: "testers only" + their id.
   - Shared with the website through `@bairmair/browse` `payments.ts`: `paymentsApi(apiBase)` (create, get with check, cancel), `PaymentRequestError`, `paymentErrorKey`, `fetchPaymentHistory`. The web's `lib/payments.ts` now wraps it.
   - Verified: typecheck, lint, tests (browse +4), `expo export` for iOS. Not verified: on a phone.
-- Tests: 661 unit (room-model 232, browse 143, mobile 118, web 79, edge functions 53, i18n 29, db 7) + 99 integration tests against the dev project (db 70, web 17, mobile 12).
+- Shared native packages (for bairmair scan, `docs/scan/`; JS only, no OTA published): the scanner and the UI kit moved out of `apps/mobile` into `@bairmair/scanner` (pure: support check, scan state, ids, conversion; `/native`: scan screen, intro, storage, `ScanReport`) and `@bairmair/native-ui` (theme, `Text`, `Icon`, `Button`, blueprint, floor plan view, `I18nProvider`). `apps/mobile` imports them directly; behaviour unchanged. Verified: typecheck, lint, tests, `expo export` for iOS. Not verified: on a phone.
+- Tests: 661 unit (room-model 232, browse 143, mobile 98, scanner 20, web 79, edge functions 53, i18n 29, db 7) + 99 integration tests against the dev project (db 70, web 17, mobile 12).
 
 ## Commands
 - `pnpm dev:web`, then open http://localhost:3000/samples

@@ -10,12 +10,12 @@ import {
 } from '@maplibre/maplibre-react-native';
 import { useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
-import { Icon } from '@/ui/icon';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Icon } from '@bairmair/native-ui/icon';
 import { useScrollLockTouches } from '@/ui/scroll-lock';
-import { useColors } from '@/ui/theme';
+import { useColors } from '@bairmair/native-ui/theme';
 import { useMapStyle } from './map-style';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 /** The website's limits: the city stays in view, and an approximate spot cannot be zoomed into. */
 const MIN_ZOOM = 10;

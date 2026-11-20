@@ -4,12 +4,12 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMapStyle } from '@/browse/map-style';
-import { useI18n } from '@/i18n/i18n';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
 import { locateHere, type LocateResult } from './location';
 import { mapPin, type PinnedLocation } from './model';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 const nowIso = () => new Date().toISOString();
 

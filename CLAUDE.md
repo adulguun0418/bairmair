@@ -12,4 +12,4 @@
 
 ## Apps in this monorepo
 - `apps/web` and `apps/mobile`: the marketplace (brief and progress above).
-- `apps/scan` (planned): bairmair scan, a standalone scanning app with a paid subscription. Read `docs/scan/PLAN.md` before working on it; its progress goes to `docs/scan/PROGRESS.md`, not `docs/PROGRESS.md`.
+- `apps/scan`: bairmair scan, a standalone scanning app with a paid subscription. Read `docs/scan/PLAN.md` before working on it; its progress goes to `docs/scan/PROGRESS.md`, not `docs/PROGRESS.md`.

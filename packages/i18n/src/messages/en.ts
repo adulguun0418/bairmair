@@ -229,6 +229,28 @@ export const en: Messages = {
     savedScans: 'Saved scans',
     noScans: 'No scans yet.',
   },
+  scanApp: {
+    name: 'bairmair scan',
+    homeTitle: 'My scans',
+    newScan: 'New scan',
+    emptyEyebrow: '3D scan',
+    emptyTitle: 'Scan your apartment in 3D',
+    emptyBody:
+      'The iPhone’s LiDAR sensor measures every room and makes a 3D model, a floor plan and the area of each room.',
+    cannotScanTitle: 'This iPhone cannot scan',
+    savedOnPhone: 'Saved on this phone',
+    testNote: 'Test version: scans are kept on this phone only for now.',
+    diagnostics: {
+      title: 'Diagnostics',
+      device: 'Device',
+      scan: '3D scan',
+      store: 'App Store payments',
+      storeChecking: 'Checking…',
+      storeConnected: 'Connected',
+      storeFailed: 'Not connected',
+      check: 'Check again',
+    },
+  },
   auth: {
     title: 'Sign in',
     intro: 'Sign in with your phone number. We will text you a 6-digit code.',

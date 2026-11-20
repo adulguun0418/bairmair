@@ -1,8 +1,8 @@
 import type { ListingStatus } from '@bairmair/browse';
 import { StyleSheet, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
-import { Text } from '@/ui/text';
-import { radius, useColors, type Colors } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Text } from '@bairmair/native-ui/text';
+import { radius, useColors, type Colors } from '@bairmair/native-ui/theme';
 
 function tones(colors: Colors, status: ListingStatus) {
   switch (status) {

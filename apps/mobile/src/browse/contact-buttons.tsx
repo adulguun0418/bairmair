@@ -4,12 +4,12 @@ import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { formatMongolianPhone } from '@bairmair/browse';
 import { useAuth } from '@/auth/auth-provider';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/ui/button';
-import { Icon } from '@/ui/icon';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { Button } from '@bairmair/native-ui/button';
+import { Icon } from '@bairmair/native-ui/icon';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 type State =
   | { kind: 'idle' }

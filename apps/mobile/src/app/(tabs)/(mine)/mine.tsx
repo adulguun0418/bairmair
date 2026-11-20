@@ -6,7 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { editorProgress, editorSteps } from '@/listings/editor-steps';
 import {
   createDraft,
@@ -22,13 +22,13 @@ import { fetchMyListings, type ServerListingSummary } from '@/listings/server-li
 import { StatusPill } from '@/listings/status-pill';
 import { SyncStatusLine } from '@/listings/sync-status-line';
 import { supabase } from '@/lib/supabase';
-import { BlueprintGrid } from '@/ui/blueprint';
-import { BlueprintPanel } from '@/ui/blueprint-panel';
-import { Button } from '@/ui/button';
-import { Icon, type IconName } from '@/ui/icon';
+import { BlueprintGrid } from '@bairmair/native-ui/blueprint';
+import { BlueprintPanel } from '@bairmair/native-ui/blueprint-panel';
+import { Button } from '@bairmair/native-ui/button';
+import { Icon, type IconName } from '@bairmair/native-ui/icon';
 import { ProgressBar } from '@/ui/progress-bar';
-import { Text } from '@/ui/text';
-import { PAPER, PAPER_GRID, radius, useColors } from '@/ui/theme';
+import { Text } from '@bairmair/native-ui/text';
+import { PAPER, PAPER_GRID, radius, useColors } from '@bairmair/native-ui/theme';
 
 /** The seller's listings, on this phone and on the server, as project cards. */
 export default function MyListingsScreen() {

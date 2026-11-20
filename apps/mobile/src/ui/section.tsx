@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useColors } from './theme';
-import { Text } from './text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   const colors = useColors();

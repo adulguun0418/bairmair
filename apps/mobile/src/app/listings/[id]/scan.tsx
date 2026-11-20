@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { attachScannedRoom } from '@/listings/listings';
 import { useBestFix } from '@/listings/location';
-import { ScanSession } from '@/scanner/scan-session';
+import { ScanSession } from '@bairmair/scanner/native';
 
 /**
  * Scans the apartment for one listing. The phone's position is watched during the scan (for the

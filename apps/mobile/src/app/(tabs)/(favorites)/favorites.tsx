@@ -9,10 +9,10 @@ import {
   type FavoriteCard,
 } from '@/browse/favorites';
 import { ListingCard } from '@/browse/listing-card';
-import { useI18n } from '@/i18n/i18n';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 import { CardSkeletonList } from '@/ui/skeleton';
 
 type State = { kind: 'loading' } | { kind: 'ready'; items: FavoriteCard[] } | { kind: 'error' };

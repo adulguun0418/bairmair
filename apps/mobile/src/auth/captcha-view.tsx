@@ -7,12 +7,12 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, useColorScheme, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { env } from '@/lib/env';
 import { captureError } from '@/lib/error-tracking';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 export type CaptchaState =
   /** Waiting for Turnstile (at most `GIVE_UP_MS` while it stays invisible). */

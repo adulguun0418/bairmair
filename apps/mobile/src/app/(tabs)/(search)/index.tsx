@@ -16,12 +16,12 @@ import {
 import { ListingCard } from '@/browse/listing-card';
 import { hasMorePages, searchPage } from '@/browse/search';
 import { setSearchFilters, useSearchFilters } from '@/browse/search-store';
-import { useI18n } from '@/i18n/i18n';
-import { BlueprintGrid } from '@/ui/blueprint';
-import { Button } from '@/ui/button';
-import { Icon, type IconName } from '@/ui/icon';
-import { radius, useColors } from '@/ui/theme';
-import { Text, TextInput } from '@/ui/text';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { BlueprintGrid } from '@bairmair/native-ui/blueprint';
+import { Button } from '@bairmair/native-ui/button';
+import { Icon, type IconName } from '@bairmair/native-ui/icon';
+import { radius, useColors } from '@bairmair/native-ui/theme';
+import { Text, TextInput } from '@bairmair/native-ui/text';
 import { CardSkeletonList } from '@/ui/skeleton';
 
 /**

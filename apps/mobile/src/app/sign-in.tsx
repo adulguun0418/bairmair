@@ -11,12 +11,12 @@ import {
 import { useAuth } from '@/auth/auth-provider';
 import { useSendCode } from '@/auth/use-send-code';
 import { authErrorKey, normalizeMongolianPhone } from '@bairmair/browse';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { openSitePage } from '@/lib/site-pages';
-import { Button } from '@/ui/button';
+import { Button } from '@bairmair/native-ui/button';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 /**
  * Phone sign-in (primary), plus Apple and Google when they are enabled in the project.

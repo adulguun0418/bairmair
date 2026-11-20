@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeExport } from '../src/scanner/analyze';
-import { formatScanTime, isScanId, newScanId } from '../src/scanner/scan-meta';
+import { analyzeExport } from '../src/analyze';
+import { formatScanTime, isScanId, newScanId } from '../src/scan-meta';
 
 describe('scan ids', () => {
   it('builds a sortable, file-name-safe id', () => {

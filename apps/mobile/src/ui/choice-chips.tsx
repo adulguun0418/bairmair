@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useColors } from './theme';
-import { Text } from './text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 export interface Choice<T> {
   value: T;

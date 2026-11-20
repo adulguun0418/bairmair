@@ -27,14 +27,14 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
 import { ListingCard } from './listing-card';
 import { PIN_IMAGES, useMapStyle } from './map-style';
 import { searchPins } from './search';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 /** Above this zoom, points stay clustered only when they share a spot (an approximate cell). */
 const CLUSTER_MAX_ZOOM = 16;

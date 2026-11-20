@@ -3,7 +3,7 @@ import { lazy, Suspense } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { editListing, useLocalListing } from '@/listings/listings';
 import { setLocation } from '@/listings/model';
-import { useColors } from '@/ui/theme';
+import { useColors } from '@bairmair/native-ui/theme';
 
 /** Loaded on first use, like the other maps (MapLibre's native module). */
 const PinPickerMap = lazy(() =>

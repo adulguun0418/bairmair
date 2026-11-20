@@ -3,11 +3,11 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { ListingCard } from '@/browse/listing-card';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 import { CardSkeletonList } from '@/ui/skeleton';
 
 type State =

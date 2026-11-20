@@ -1,22 +1,21 @@
 import { formatArea } from '@bairmair/i18n';
 import { useRouter } from 'expo-router';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
-import { useI18n } from '@/i18n/i18n';
-import { scanSupport } from '@/scanner/device';
-import { supportMessage } from '@/scanner/support-message';
-import { canStartScan } from '@/scanner/support';
-import { BlueprintPanel, PAPER_INK_MUTED } from '@/ui/blueprint-panel';
-import { Button } from '@/ui/button';
-import { BlueprintGrid } from '@/ui/blueprint';
-import { Icon, type IconName } from '@/ui/icon';
-import { ScanFloorPlan } from '@/ui/scan-floor-plan';
-import { PAPER, PAPER_GRID, radius, useColors, type Colors } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { scanSupport } from '@bairmair/scanner/native';
+import { canStartScan, supportMessage } from '@bairmair/scanner';
+import { BlueprintPanel, PAPER_INK_MUTED } from '@bairmair/native-ui/blueprint-panel';
+import { Button } from '@bairmair/native-ui/button';
+import { BlueprintGrid } from '@bairmair/native-ui/blueprint';
+import { Icon, type IconName } from '@bairmair/native-ui/icon';
+import { ScanFloorPlan } from '@bairmair/native-ui/scan-floor-plan';
+import { PAPER, PAPER_GRID, radius, useColors, type Colors } from '@bairmair/native-ui/theme';
 import { removeListingScan } from './listings';
 import type { LocalListing } from './model';
 import { useScanModel } from './scan-model';
 import { ScanModelMessage } from './scan-model-message';
 import { scanProgress } from './sync-plan';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 /** The listing's 3D scan in the editor: start one, or see and manage the current one. */
 export function ScanSection({ listing }: { listing: LocalListing }) {

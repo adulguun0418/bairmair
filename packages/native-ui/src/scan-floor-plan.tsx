@@ -1,7 +1,7 @@
 import { formatArea, roomDisplayName } from '@bairmair/i18n';
 import { renderFloorPlanSvg, type RoomModelV1 } from '@bairmair/room-model';
 import { useMemo } from 'react';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from './i18n';
 import { FloorPlanView } from './floor-plan-view';
 
 /** The floor plan of a scan, labelled in the UI language (the renderer the web app uses). */

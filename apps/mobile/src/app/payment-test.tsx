@@ -13,12 +13,12 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/ui/button';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { Button } from '@bairmair/native-ui/button';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 const api = paymentsApi(env.apiUrl);
 

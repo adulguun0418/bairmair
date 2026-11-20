@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Icon, type IconName } from './icon';
-import { Text } from './text';
-import { radius, useColors } from './theme';
+import { Icon, type IconName } from '@bairmair/native-ui/icon';
+import { Text } from '@bairmair/native-ui/text';
+import { radius, useColors } from '@bairmair/native-ui/theme';
 
 export interface Segment<T> {
   value: T;

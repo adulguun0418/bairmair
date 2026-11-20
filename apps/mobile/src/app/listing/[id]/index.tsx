@@ -49,18 +49,18 @@ import { ContactButtons } from '@/browse/contact-buttons';
 import { FavoriteButton } from '@/browse/favorite-button';
 import { Badge3d } from '@/browse/listing-card';
 import { PhotoCarousel } from '@/browse/photo-carousel';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
 import { useLocalListings } from '@/listings/listings';
-import { BlueprintGrid } from '@/ui/blueprint';
-import { Button } from '@/ui/button';
-import { Icon, type IconName } from '@/ui/icon';
-import { ScanFloorPlan } from '@/ui/scan-floor-plan';
+import { BlueprintGrid } from '@bairmair/native-ui/blueprint';
+import { Button } from '@bairmair/native-ui/button';
+import { Icon, type IconName } from '@bairmair/native-ui/icon';
+import { ScanFloorPlan } from '@bairmair/native-ui/scan-floor-plan';
 import { ScrollLockHost } from '@/ui/scroll-lock';
 import { Skeleton, SkeletonLine } from '@/ui/skeleton';
-import { Text } from '@/ui/text';
-import { PAPER, PAPER_GRID, radius, useColors } from '@/ui/theme';
+import { Text } from '@bairmair/native-ui/text';
+import { PAPER, PAPER_GRID, radius, useColors } from '@bairmair/native-ui/theme';
 
 type State =
   | { kind: 'loading' }

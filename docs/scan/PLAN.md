@@ -48,8 +48,11 @@ One repo, one backend:
 **Monorepo rules (all apps):**
 - Every Expo app stays on the same Expo SDK (one lockfile, one React Native). SDK upgrades
   move all apps together.
-- Native modules live in the apps, never in `packages/*` (the packages stay pure TypeScript), so
-  each app's build has only the native code it uses.
+- Native modules are installed by the apps. Shared React Native packages (`@bairmair/native-ui`,
+  `@bairmair/scanner/native`) list them as peer dependencies (plus the same versions as dev
+  dependencies for their own typecheck). Expo's "autolinking module resolution", on by default
+  in a monorepo, resolves every import of a native module or React Native to the app's own copy
+  (checked in the scan app's bundle: one copy of each package).
 - Each app has its own EAS project, `app.json`, `runtimeVersion` and channels; `eas build` and
   `eas update` run from the app's folder.
 - Vercel: check that the web project skips deployments when neither `apps/web` nor the packages
@@ -97,24 +100,17 @@ One repo, one backend:
   `appAccountToken`; the server verifies the signed transaction
   (`POST /api/iap/apple/transactions`, Apple's `@apple/app-store-server-library`) and receives
   App Store Server Notifications v2 (`POST /api/iap/apple/notifications`: renewals, expiry,
-  grace period, refunds, revocations). IAP library candidates: `expo-iap` (StoreKit 2) with our
-  own verification (recommended: one entitlement table for both sources) or RevenueCat (less
-  server code, but a third copy of the entitlement and another processor). I check versions
-  and docs before choosing.
+  grace period, refunds, revocations). IAP library: **`expo-iap` 6.5.1** (StoreKit 2 through
+  OpenIAP, an Expo module, `appAccountToken` supported, needs iOS 15+) with our own server
+  verification, so one entitlement table holds both sources. RevenueCat was the alternative
+  (less server code, but a third copy of the entitlement and another processor).
 
 ## Build steps
 Each step ends with a summary and a `docs/scan/PROGRESS.md` update. "Build" = a new EAS build
 of the scan app.
 
-1. **App shell — EAS development build 1.**
-   `apps/scan` from the Expo SDK 58 template (same versions as `apps/mobile`), TypeScript
-   strict, lint, i18n through `@bairmair/i18n` (mn first, en), the bairmair look (navy / sky /
-   blueprint, Onest), root scripts, `docs/scan/PROGRESS.md`. All native modules go into this
-   first build so later steps stay JS-only: dev-client, expo-roomplan 1.3.2, device,
-   file-system, webview, sharing, web-browser, apple-authentication, secure-store, AsyncStorage,
-   localization, crypto, keep-awake, updates, **the IAP library**.
-   You: `eas init` for the new project, install the build on the iPhone; check the device
-   check and a test scan.
+1. **App shell — EAS development build 1.** Done in code (see `docs/scan/PROGRESS.md`); the
+   build itself is yours.
 2. **Backend.** Migration (`user_scans`, buckets, RLS, limit trigger with a stub entitlement),
    the process route, `/s/[slug]`, the embed, the OG image, captcha return URL per app (it is
    hard-coded to `bairmair://captcha` today), Apple client id `mn.bairmair.scan` added to

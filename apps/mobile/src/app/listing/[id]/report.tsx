@@ -3,13 +3,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
-import { useI18n } from '@/i18n/i18n';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/ui/button';
+import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
 import { TextField } from '@/ui/text-field';
-import { useColors } from '@/ui/theme';
-import { Text } from '@/ui/text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { Text } from '@bairmair/native-ui/text';
 
 type Reason = Enums<'report_reason'>;
 

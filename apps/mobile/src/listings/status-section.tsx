@@ -1,16 +1,16 @@
 import { useRouter } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/auth-provider';
-import { useI18n } from '@/i18n/i18n';
-import { Button } from '@/ui/button';
-import { Icon } from '@/ui/icon';
-import { radius, useColors } from '@/ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
+import { Button } from '@bairmair/native-ui/button';
+import { Icon } from '@bairmair/native-ui/icon';
+import { radius, useColors } from '@bairmair/native-ui/theme';
 import type { ListingStatus } from '@bairmair/browse';
 import { FreshnessSection } from './freshness-section';
 import { changeListingStatus, retryRefusedSync, useSyncStatus } from './listings';
 import { isLive, type LocalListing } from './model';
 import { missingToPublish } from './sync-plan';
-import { Text } from '@/ui/text';
+import { Text } from '@bairmair/native-ui/text';
 
 /**
  * Publishing and the listing's life after it: publish, mark sold/rented, hide, publish again.
