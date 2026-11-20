@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseAuthRedirect } from '../src/auth/redirect';
+import { parseAuthRedirect } from '../src/redirect';
 
 describe('parseAuthRedirect', () => {
   it('reads tokens from the fragment', () => {

@@ -1,12 +1,13 @@
+import type { TypedSupabaseClient } from '@bairmair/db';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { supabase } from '@/lib/supabase';
 import { parseAuthRedirect } from './redirect';
 
 /**
  * Sign-in and phone actions. Errors are supabase-js Auth errors; screens turn them into text
  * with `authErrorKey`. A user closing the Apple sheet or the browser is `'canceled'`, not an error.
+ * Each takes the app's Supabase client.
  */
 
 /** 'sign-in': phone sign-in or sign-up. 'add-phone': a signed-in user adds or changes a phone. */
@@ -20,6 +21,7 @@ export type SignInResult = 'signed-in' | 'canceled';
  * `/otp`. Adding a phone is an update of the signed-in user, which captcha does not cover.
  */
 export async function sendPhoneCode(
+  supabase: TypedSupabaseClient,
   phone: string,
   mode: PhoneMode,
   captchaToken?: string | null,
@@ -38,6 +40,7 @@ export async function sendPhoneCode(
 export const needsCaptcha = (mode: PhoneMode): boolean => mode === 'sign-in';
 
 export async function verifyPhoneCode(
+  supabase: TypedSupabaseClient,
   phone: string,
   token: string,
   mode: PhoneMode,
@@ -55,7 +58,7 @@ export async function verifyPhoneCode(
  * authorization and never in the token, so it is saved right away (auth metadata, and the
  * profile name if the user has none yet).
  */
-export async function signInWithApple(): Promise<SignInResult> {
+export async function signInWithApple(supabase: TypedSupabaseClient): Promise<SignInResult> {
   let credential: AppleAuthentication.AppleAuthenticationCredential;
   try {
     credential = await AppleAuthentication.signInAsync({
@@ -95,9 +98,9 @@ export async function signInWithApple(): Promise<SignInResult> {
 
 /**
  * Google through Supabase's browser OAuth flow (no native module). The in-app browser session
- * ends at `bairmair://auth/callback`, whose fragment carries the tokens.
+ * ends at `<app scheme>://auth/callback`, whose fragment carries the tokens.
  */
-export async function signInWithGoogle(): Promise<SignInResult> {
+export async function signInWithGoogle(supabase: TypedSupabaseClient): Promise<SignInResult> {
   const redirectTo = Linking.createURL('auth/callback');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -122,7 +125,7 @@ export async function signInWithGoogle(): Promise<SignInResult> {
   return 'signed-in';
 }
 
-export async function signOut(): Promise<void> {
+export async function signOut(supabase: TypedSupabaseClient): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }

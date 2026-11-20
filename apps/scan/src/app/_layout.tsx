@@ -4,6 +4,7 @@ import { Onest_600SemiBold } from '@expo-google-fonts/onest/600SemiBold';
 import { Onest_700Bold } from '@expo-google-fonts/onest/700Bold';
 import { Onest_800ExtraBold } from '@expo-google-fonts/onest/800ExtraBold';
 import { createTranslator, DEFAULT_LOCALE } from '@bairmair/i18n';
+import { AuthProvider, type AuthConfig } from '@bairmair/native-auth';
 import { Button } from '@bairmair/native-ui/button';
 import { I18nProvider, useI18n } from '@bairmair/native-ui/i18n';
 import { Text } from '@bairmair/native-ui/text';
@@ -21,6 +22,18 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { StyleSheet, useColorScheme, View } from 'react-native';
+import { env } from '@/lib/env';
+import { supabase } from '@/lib/supabase';
+import { startUploads } from '@/uploads/uploads';
+
+/** The shared sign-in, set up for this app (the captcha page returns to bairmairscan://). */
+const AUTH_CONFIG: AuthConfig = {
+  client: supabase,
+  supabaseUrl: env.supabaseUrl,
+  supabasePublishableKey: env.supabasePublishableKey,
+  siteUrl: env.siteUrl,
+  captchaReturn: 'scan',
+};
 
 // Kept up until the fonts are loaded (a moment: they ship inside the app or the update).
 void SplashScreen.preventAutoHideAsync();
@@ -81,13 +94,17 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
   }, [ready]);
+  // Scans waiting for their link are sent whenever the app is open.
+  useEffect(startUploads, []);
   if (!ready) return null;
   return (
     <I18nProvider>
-      <ThemeProvider value={navigationTheme(colors, dark, fontsLoaded)}>
-        <StatusBar style="auto" />
-        <RootStack />
-      </ThemeProvider>
+      <AuthProvider config={AUTH_CONFIG}>
+        <ThemeProvider value={navigationTheme(colors, dark, fontsLoaded)}>
+          <StatusBar style="auto" />
+          <RootStack />
+        </ThemeProvider>
+      </AuthProvider>
     </I18nProvider>
   );
 }
@@ -104,7 +121,18 @@ function RootStack() {
         name="scan"
         options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }}
       />
-      <Stack.Screen name="scans/[id]" options={{ title: t('scanResult.title') }} />
+      <Stack.Screen name="review/[id]" options={{ title: t('scanApp.review.title') }} />
+      <Stack.Screen name="local/[id]" options={{ title: t('scanResult.files') }} />
+      <Stack.Screen name="scans/[id]/index" options={{ title: '' }} />
+      <Stack.Screen
+        name="scans/[id]/model"
+        // iOS 26 turns a swipe right anywhere into "back", which took the 3D view's drags.
+        options={{ title: t('viewer.label'), fullScreenGestureEnabled: false }}
+      />
+      <Stack.Screen name="account" options={{ title: t('account.title') }} />
+      <Stack.Screen name="sign-in" options={{ title: t('auth.title') }} />
+      <Stack.Screen name="verify" options={{ title: t('auth.codeTitle') }} />
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       <Stack.Screen name="diagnostics" options={{ title: t('scanApp.diagnostics.title') }} />
     </Stack>
   );

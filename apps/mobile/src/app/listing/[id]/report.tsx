@@ -2,12 +2,12 @@ import { Constants, type Enums } from '@bairmair/db';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
-import { useAuth } from '@/auth/auth-provider';
+import { useAuth } from '@bairmair/native-auth';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
-import { TextField } from '@/ui/text-field';
+import { TextField } from '@bairmair/native-ui/text-field';
 import { useColors } from '@bairmair/native-ui/theme';
 import { Text } from '@bairmair/native-ui/text';
 

@@ -22,6 +22,12 @@ export function sharedScanPath(slug: string, locale: 'mn' | 'en' = 'mn'): string
   return locale === 'mn' ? path : `/en${path}`;
 }
 
+/**
+ * Scans a free bairmair scan user may keep (not counting scans turned into listings). Mirrors
+ * `private.scan_limit()` in the database, which enforces it.
+ */
+export const USER_SCAN_FREE_LIMIT = 2;
+
 /** Whether a string can be a share slug (12 letters and digits, as the database makes them). */
 export function isShareSlug(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9]{12}$/.test(value);

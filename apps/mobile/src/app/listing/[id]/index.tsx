@@ -43,7 +43,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@/auth/auth-provider';
+import { useAuth } from '@bairmair/native-auth';
 import { rememberedCover } from '@/browse/cover-cache';
 import { ContactButtons } from '@/browse/contact-buttons';
 import { FavoriteButton } from '@/browse/favorite-button';

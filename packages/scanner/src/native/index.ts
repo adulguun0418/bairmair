@@ -9,7 +9,9 @@ export {
   deleteScan,
   getScan,
   listScans,
+  readScanSidecar,
   saveExport,
   writeModelJson,
+  writeScanSidecar,
   type SavedScan,
 } from './storage';

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Alert, StyleSheet, View } from 'react-native';
-import { useAuth } from '@/auth/auth-provider';
+import { useAuth } from '@bairmair/native-auth';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { Button } from '@bairmair/native-ui/button';
 import { Icon } from '@bairmair/native-ui/icon';

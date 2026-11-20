@@ -19,15 +19,27 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { StyleSheet, useColorScheme, View } from 'react-native';
-import { AuthProvider } from '@/auth/auth-provider';
+import { AuthProvider, type AuthConfig } from '@bairmair/native-auth';
 import { startFavorites } from '@/browse/favorites';
 import { I18nProvider, useI18n } from '@bairmair/native-ui/i18n';
 import { UpdateBanner } from '@/lib/app-update';
+import { env } from '@/lib/env';
+import { supabase } from '@/lib/supabase';
 import { startListingSync } from '@/listings/listings';
 import { loadThemePreference } from '@/ui/appearance';
 import { Button } from '@bairmair/native-ui/button';
 import { Text } from '@bairmair/native-ui/text';
 import { FONT_FAMILIES, useColors, type Colors } from '@bairmair/native-ui/theme';
+
+/** The shared sign-in, set up for this app (captcha returns to bairmair://). */
+const AUTH_CONFIG: AuthConfig = {
+  client: supabase,
+  supabaseUrl: env.supabaseUrl,
+  supabasePublishableKey: env.supabasePublishableKey,
+  siteUrl: env.siteUrl,
+  captchaReturn: 'app',
+  reportError: captureError,
+};
 
 // Kept up until the fonts are loaded (a moment: they ship inside the app or the update).
 void SplashScreen.preventAutoHideAsync();
@@ -108,7 +120,7 @@ export default function RootLayout() {
   if (!ready) return null;
   return (
     <I18nProvider>
-      <AuthProvider>
+      <AuthProvider config={AUTH_CONFIG}>
         <ThemeProvider value={navigationTheme(colors, dark, fontsLoaded)}>
           <StatusBar style="auto" />
           <RootStack />

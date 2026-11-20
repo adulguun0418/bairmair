@@ -56,7 +56,7 @@ import { ChoiceChips } from '@/ui/choice-chips';
 import { Icon } from '@bairmair/native-ui/icon';
 import { ProgressBar } from '@/ui/progress-bar';
 import { ScrollLockHost } from '@/ui/scroll-lock';
-import { TextField } from '@/ui/text-field';
+import { TextField } from '@bairmair/native-ui/text-field';
 import { radius, useColors } from '@bairmair/native-ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
 import { Text } from '@bairmair/native-ui/text';

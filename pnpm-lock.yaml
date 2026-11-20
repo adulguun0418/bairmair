@@ -202,6 +202,9 @@ importers:
       '@bairmair/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@bairmair/native-auth':
+        specifier: workspace:*
+        version: link:../../packages/native-auth
       '@bairmair/native-ui':
         specifier: workspace:*
         version: link:../../packages/native-ui
@@ -362,9 +365,18 @@ importers:
 
   apps/scan:
     dependencies:
+      '@bairmair/browse':
+        specifier: workspace:*
+        version: link:../../packages/browse
+      '@bairmair/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@bairmair/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@bairmair/native-auth':
+        specifier: workspace:*
+        version: link:../../packages/native-auth
       '@bairmair/native-ui':
         specifier: workspace:*
         version: link:../../packages/native-ui
@@ -380,6 +392,9 @@ importers:
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
+      '@supabase/supabase-js':
+        specifier: 2.119.0
+        version: 2.119.0
       expo:
         specifier: ~58.0.25
         version: 58.0.25(94b1ba2a5f3cd066f6e82230b9d46dc6)
@@ -482,6 +497,9 @@ importers:
       react-native-screens:
         specifier: ~4.30.1
         version: 4.30.1(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      react-native-url-polyfill:
+        specifier: ^4.0.0
+        version: 4.0.0(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
       react-native-webview:
         specifier: 14.0.1
         version: 14.0.1(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -489,6 +507,9 @@ importers:
         specifier: 0.13.0
         version: 0.13.0(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
     devDependencies:
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
       '@types/react':
         specifier: ~19.3.0
         version: 19.3.0
@@ -501,6 +522,9 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/web:
     dependencies:
@@ -628,8 +652,66 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
+  packages/native-auth:
+    dependencies:
+      '@bairmair/browse':
+        specifier: workspace:*
+        version: link:../browse
+      '@bairmair/db':
+        specifier: workspace:*
+        version: link:../db
+      '@bairmair/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@bairmair/native-ui':
+        specifier: workspace:*
+        version: link:../native-ui
+    devDependencies:
+      '@supabase/supabase-js':
+        specifier: 2.119.0
+        version: 2.119.0
+      '@types/react':
+        specifier: ~19.3.0
+        version: 19.3.0
+      expo:
+        specifier: ~58.0.25
+        version: 58.0.25(94b1ba2a5f3cd066f6e82230b9d46dc6)
+      expo-apple-authentication:
+        specifier: ~58.0.3
+        version: 58.0.3(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      expo-linking:
+        specifier: ~58.0.17
+        version: 58.0.17(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
+      expo-symbols:
+        specifier: ~58.0.5
+        version: 58.0.5(expo-font@58.0.12)(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      expo-web-browser:
+        specifier: ~58.0.8
+        version: 58.0.8(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
+      i18next:
+        specifier: ^27.1.0
+        version: 27.1.1(typescript@6.0.3)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-native:
+        specifier: 0.88.1
+        version: 0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
+      react-native-webview:
+        specifier: 14.0.1
+        version: 14.0.1(react-native@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+
   packages/native-ui:
     dependencies:
+      '@bairmair/browse':
+        specifier: workspace:*
+        version: link:../browse
       '@bairmair/i18n':
         specifier: workspace:*
         version: link:../i18n

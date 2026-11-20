@@ -101,6 +101,23 @@ export async function writeModelJson(id: string, json: string): Promise<File> {
   return file;
 }
 
+const SIDECAR = /^[a-z][a-z-]{0,30}\.json$/;
+
+/** A small file an app keeps next to a scan (e.g. its upload state), or null when absent. */
+export function readScanSidecar(id: string, name: string): string | null {
+  if (!SIDECAR.test(name) || !isScanId(id)) return null;
+  const file = new File(new Directory(scansRoot(), id), name);
+  return file.exists ? file.textSync() : null;
+}
+
+/** Writes (or replaces) a small file next to a scan. The scan's folder must exist. */
+export function writeScanSidecar(id: string, name: string, text: string): void {
+  if (!SIDECAR.test(name)) throw new Error(`Invalid sidecar name: ${name}`);
+  const file = new File(scanDir(id), name);
+  file.create({ overwrite: true });
+  file.write(text);
+}
+
 export function deleteScan(id: string): void {
   const dir = scanDir(id);
   if (dir.exists) dir.delete();

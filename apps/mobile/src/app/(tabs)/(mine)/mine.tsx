@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { useAuth } from '@/auth/auth-provider';
+import { useAuth } from '@bairmair/native-auth';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { editorProgress, editorSteps } from '@/listings/editor-steps';
 import {

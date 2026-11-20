@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { formatMongolianPhone } from '@bairmair/browse';
-import { useAuth } from '@/auth/auth-provider';
+import { useAuth } from '@bairmair/native-auth';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@bairmair/native-ui/button';

@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { Alert, AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useAuth } from '@/auth/auth-provider';
+import { useAuth } from '@bairmair/native-auth';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';

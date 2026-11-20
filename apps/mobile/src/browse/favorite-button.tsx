@@ -9,7 +9,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { useAuth } from '@/auth/auth-provider';
+import { useAuth } from '@bairmair/native-auth';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { useColors } from '@bairmair/native-ui/theme';
 import { SignedOutError, toggleFavorite, useIsFavorite } from './favorites';

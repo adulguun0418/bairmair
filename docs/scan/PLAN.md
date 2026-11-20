@@ -115,7 +115,8 @@ of the scan app.
    the process route, `/s/[slug]`, the embed, the OG image, captcha return URL per app (it is
    hard-coded to `bairmair://captcha` today), Apple client id `mn.bairmair.scan` added to
    Supabase Auth, account deletion covering scans. Unit + integration tests on the dev project.
-3. **App core (JS only).** Sign-in (shared with `apps/mobile` where it can move into a package),
+3. **App core (JS only).** Done (see `docs/scan/PROGRESS.md`; room names and front door
+   editing moved to a later step). Was: sign-in (shared with `apps/mobile` where it can move into a package),
    "Миний сканууд" with "1 / 2 үнэгүй", scanner (whole-apartment flow and error messages from
    `apps/mobile`), review (plan, areas, room names, front door), local draft + background upload
    with retry (create row → raw JSON → USDZ → process), scan screen (embed WebView, share link
@@ -147,8 +148,8 @@ of the scan app.
 4. **"2 free"**: 2 scans saved at once (delete one to scan again; proposed) or 2 ever?
 5. **Review scope in the app**: room names and front door (proposed for the MVP); room dividers
    and photos later?
-6. **Phones without LiDAR** can install from the App Store (Apple has no LiDAR-only switch):
-   show "this iPhone cannot scan" and let them view their scans (proposed), or block?
+6. **Phones without LiDAR**: answered 2026-11-20: "this iPhone cannot scan" and a button to
+   the website.
 7. **App Store name**: "bairmair scan" in English, Mongolian subtitle?
 
 ## Risks

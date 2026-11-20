@@ -13,12 +13,15 @@
     "./blueprint-panel": "./src/blueprint-panel.tsx",
     "./floor-plan-view": "./src/floor-plan-view.tsx",
     "./scan-floor-plan": "./src/scan-floor-plan.tsx",
-    "./i18n": "./src/i18n.tsx"
+    "./i18n": "./src/i18n.tsx",
+    "./text-field": "./src/text-field.tsx",
+    "./model-embed": "./src/model-embed.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@bairmair/browse": "workspace:*",
     "@bairmair/i18n": "workspace:*",
     "@bairmair/room-model": "workspace:*"
   },

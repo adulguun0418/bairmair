@@ -1,0 +1,8 @@
+{
+  // Integration tests run in Node (vitest), so they get Node's types; the app does not.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "../expo-env.d.ts"]
+}

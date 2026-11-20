@@ -17,6 +17,7 @@
     "@bairmair/browse": "workspace:*",
     "@bairmair/db": "workspace:*",
     "@bairmair/i18n": "workspace:*",
+    "@bairmair/native-auth": "workspace:*",
     "@bairmair/native-ui": "workspace:*",
     "@bairmair/room-model": "workspace:*",
     "@bairmair/scanner": "workspace:*",
