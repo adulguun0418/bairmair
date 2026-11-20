@@ -14,8 +14,7 @@ import {
 } from 'react-native';
 import { AgentSection } from '@/account/agent-section';
 import { deleteAccount } from '@/account/delete-account';
-import { signOut } from '@/auth/actions';
-import { useAuth } from '@/auth/auth-provider';
+import { signOut, useAuth } from '@bairmair/native-auth';
 import { authErrorKey, formatMongolianPhone } from '@bairmair/browse';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { openSitePage } from '@/lib/site-pages';
@@ -25,7 +24,7 @@ import { BlueprintPanel } from '@bairmair/native-ui/blueprint-panel';
 import { Button } from '@bairmair/native-ui/button';
 import { Icon, type IconName } from '@bairmair/native-ui/icon';
 import { Segmented } from '@/ui/segmented';
-import { TextField } from '@/ui/text-field';
+import { TextField } from '@bairmair/native-ui/text-field';
 import { radius, useColors } from '@bairmair/native-ui/theme';
 import { Text } from '@bairmair/native-ui/text';
 
@@ -179,7 +178,7 @@ export default function AccountScreen() {
         text: t('account.signOut'),
         style: 'destructive',
         onPress: () => {
-          signOut().catch((cause: unknown) =>
+          signOut(supabase).catch((cause: unknown) =>
             setMessage({ text: t(`auth.errors.${authErrorKey(cause)}`), error: true }),
           );
         },

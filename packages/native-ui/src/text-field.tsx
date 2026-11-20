@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type TextInputProps } from 'react-native';
-import { useColors } from '@bairmair/native-ui/theme';
-import { Text, TextInput } from '@bairmair/native-ui/text';
+import { useColors } from './theme';
+import { Text, TextInput } from './text';
 
 interface TextFieldProps extends TextInputProps {
   label: string;

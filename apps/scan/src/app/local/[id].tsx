@@ -6,8 +6,10 @@ import { getScan, ScanReport } from '@bairmair/scanner/native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { refreshLocalScans } from '@/uploads/uploads';
 
-/** One scan saved on this phone: plan, rooms with areas, files to share. */
+/** A scan on this phone before its link exists: plan, rooms, and its raw files to share (for
+ * reporting a scan that converts badly). */
 export default function ScanResultScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -27,7 +29,13 @@ export default function ScanResultScreen() {
       <Stack.Screen
         options={{ title: formatScanTime(scan.meta.createdAt) || t('scanResult.title') }}
       />
-      <ScanReport scan={scan} onDeleted={() => router.back()} />
+      <ScanReport
+        scan={scan}
+        onDeleted={() => {
+          refreshLocalScans();
+          router.dismissTo('/');
+        }}
+      />
     </>
   );
 }

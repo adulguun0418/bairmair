@@ -7,12 +7,11 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, useColorScheme, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useI18n } from '@bairmair/native-ui/i18n';
-import { env } from '@/lib/env';
-import { captureError } from '@/lib/error-tracking';
 import { Button } from '@bairmair/native-ui/button';
-import { useColors } from '@bairmair/native-ui/theme';
+import { useI18n } from '@bairmair/native-ui/i18n';
 import { Text } from '@bairmair/native-ui/text';
+import { useColors } from '@bairmair/native-ui/theme';
+import { useAuth } from './auth-provider';
 
 export type CaptchaState =
   /** Waiting for Turnstile (at most `GIVE_UP_MS` while it stays invisible). */
@@ -47,8 +46,9 @@ class CaptchaError extends Error {
 export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => void }) {
   const { t, locale } = useI18n();
   const colors = useColors();
+  const { config } = useAuth();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const pageUrl = `${env.siteUrl}${captchaPath(locale)}`;
+  const pageUrl = `${config.siteUrl}${captchaPath(locale)}`;
   const [status, setStatus] = useState<CaptchaState['status']>('checking');
   const [height, setHeight] = useState(0);
   /** Cloudflare is waiting for a click: no time limit meanwhile. */
@@ -75,7 +75,9 @@ export function CaptchaView({ onChange }: { onChange: (state: CaptchaState) => v
     note(reason);
     setStatus('failed');
     callback.current({ status: 'failed' });
-    captureError(new CaptchaError(`captcha ${reason}`), { trail: trailRef.current.join(' > ') });
+    config.reportError?.(new CaptchaError(`captcha ${reason}`), {
+      trail: trailRef.current.join(' > '),
+    });
   };
 
   // Give up on a check that never ends, unless Cloudflare is waiting for the person.

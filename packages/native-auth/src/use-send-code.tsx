@@ -1,10 +1,11 @@
 import { authErrorKey, isCaptchaRequired } from '@bairmair/browse';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useColorScheme } from 'react-native';
-import { needsCaptcha, sendPhoneCode, type PhoneMode } from '@/auth/actions';
-import { CAPTCHA_IN_BROWSER, captchaTokenFromBrowser } from '@/auth/captcha-browser';
-import { CaptchaView, type CaptchaState } from '@/auth/captcha-view';
 import { useI18n } from '@bairmair/native-ui/i18n';
+import { needsCaptcha, sendPhoneCode, type PhoneMode } from './actions';
+import { useAuth } from './auth-provider';
+import { CAPTCHA_IN_BROWSER, captchaTokenFromBrowser } from './captcha-browser';
+import { CaptchaView, type CaptchaState } from './captcha-view';
 
 export interface SendCode {
   /** Texts a code to `phone` (E.164); `onSent` follows on success. */
@@ -28,6 +29,7 @@ export interface SendCode {
  */
 export function useSendCode(mode: PhoneMode, onSent: (phone: string) => void): SendCode {
   const { t, locale } = useI18n();
+  const { config } = useAuth();
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function useSendCode(mode: PhoneMode, onSent: (phone: string) => void): S
   const fail = (cause: unknown) => setError(t(`auth.errors.${authErrorKey(cause)}`));
 
   const sendWith = async (phone: string, captchaToken: string | null) => {
-    await sendPhoneCode(phone, mode, captchaToken);
+    await sendPhoneCode(config.client, phone, mode, captchaToken);
     onSentRef.current(phone);
   };
 
@@ -74,7 +76,12 @@ export function useSendCode(mode: PhoneMode, onSent: (phone: string) => void): S
       } catch (cause) {
         if (ready || !needsCaptcha(mode) || !isCaptchaRequired(cause)) throw cause;
         if (CAPTCHA_IN_BROWSER) {
-          const browserToken = await captchaTokenFromBrowser(locale, scheme);
+          const browserToken = await captchaTokenFromBrowser(
+            config.siteUrl,
+            config.captchaReturn,
+            locale,
+            scheme,
+          );
           // Null: the person closed the sheet; nothing sent, nothing to say.
           if (browserToken) await sendWith(phone, browserToken);
         } else {

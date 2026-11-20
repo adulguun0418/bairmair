@@ -8,7 +8,7 @@ import { useI18n } from '@bairmair/native-ui/i18n';
 import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
 import { MultiChips } from '@/ui/multi-chips';
-import { TextField } from '@/ui/text-field';
+import { TextField } from '@bairmair/native-ui/text-field';
 import { useColors } from '@bairmair/native-ui/theme';
 import { ToggleRow } from '@/ui/toggle-row';
 import { Text } from '@bairmair/native-ui/text';

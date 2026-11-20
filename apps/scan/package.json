@@ -5,19 +5,25 @@
   "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start --max-workers 2",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test-remote",
     "lint": "eslint .",
+    "test": "vitest run",
     "doctor": "pnpm dlx expo-doctor",
     "eas": "pnpm dlx eas-cli@27.7.2",
-    "update:preview": "pnpm dlx eas-cli@27.7.2 update --channel preview --environment preview"
+    "update:preview": "pnpm dlx eas-cli@27.7.2 update --channel preview --environment preview",
+    "test:remote": "vitest run --config vitest.remote.config.mts"
   },
   "dependencies": {
+    "@bairmair/browse": "workspace:*",
+    "@bairmair/db": "workspace:*",
     "@bairmair/i18n": "workspace:*",
+    "@bairmair/native-auth": "workspace:*",
     "@bairmair/native-ui": "workspace:*",
     "@bairmair/room-model": "workspace:*",
     "@bairmair/scanner": "workspace:*",
     "@expo-google-fonts/onest": "0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "2.119.0",
     "expo": "~58.0.25",
     "expo-apple-authentication": "~58.0.3",
     "expo-build-properties": "~58.0.12",
@@ -52,13 +58,16 @@
     "react-native-reanimated": "4.7.1",
     "react-native-safe-area-context": "~5.11.1",
     "react-native-screens": "~4.30.1",
+    "react-native-url-polyfill": "^4.0.0",
     "react-native-webview": "14.0.1",
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@types/node": "^24.19.2",
     "@types/react": "~19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~58.0.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
   }
 }

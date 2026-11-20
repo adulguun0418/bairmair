@@ -11,7 +11,7 @@ import { ScanModelMessage } from '@/listings/scan-model-message';
 import { Button } from '@bairmair/native-ui/button';
 import { ChoiceChips } from '@/ui/choice-chips';
 import { ScanFloorPlan } from '@bairmair/native-ui/scan-floor-plan';
-import { TextField } from '@/ui/text-field';
+import { TextField } from '@bairmair/native-ui/text-field';
 import { useColors } from '@bairmair/native-ui/theme';
 import { Text } from '@bairmair/native-ui/text';
 

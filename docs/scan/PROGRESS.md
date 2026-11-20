@@ -3,9 +3,10 @@
 Plan: `docs/scan/PLAN.md`. Marketplace progress stays in `docs/PROGRESS.md`.
 
 ## Current state (2026-11-20)
-Steps 1 (app shell) and 2 (backend) are done. Development build 1 is installed on your iPhone
-(checks below not reported yet). Next: step 3 (the app signs in, uploads scans and shows their
-links), which needs your answer on non-LiDAR iPhones.
+Steps 1–3 are done: the app signs in, uploads scans, and shows each scan's link. Development
+build 1 is on your iPhone and passed its checks (StoreKit "Холбогдлоо"). Step 3 is JS only:
+test it with `pnpm dev:scan` (below). Next: step 4 (subscriptions on the server + QPay on the
+website), which needs the plan's open questions on price and plan.
 
 ## Done
 - Step 1, app shell:
@@ -89,12 +90,55 @@ links), which needs your answer on non-LiDAR iPhones.
     the image and the phone embed. Demo data deleted.
   - Noticed, not fixed: at 390 px the embed's "Анхны харагдац" button runs past the right edge
     (shared viewer, so bairmair's listing embed too).
+- Step 3, the app uses the backend (JS only, no new build):
+  - Shared sign-in, moved out of `apps/mobile` into `@bairmair/native-auth` (no copies):
+    `AuthProvider` takes the app's config (client, URLs, captcha return `app` | `scan`, error
+    reporter), phone / Apple / Google actions (client as a parameter), captcha when Supabase asks
+    (system browser sheet on iOS, inline on Android), `SignInForm` and `VerifyForm` (navigation
+    through callbacks), `openSitePage`. `apps/mobile`'s sign-in and code screens are now thin
+    routes around them; behaviour unchanged. `TextField` and the 3D embed WebView (`ModelEmbed`,
+    used by bairmair's listing 3D screen and the scan app) moved to `@bairmair/native-ui`.
+  - Uploads (`apps/scan/src/uploads/`): one record per scan next to its files on the phone
+    (`upload.json`, a scanner "sidecar"); steps row → raw JSON → USDZ → process → done, one at a
+    time, every step repeatable; backoff 5 s → 5 min; `limit` (over the free limit) and
+    `failed` (unreadable export, or row/files missing 3 rounds in a row) wait for "Дахин
+    оролдох". Runs while the app is open: launch, foreground, sign-in, after "Холбоос үүсгэх".
+    Files go up with `File.upload` (background URL session), like bairmair's photos.
+  - Screens:
+    - "Миний сканууд": no LiDAR → "Энэ iPhone скан хийх боломжгүй" + reason + "bairmair вэбсайт
+      руу орох" (your call); signed out → sign in; signed in → "Шинэ скан" (or the limit notice
+      when 2 are kept), "Үнэгүй скан: n / 2", the list: unsent scans, uploads with their status
+      and retry, server scans with area / "Холбоос хаалттай". Pull to refresh.
+    - After a scan: "Скан шалгах" (plan, rooms, total area from the same converter, optional
+      name, "Холбоос үүсгэх" or delete; the raw files stay reachable for reporting).
+    - A scan: plan and rooms (the server's model with the owner's labels), the link with
+      "Холбоос хуваалцах" (iOS share sheet: text + link) and an on/off switch, "3D-ээр үзэх"
+      (`/embed/s/<slug>` full screen; hidden while the link is off), rename (header), delete
+      (files, then the row, then the phone's copy).
+    - "Бүртгэл" (person icon): who is signed in, "this is your bairmair account", terms,
+      privacy, Туршилт, sign out, delete account (`DELETE /api/account`, then this user's scans
+      leave the phone), version.
+  - `@bairmair/db`: `USER_SCAN_FREE_LIMIT` (2, mirrors `private.scan_limit()`). Copy: `scanApp`
+    grew (status, review, detail, website, limit); the step-1 "test version" note is gone.
+  - `apps/scan/.env` (gitignored): the dev project's public keys, `EXPO_PUBLIC_API_URL` =
+    `https://bairmair.vercel.app`.
+  - Verified: typecheck, lint, prettier, unit tests (scan 16: model, engine, remote answers;
+    native-auth 3; mobile 95), integration tests on the dev project (scan 3: a scan to a ready
+    row with a slug, the third stopped at the limit and sent after a delete, a repeated insert
+    makes no second row; processing runs this branch's `processScan`), `expo export` for iOS of
+    both apps (scan bundle: one copy of every package). Not verified: anything on the iPhone.
 
 ## Decisions
 - `expo-iap` for Apple In-App Purchase, our own server verification (see the plan).
 - Shared React Native code lives in packages with native modules as peer dependencies (see the
   plan's monorepo rules), instead of copying `apps/mobile`'s files.
 - App icon and splash: bairmair's for now; a scan-specific icon before the store.
+- iPhones without LiDAR are sent to the website (your call, 2026-11-20).
+- Scanning needs sign-in first (the scan is uploaded to the account; the limit is the account's).
+- "2 free" is counted as scans kept (delete one to scan again), the plan's proposal; the
+  database enforces it. Step 4 adds the subscription.
+- Room names and the front door are not editable in the scan app yet (the server and the link
+  pages already apply them); a later step, together with the paywall screens.
 
 ## Commands
 - `pnpm dev:scan` (Metro for the scan app's development build). Metro for `apps/mobile` and for
@@ -103,27 +147,22 @@ links), which needs your answer on non-LiDAR iPhones.
   preview build exists).
 
 ## Next
-- You, if not done yet, the build 1 checks (you installed it on 2026-11-20). In `apps/scan`:
-  1. `pnpm eas build --profile development --platform ios`. It is the first build for
-     `mn.bairmair.scan`: sign in to Apple when asked, let EAS create the bundle id (with Sign in
-     with Apple) and the ad hoc profile, and pick your registered iPhone.
-  2. Install it from the link / QR code EAS shows.
-  3. From the repo root: `pnpm dev:scan` (stop `pnpm dev:mobile` first), open "bairmair scan" on
-     the iPhone and connect to the PC.
-  4. Check:
-     - "Миний сканууд" shows the blueprint card "Байраа 3D-ээр скан хийгээрэй" with "Шинэ скан".
-     - Wrench → "Туршилт": your iPhone model, the green "Энэ төхөөрөмжөөр 3D скан хийж болно.",
-       "App Store-ын төлбөр: Холбогдлоо" (StoreKit answers; no products are set up yet), and
-       "Хувилбар 0.1.0 · суулгасан хувилбар".
-     - "Шинэ скан": the camera prompt in Mongolian, the blueprint intro, scan a room or two,
-       "Дуусгах": the report shows the plan, rooms and total area; sharing the raw JSON works.
-     - Back on "Миний сканууд" the scan is listed; deleting it from its report removes it.
-  5. If the build fails, send me the EAS build log link (most likely spot: the OpenIAP Swift
-     package `expo-iap` fetches during `pod install`).
-- Optional, `apps/mobile` (its scanner and UI code moved into packages; JS only, no OTA published):
-  with `pnpm dev:mobile`, open Бүртгэл → RoomPlan туршилт, scan once, and open a listing's
-  "3D скан". Everything should look as before.
-- Step 3 (JS only): sign-in, upload with retry, processing, the link (share, copy, on/off),
-  "1 / 2 үнэгүй" and the limit message. Needs: what non-LiDAR iPhones see (plan question 6).
-- Open questions in the plan (price, what Pro gives, what happens when it ends, "2 free" meaning,
-  non-LiDAR phones, store name) are needed by step 4, except non-LiDAR phones (step 3).
+- You, step 3 on the iPhone (development build 1, no new build): stop `pnpm dev:mobile` if it
+  runs, then `pnpm dev:scan` from the repo root and open bairmair scan.
+  1. Signed out, the home screen asks you to sign in. Sign in with your phone (code by SMS) or
+     Apple. The person icon → Бүртгэл shows your number and "Энэ бол bairmair-ийн бүртгэл…".
+  2. "Шинэ скан" → scan → "Дуусгах" → "Скан шалгах" shows plan, rooms, total; type a name →
+     "Холбоос үүсгэх". Home shows it uploading, then processing, then with its area.
+  3. Tap it: the plan, the link, "Холбоос хуваалцах" (share to Messenger or Notes and open the
+     link on a computer: the 3D page), "3D-ээр үзэх", the switch off (the link then says not
+     available within a minute) and on, rename, pull to refresh.
+  4. Make a second scan: "Үнэгүй скан: 2 / 2" and the limit notice instead of "Шинэ скан".
+     Delete one: "Шинэ скан" is back.
+  5. Airplane mode during an upload: the row says it waits for the network; turn it off and
+     the upload finishes by itself (or tap "Дахин оролдох").
+  6. Optional, bairmair app (`pnpm dev:mobile`): sign in / out and the add-phone flow still
+     work (they now come from the shared package); a listing's "3D-ээр үзэх" still opens.
+- Before the next bairmair OTA update: it would carry this refactor of its sign-in; publish only
+  after check 6.
+- Step 4 (subscriptions on the server + QPay on the website). Needs the plan's open questions:
+  price and period, what Pro gives, what happens when it ends, App Store name.

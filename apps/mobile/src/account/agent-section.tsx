@@ -3,7 +3,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useI18n } from '@bairmair/native-ui/i18n';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@bairmair/native-ui/button';
-import { TextField } from '@/ui/text-field';
+import { TextField } from '@bairmair/native-ui/text-field';
 import { Icon } from '@bairmair/native-ui/icon';
 import { radius, useColors } from '@bairmair/native-ui/theme';
 import { Text } from '@bairmair/native-ui/text';
