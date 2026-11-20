@@ -1057,6 +1057,9 @@ export const en: Messages = {
     history: 'Recent payments',
     noHistory: 'No payments.',
     show: 'Show',
+    signInNeeded: 'Sign in to test.',
+    qrOtherPhone: 'Paying from another phone? Scan this QR code',
+    appMissing: 'This app is not on your phone. Choose another bank app.',
     status: {
       pending: 'Pending',
       paid: 'Paid',

@@ -420,6 +420,22 @@ function AppSettings() {
           </Text>
           <Icon name="chevron" size={14} color={colors.textSubtle} />
         </Pressable>
+        {/* Temporary: remove with the website's /payments/test (see PROGRESS "Next"). */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/payment-test')}
+          style={({ pressed }) => [
+            styles.card,
+            styles.row,
+            { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Icon name="card" size={16} color={colors.brand} />
+          <Text style={[styles.body, styles.grow, { color: colors.text }]}>
+            {t('payments.testTitle')}
+          </Text>
+          <Icon name="chevron" size={14} color={colors.textSubtle} />
+        </Pressable>
         <VersionLine />
       </Group>
     </>

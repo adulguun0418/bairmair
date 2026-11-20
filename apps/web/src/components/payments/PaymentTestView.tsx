@@ -1,6 +1,7 @@
 'use client';
 
-import { PAYMENT_PRODUCTS, type PaymentResponse, type PaymentStatus } from '@bairmair/db';
+import { fetchPaymentHistory, type PaymentHistoryRow } from '@bairmair/browse';
+import { PAYMENT_PRODUCTS, type PaymentResponse } from '@bairmair/db';
 import { createTranslator, formatDate, formatMoney, localePath, type Locale } from '@bairmair/i18n';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,13 +14,6 @@ import { QPayCheckout } from './QPayCheckout';
 const primary =
   'rounded-full bg-primary px-5 py-2.5 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50';
 const card = 'space-y-3 rounded-2xl bg-surface p-5 shadow-sm';
-
-interface HistoryRow {
-  id: string;
-  amount: number;
-  status: PaymentStatus;
-  created_at: string;
-}
 
 /**
  * A real-money check of the QPay flow on production: pay the `test` product (100₮), watch it go
@@ -35,7 +29,7 @@ export function PaymentTestView({ locale }: { locale: Locale }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
-  const [history, setHistory] = useState<HistoryRow[] | null>(null);
+  const [history, setHistory] = useState<PaymentHistoryRow[] | null>(null);
 
   useEffect(() => {
     if (ready && !userId) {
@@ -50,14 +44,9 @@ export function PaymentTestView({ locale }: { locale: Locale }) {
   useEffect(() => {
     if (!userId) return;
     let active = true;
-    void browserClient()
-      .from('payments')
-      .select('id, amount, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(10)
-      .then(({ data }) => {
-        if (active) setHistory(data ?? []);
-      });
+    fetchPaymentHistory(browserClient())
+      .then((rows) => active && setHistory(rows))
+      .catch(() => active && setHistory([]));
     return () => {
       active = false;
     };
@@ -145,8 +134,8 @@ export function PaymentTestView({ locale }: { locale: Locale }) {
           <ul className="divide-y divide-line">
             {history.map((row) => (
               <li key={row.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span>{formatDate(row.created_at, locale)}</span>
-                <span>{formatMoney(Number(row.amount), 'MNT')}</span>
+                <span>{formatDate(row.createdAt, locale)}</span>
+                <span>{formatMoney(row.amount, 'MNT')}</span>
                 <span className={row.status === 'paid' ? 'text-success' : 'text-fg-muted'}>
                   {t(`payments.status.${row.status}`)}
                 </span>

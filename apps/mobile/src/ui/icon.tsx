@@ -49,6 +49,7 @@ const ICONS = {
   contrast: { ios: 'circle.lefthalf.filled', android: 'contrast' },
   briefcase: { ios: 'briefcase', android: 'work' },
   wrench: { ios: 'wrench.and.screwdriver', android: 'build' },
+  card: { ios: 'creditcard', android: 'credit_card' },
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout' },
   trash: { ios: 'trash', android: 'delete' },
   sparkle: { ios: 'sparkles', android: 'auto_awesome' },

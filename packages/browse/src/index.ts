@@ -10,6 +10,7 @@ export * from './listing-page';
 export * from './listing-text';
 export * from './map-pins';
 export * from './map-style';
+export * from './payments';
 export * from './phone';
 export * from './search-filters';
 export * from './share-link';
