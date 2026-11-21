@@ -35,6 +35,7 @@ export function listingPackageFulfilments(
     };
   return {
     listing_pack_30d: fulfilment('listing_pack_30d'),
+    listing_pack_90d: fulfilment('listing_pack_90d'),
     listing_pack_test: fulfilment('listing_pack_test'),
   };
 }

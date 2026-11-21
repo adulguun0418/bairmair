@@ -79,8 +79,8 @@ export function AccountView({ locale }: { locale: Locale }) {
       </section>
 
       <NameForm userId={user.id} locale={locale} />
-      <AgentForm userId={user.id} locale={locale} />
       <ListingPackageCard userId={user.id} accessToken={session!.access_token} locale={locale} />
+      <AgentForm userId={user.id} locale={locale} />
       <ScanPlanCard userId={user.id} locale={locale} />
 
       <section className="flex flex-wrap items-center gap-3">
