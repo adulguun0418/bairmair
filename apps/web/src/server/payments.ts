@@ -207,7 +207,13 @@ export async function createPayment(
     request.subjectId,
     minutesBefore(now, PAYMENT_LIMITS.reuseMinutes),
   );
-  if (open) return ok(200, open);
+  if (open) {
+    if (open.amount === product.amount) return ok(200, open);
+    // The price changed since that invoice was made: close it (unless it was paid meanwhile,
+    // then show that) and make one at today's price. A failed cancel leaves it to expire.
+    const closed = await cancelPayment(deps, userId, open.id).catch(() => null);
+    if (closed?.ok && closed.body.status === 'paid') return closed;
+  }
   if ((await deps.store.countSince(userId, minutesBefore(now, 60))) >= PAYMENT_LIMITS.perHour) {
     return fail(429, 'payment_rate_limited');
   }

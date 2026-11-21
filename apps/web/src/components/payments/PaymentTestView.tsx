@@ -16,7 +16,7 @@ const primary =
 const card = 'space-y-3 rounded-2xl bg-surface p-5 shadow-sm';
 
 /**
- * A real-money check of the QPay flow on production: pay the `test` product (100₮), watch it go
+ * A real-money check of the QPay flow on production: pay the `test` product (50₮), watch it go
  * from pending to paid, see recent payments. The server allows only the ids in `PAYMENT_TESTERS`;
  * everyone else gets "testers only" with their id to add.
  */

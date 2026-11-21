@@ -92,7 +92,7 @@ describe.skipIf(!configured)('payments (QPay live merchant, invoices never paid)
     const response = await POST(request('/api/payments', tester, { method: 'POST', body }));
     expect(response.status).toBe(201);
     payment = (await response.json()) as PaymentResponse;
-    expect(payment).toMatchObject({ product: 'test', amount: 100, status: 'pending' });
+    expect(payment).toMatchObject({ product: 'test', amount: 50, status: 'pending' });
     expect(payment.checkout?.qrText).toMatch(/^0002/);
     expect(payment.checkout?.shortUrl).toMatch(/^https:\/\/s\.qpay\.mn\//);
     expect(payment.checkout?.bankApps.length).toBeGreaterThan(5);
