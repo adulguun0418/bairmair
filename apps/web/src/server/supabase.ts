@@ -14,6 +14,7 @@ import type { AppleSubscriptionStore } from './apple-iap';
 import type { AccountStore } from './delete-account';
 import type { PaymentRecord, PaymentStore } from './payments';
 import type { ScanStore } from './process-scan';
+import type { AddListingPackagePeriod } from './listing-package';
 import type { AddScanProPeriod } from './scan-pro';
 import type { SharedScanSource } from './shared-scan';
 
@@ -218,6 +219,21 @@ export function supabasePaymentStore(client: TypedSupabaseClient): PaymentStore 
 export function supabaseAddScanProPeriod(client: TypedSupabaseClient): AddScanProPeriod {
   return async ({ userId, paymentId, product, days }) => {
     const { error } = await client.rpc('add_scan_pro_period', {
+      p_user_id: userId,
+      p_payment_id: paymentId,
+      p_product_id: product,
+      p_days: days,
+    });
+    if (error) throw error;
+  };
+}
+
+/** Adds a paid listing package period (`add_listing_package_period`, service role only). */
+export function supabaseAddListingPackagePeriod(
+  client: TypedSupabaseClient,
+): AddListingPackagePeriod {
+  return async ({ userId, paymentId, product, days }) => {
+    const { error } = await client.rpc('add_listing_package_period', {
       p_user_id: userId,
       p_payment_id: paymentId,
       p_product_id: product,

@@ -54,14 +54,22 @@ function fail(error: { message: string } | null): void {
 
 export type MyListingSummary = Pick<
   MyListingRow,
-  'id' | 'title' | 'type' | 'status' | 'price' | 'currency' | 'has_3d' | 'updated_at'
+  | 'id'
+  | 'title'
+  | 'type'
+  | 'status'
+  | 'price'
+  | 'currency'
+  | 'has_3d'
+  | 'updated_at'
+  | 'plan_paused_at'
 >;
 
 /** The user's listings (any status), most recently changed first. */
 export async function fetchMyListings(ownerId: string): Promise<MyListingSummary[]> {
   const { data, error } = await browserClient()
     .from('listings')
-    .select('id, title, type, status, price, currency, has_3d, updated_at')
+    .select('id, title, type, status, price, currency, has_3d, updated_at, plan_paused_at')
     .eq('owner_id', ownerId)
     .order('updated_at', { ascending: false });
   fail(error);

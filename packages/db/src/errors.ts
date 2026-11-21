@@ -21,6 +21,8 @@ export const DB_ERROR_KEYS = [
   'reveal_requires_sign_in',
   /** bairmair scan: the user already keeps as many scans as their plan allows. */
   'scan_limit_reached',
+  /** The seller already has as many published listings as their plan allows (1 free, 20 with a package). */
+  'listing_limit_reached',
 ] as const;
 
 export type DbErrorKey = (typeof DB_ERROR_KEYS)[number];

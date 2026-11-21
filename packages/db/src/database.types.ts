@@ -174,6 +174,57 @@ export type Database = {
           },
         ];
       };
+      listing_packages: {
+        Row: {
+          created_at: string;
+          expires_at: string;
+          id: string;
+          payment_id: string;
+          product_id: string;
+          starts_at: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          payment_id: string;
+          product_id: string;
+          starts_at: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          payment_id?: string;
+          product_id?: string;
+          starts_at?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'listing_packages_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: true;
+            referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'listing_packages_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       listing_photos: {
         Row: {
           camera_pose: Json | null;
@@ -315,6 +366,7 @@ export type Database = {
           new_building: boolean;
           owner_id: string;
           parking: Database['public']['Enums']['parking_type'] | null;
+          plan_paused_at: string | null;
           price: number | null;
           public_lat: number | null;
           public_lng: number | null;
@@ -358,6 +410,7 @@ export type Database = {
           new_building?: boolean;
           owner_id?: string;
           parking?: Database['public']['Enums']['parking_type'] | null;
+          plan_paused_at?: string | null;
           price?: number | null;
           public_lat?: number | null;
           public_lng?: number | null;
@@ -401,6 +454,7 @@ export type Database = {
           new_building?: boolean;
           owner_id?: string;
           parking?: Database['public']['Enums']['parking_type'] | null;
+          plan_paused_at?: string | null;
           price?: number | null;
           public_lat?: number | null;
           public_lng?: number | null;
@@ -839,6 +893,31 @@ export type Database = {
       };
     };
     Functions: {
+      add_listing_package_period: {
+        Args: {
+          p_days: number;
+          p_payment_id: string;
+          p_product_id: string;
+          p_user_id: string;
+        };
+        Returns: {
+          created_at: string;
+          expires_at: string;
+          id: string;
+          payment_id: string;
+          product_id: string;
+          starts_at: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'listing_packages';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       add_scan_pro_period: {
         Args: {
           p_days: number;
@@ -900,6 +979,17 @@ export type Database = {
       confirm_listing_available: {
         Args: { p_listing_id: string };
         Returns: string;
+      };
+      enforce_listing_limits: { Args: never; Returns: number };
+      listing_plan: {
+        Args: never;
+        Returns: {
+          enforced: boolean;
+          listing_limit: number;
+          live_listings: number;
+          package_until: string;
+          paused_listings: number;
+        }[];
       };
       record_listing_view: {
         Args: { p_listing_id: string };
@@ -973,6 +1063,10 @@ export type Database = {
           total_floors: number;
           type: Database['public']['Enums']['listing_type'];
         }[];
+      };
+      set_listing_limit_tester: {
+        Args: { p_on: boolean; p_user_id: string };
+        Returns: string;
       };
       take_alerts: {
         Args: never;

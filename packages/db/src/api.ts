@@ -32,6 +32,16 @@ export const USER_SCAN_FREE_LIMIT = 2;
 /** Scans a bairmair scan Pro user may keep (a fair-use cap). Mirrors `private.scan_limit()`. */
 export const USER_SCAN_PRO_LIMIT = 100;
 
+/**
+ * Published listings a seller may have at once without a package. Mirrors
+ * `private.listing_limit()`, which enforces it (only where `private.listing_limit_applies()`);
+ * the apps read the caller's actual plan with the `listing_plan` RPC.
+ */
+export const LISTING_FREE_LIMIT = 1;
+
+/** Published listings a seller may have at once with a listing package. */
+export const LISTING_PACKAGE_LIMIT = 20;
+
 /** Whether a string can be a share slug (12 letters and digits, as the database makes them). */
 export function isShareSlug(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9]{12}$/.test(value);

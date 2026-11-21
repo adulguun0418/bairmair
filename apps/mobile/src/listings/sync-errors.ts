@@ -19,6 +19,8 @@ export type SyncErrorKey =
   | 'needsVerifiedPhone'
   /** Publishing refused: no photo row yet. */
   | 'needsPhoto'
+  /** Publishing refused: the seller's plan allows no more published listings. */
+  | 'needsPlan'
   /** A live listing must have price, rooms, area, district and location. */
   | 'incomplete'
   /** The scan row is gone (deleted on another phone). Handled by the engine, never shown. */
@@ -57,6 +59,9 @@ export function classifyPostgrestError(
       return new SyncError('permanent', 'needsVerifiedPhone', message);
     case 'publish_requires_photo':
       return new SyncError('permanent', 'needsPhoto', message);
+    case 'listing_limit_reached':
+      // Neutral on purpose: no price or link to the website inside the app (App Store 3.1.1).
+      return new SyncError('permanent', 'needsPlan', message);
     default:
       break;
   }

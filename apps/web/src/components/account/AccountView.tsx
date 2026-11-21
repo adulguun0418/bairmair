@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { signInHref } from '@/components/auth/sign-in-href';
 import { browserClient } from '@/lib/supabase-browser';
+import { ListingPackageCard } from './ListingPackageCard';
 import { ScanPlanCard } from './ScanPlanCard';
 
 type Notice = { text: string; error: boolean } | null;
@@ -79,6 +80,7 @@ export function AccountView({ locale }: { locale: Locale }) {
 
       <NameForm userId={user.id} locale={locale} />
       <AgentForm userId={user.id} locale={locale} />
+      <ListingPackageCard userId={user.id} accessToken={session!.access_token} locale={locale} />
       <ScanPlanCard userId={user.id} locale={locale} />
 
       <section className="flex flex-wrap items-center gap-3">
