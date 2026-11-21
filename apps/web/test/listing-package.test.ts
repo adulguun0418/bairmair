@@ -31,9 +31,11 @@ describe('listing package fulfilments', () => {
       added.push(period);
     });
     await fulfil.listing_pack_30d(payment('listing_pack_30d'));
+    await fulfil.listing_pack_90d(payment('listing_pack_90d'));
     await fulfil.listing_pack_test(payment('listing_pack_test'));
     expect(added).toEqual([
       { userId: USER, paymentId: PAYMENT_ID, product: 'listing_pack_30d', days: 30 },
+      { userId: USER, paymentId: PAYMENT_ID, product: 'listing_pack_90d', days: 90 },
       { userId: USER, paymentId: PAYMENT_ID, product: 'listing_pack_test', days: 1 },
     ]);
   });
@@ -64,5 +66,7 @@ describe('listing package fulfilments', () => {
     }
     expect(PAYMENT_PRODUCTS.listing_pack_30d.amount).toBe(29_900);
     expect(LISTING_PACKAGE_PLANS.listing_pack_30d.days).toBe(30);
+    expect(PAYMENT_PRODUCTS.listing_pack_90d.amount).toBe(79_900);
+    expect(LISTING_PACKAGE_PLANS.listing_pack_90d.days).toBe(90);
   });
 });

@@ -53,6 +53,11 @@ export const PAYMENT_PRODUCTS = {
     invoiceDescription: 'bairmair: 20 зарын багц, 30 хоног',
     testersOnly: true,
   },
+  listing_pack_90d: {
+    amount: 79_900,
+    invoiceDescription: 'bairmair: 20 зарын багц, 90 хоног',
+    testersOnly: true,
+  },
   /** A real payment for one day of the package, to check the whole flow cheaply. */
   listing_pack_test: {
     amount: 100,
@@ -85,6 +90,7 @@ export function isScanProProduct(value: unknown): value is ScanProProductKey {
 /** The products that buy a listing package, and for how long. */
 export const LISTING_PACKAGE_PLANS = {
   listing_pack_30d: { days: 30 },
+  listing_pack_90d: { days: 90 },
   listing_pack_test: { days: 1 },
 } as const satisfies Partial<Record<PaymentProductKey, { days: number }>>;
 

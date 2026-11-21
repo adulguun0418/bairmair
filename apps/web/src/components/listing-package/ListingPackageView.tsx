@@ -62,8 +62,8 @@ export function ListingPackageView({ locale }: { locale: Locale }) {
 
   const until = plan?.packageUntil ?? null;
   const products: ListingPackageProductKey[] = showTest
-    ? ['listing_pack_30d', 'listing_pack_test']
-    : ['listing_pack_30d'];
+    ? ['listing_pack_30d', 'listing_pack_90d', 'listing_pack_test']
+    : ['listing_pack_30d', 'listing_pack_90d'];
 
   return (
     <div className="space-y-6">
@@ -154,11 +154,18 @@ export function ListingPackageView({ locale }: { locale: Locale }) {
               <div
                 key={product}
                 className={`flex flex-col gap-4 rounded-2xl bg-surface p-5 shadow-sm ${
-                  product === 'listing_pack_30d' ? 'ring-2 ring-brand' : ''
+                  product === 'listing_pack_90d' ? 'ring-2 ring-brand' : ''
                 }`}
               >
                 <div className="space-y-1">
-                  <p className="font-semibold">{t(`listingPackage.plans.${product}.name`)}</p>
+                  <p className="flex items-center justify-between gap-2 font-semibold">
+                    {t(`listingPackage.plans.${product}.name`)}
+                    {product === 'listing_pack_90d' && (
+                      <span className="rounded-full bg-brand/15 px-2 py-0.5 text-xs font-semibold text-brand">
+                        {t('listingPackage.plans.listing_pack_90d.note')}
+                      </span>
+                    )}
+                  </p>
                   <p className="text-2xl font-semibold">
                     {formatMoney(PAYMENT_PRODUCTS[product].amount, 'MNT')}
                   </p>
