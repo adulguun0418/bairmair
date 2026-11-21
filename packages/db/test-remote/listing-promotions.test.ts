@@ -94,8 +94,8 @@ async function periods(listingId: string) {
   return data.map((p) => ({
     tier: p.tier,
     // Days from now, rounded: the calls run within seconds of each other.
-    from: Math.round((Date.parse(p.starts_at) - Date.now()) / DAY),
-    to: Math.round((Date.parse(p.expires_at) - Date.now()) / DAY),
+    from: Math.round((Date.parse(p.starts_at) - Date.now()) / DAY) || 0,
+    to: Math.round((Date.parse(p.expires_at) - Date.now()) / DAY) || 0,
   }));
 }
 
@@ -190,10 +190,10 @@ describe('search order', () => {
   beforeAll(async () => {
     await admin.from('listings').delete().eq('owner_id', alice.id);
     // Published in this order, so "newest" without tiers would be D, C, B, A.
-    const a = await publishedListing(alice, 'A', 100_000_000);
-    const b = await publishedListing(alice, 'B', 200_000_000);
-    await publishedListing(alice, 'C', 300_000_000);
-    await publishedListing(alice, 'D', 400_000_000);
+    const a = await publishedListing(alice, 'Байр A', 100_000_000);
+    const b = await publishedListing(alice, 'Байр B', 200_000_000);
+    await publishedListing(alice, 'Байр C', 300_000_000);
+    await publishedListing(alice, 'Байр D', 400_000_000);
     await promote(alice, b, 'gold');
     await promote(alice, a, 'silver');
   });
@@ -202,12 +202,15 @@ describe('search order', () => {
     for (const sort of ['recommended', 'newest', 'price_asc', 'price_desc']) {
       const rows = await search(sort);
       expect(rows.slice(0, 2), sort).toEqual([
-        { title: 'B', tier: 'gold' },
-        { title: 'A', tier: 'silver' },
+        { title: 'Байр B', tier: 'gold' },
+        { title: 'Байр A', tier: 'silver' },
       ]);
       expect(rows.slice(2).map((row) => row.tier)).toEqual([null, null]);
     }
-    expect((await search('price_desc')).slice(2).map((row) => row.title)).toEqual(['D', 'C']);
+    expect((await search('price_desc')).slice(2).map((row) => row.title)).toEqual([
+      'Байр D',
+      'Байр C',
+    ]);
   });
 
   it('a hidden listing loses its place and badge', async () => {
@@ -215,11 +218,11 @@ describe('search order', () => {
       .from('listings')
       .select('id')
       .eq('owner_id', alice.id)
-      .eq('title', 'B')
+      .eq('title', 'Байр B')
       .single();
     await alice.client.from('listings').update({ status: 'archived' }).eq('id', data!.id);
     const tiers = await anonClient().rpc('active_listing_tiers');
     expect(tiers.data?.some((row) => row.listing_id === data!.id)).toBe(false);
-    expect((await search('newest'))[0]).toEqual({ title: 'A', tier: 'silver' });
+    expect((await search('newest'))[0]).toEqual({ title: 'Байр A', tier: 'silver' });
   });
 });
