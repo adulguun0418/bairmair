@@ -48,13 +48,14 @@ export const PAYMENT_PRODUCTS = {
   },
   // Listing package: 30 days with up to 20 live listings (LISTING_PACKAGE_PLANS). Testers only
   // until the limit is switched on for everyone (private.settings `listing_limit`).
+  // TEMPORARY test prices (2026-11-21): real prices 29,900₮ and 79,900₮. Restore before launch.
   listing_pack_30d: {
-    amount: 29_900,
+    amount: 100,
     invoiceDescription: 'bairmair: 20 зарын багц, 30 хоног',
     testersOnly: true,
   },
   listing_pack_90d: {
-    amount: 79_900,
+    amount: 250,
     invoiceDescription: 'bairmair: 20 зарын багц, 90 хоног',
     testersOnly: true,
   },
