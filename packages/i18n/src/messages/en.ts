@@ -275,6 +275,8 @@ export const en: Messages = {
       disclosure:
         'Payment is charged to your Apple ID. The subscription renews automatically for the same period and price unless cancelled at least 24 hours before it ends. Manage or cancel it in your App Store account settings.',
       restore: 'Restore purchases',
+      // Neutral on purpose (App Store 3.1.1/3.1.3): never say where or how else Pro is bought.
+      linked: 'If Pro is active on this account, it unlocks automatically once you sign in.',
       restoring: 'Restoring…',
       manage: 'Manage subscription',
       active: 'Pro · until {{date}}',

@@ -59,7 +59,8 @@ describe('scan Pro fulfilments', () => {
     for (const product of Object.keys(SCAN_PRO_PLANS) as (keyof typeof SCAN_PRO_PLANS)[]) {
       expect(PAYMENT_PRODUCTS[product].testersOnly).toBe(true);
     }
-    expect(PAYMENT_PRODUCTS.scan_pro_30d.amount).toBe(19_900);
-    expect(PAYMENT_PRODUCTS.scan_pro_365d.amount).toBe(199_000);
+    // Temporary test prices (real: 19,900₮ and 199,000₮).
+    expect(PAYMENT_PRODUCTS.scan_pro_30d.amount).toBe(50);
+    expect(PAYMENT_PRODUCTS.scan_pro_365d.amount).toBe(100);
   });
 });

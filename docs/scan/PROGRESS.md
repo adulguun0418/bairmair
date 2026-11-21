@@ -2,7 +2,7 @@
 
 Plan: `docs/scan/PLAN.md`. Marketplace progress stays in `docs/PROGRESS.md`.
 
-## Current state (2026-11-20)
+## Current state (2026-11-21)
 Steps 1–5 are done in code: the app signs in, uploads scans, shows each scan's link and the
 user's plan; Pro is sold with QPay on the website (`/scan-pro`, testers only until release) and
 with Apple In-App Purchase in the app (the only way inside the app, your call 2026-11-20).
@@ -225,11 +225,27 @@ App Store Connect setup before a sandbox purchase works (below). Next: step 6 (s
     production build, `expo export` for iOS. Not
     verified: a real sandbox purchase (needs App Store Connect, yours).
 
+- Test prices and the scan icon (your request, 2026-11-21):
+  - QPay Pro prices are **temporary test prices**: `scan_pro_30d` 50₮, `scan_pro_365d` 100₮
+    (real: 19,900₮ / 199,000₮; restore in `packages/db/src/payments.ts` and
+    `apps/web/test/scan-pro.test.ts` before launch). The static "2 сар үнэгүй" note on the yearly
+    card stays (true for the real prices). App Store prices are set in App Store Connect, not here.
+  - Icon and splash: the wordmark "scan" ("sc" navy `#1A2B60`, "an" sky blue `#199ED6`, like
+    "bair" / "mair"), in the bairmair wordmark's style: its own blue "a", and s, c, n drawn with the
+    same x-height, stroke width, round ends and spacing (the wordmark is drawn paths, not a font).
+    `node assets/brand/build-scan-logo.mjs` writes `assets/brand/scan-logo.svg`,
+    `apps/scan/assets/images/icon.png` (1024 px, white, no alpha) and `splash-icon.png`
+    (transparent). **Needs a new EAS build** (native assets; no `runtimeVersion` bump: JS unchanged).
+  - Paywall line (`scanApp.pro.linked`, under the renewal terms while not Pro): "Pro идэвхтэй бол
+    энэ бүртгэлээр нэвтэрмэгц автоматаар нээгдэнэ." Neutral on purpose (your call, after the App
+    Store rules): no link, address or wording about buying elsewhere (3.1.1 forbids calls to
+    action, clickable or not); QPay is promoted only outside the iOS app. No US-storefront link.
+
 ## Decisions
 - `expo-iap` for Apple In-App Purchase, our own server verification (see the plan).
 - Shared React Native code lives in packages with native modules as peer dependencies (see the
   plan's monorepo rules), instead of copying `apps/mobile`'s files.
-- App icon and splash: bairmair's for now; a scan-specific icon before the store.
+- App icon and splash: the "scan" wordmark (your call, 2026-11-21), not bairmair's logo.
 - iPhones without LiDAR are sent to the website (your call, 2026-11-20).
 - Scanning needs sign-in first (the scan is uploaded to the account; the limit is the account's).
 - "2 free" is counted as scans kept (delete one to scan again), the plan's proposal; the

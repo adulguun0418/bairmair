@@ -63,7 +63,8 @@ const ORDER: AppleScanProProductId[] = [
  * The Pro paywall (App Store rule 3.1.2): what Pro gives, the plans with StoreKit's prices and
  * periods, the renewal terms, Terms and Privacy, "Restore purchases". While Pro is on (bought in
  * any way) it shows until when, and "Manage subscription" for an App Store subscription. Apple's
- * In-App Purchase is the only way to buy here (rule 3.1.3).
+ * In-App Purchase is the only way to buy here (rule 3.1.3); the `linked` line says only that an
+ * account's active Pro unlocks on sign-in, never where else it is sold (rules 3.1.1, 3.1.3).
  */
 export default function ProScreen() {
   const { t, locale } = useI18n();
@@ -306,6 +307,7 @@ export default function ProScreen() {
           <Text style={[styles.small, { color: colors.textMuted }]}>
             {t('scanApp.pro.disclosure')}
           </Text>
+          <Text style={[styles.small, { color: colors.textMuted }]}>{t('scanApp.pro.linked')}</Text>
         </>
       )}
 

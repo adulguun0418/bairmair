@@ -35,13 +35,15 @@ export const PAYMENT_PRODUCTS = {
   test: { amount: 50, invoiceDescription: 'bairmair: туршилтын төлбөр', testersOnly: true },
   // bairmair scan Pro, prepaid periods (QPay has no automatic renewal; see SCAN_PRO_PLANS).
   // Testers only until the release step: terms, privacy and hosting are not ready for sales.
+  // TEMPORARY test prices (2026-11-21: 50₮ / 100₮): real prices 19,900₮ (30 days) and 199,000₮
+  // (1 year). Restore before launch.
   scan_pro_30d: {
-    amount: 19_900,
+    amount: 50,
     invoiceDescription: 'bairmair scan Pro: 30 хоног',
     testersOnly: true,
   },
   scan_pro_365d: {
-    amount: 199_000,
+    amount: 100,
     invoiceDescription: 'bairmair scan Pro: 1 жил',
     testersOnly: true,
   },
