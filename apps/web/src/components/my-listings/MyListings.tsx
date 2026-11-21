@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { signInHref } from '@/components/auth/sign-in-href';
+import { PlanBanner } from '@/components/listing-package/PlanBanner';
+import { useListingPlan } from '@/components/listing-package/use-listing-plan';
 import { fetchMyListings, type MyListingSummary } from '@/lib/my-listings';
 
 type State = { kind: 'loading' } | { kind: 'ready'; rows: MyListingSummary[] } | { kind: 'error' };
@@ -17,6 +19,7 @@ export function MyListings({ locale }: { locale: Locale }) {
   const { session, ready } = useAuth();
   const userId = session?.user.id ?? null;
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const { plan } = useListingPlan(userId);
 
   useEffect(() => {
     if (ready && !userId) router.replace(signInHref(locale, localePath(locale, '/my-listings')));
@@ -44,6 +47,7 @@ export function MyListings({ locale }: { locale: Locale }) {
           + {t('listings.new')}
         </Link>
       </div>
+      {plan && <PlanBanner plan={plan} locale={locale} />}
       {state.kind === 'loading' && <div className="h-40 animate-pulse rounded-2xl bg-surface-3" />}
       {state.kind === 'error' && <p className="text-danger">{t('browse.loadFailed')}</p>}
       {state.kind === 'ready' && state.rows.length === 0 && (
@@ -68,6 +72,11 @@ export function MyListings({ locale }: { locale: Locale }) {
                   </span>
                 </span>
                 <span className="flex items-center gap-2 text-xs font-medium">
+                  {row.status === 'archived' && row.plan_paused_at && (
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-warning">
+                      {t('listingPackage.pausedTag')}
+                    </span>
+                  )}
                   {row.has_3d && (
                     <span className="rounded-full bg-accent px-2 py-0.5 text-on-accent">3D</span>
                   )}

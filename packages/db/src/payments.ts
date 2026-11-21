@@ -46,6 +46,19 @@ export const PAYMENT_PRODUCTS = {
     invoiceDescription: 'bairmair scan Pro: туршилт, 1 өдөр',
     testersOnly: true,
   },
+  // Listing package: 30 days with up to 20 live listings (LISTING_PACKAGE_PLANS). Testers only
+  // until the limit is switched on for everyone (private.settings `listing_limit`).
+  listing_pack_30d: {
+    amount: 29_900,
+    invoiceDescription: 'bairmair: 20 зарын багц, 30 хоног',
+    testersOnly: true,
+  },
+  /** A real payment for one day of the package, to check the whole flow cheaply. */
+  listing_pack_test: {
+    amount: 100,
+    invoiceDescription: 'bairmair: зарын багц, туршилт, 1 өдөр',
+    testersOnly: true,
+  },
 } as const satisfies Record<string, PaymentProduct>;
 
 export type PaymentProductKey = keyof typeof PAYMENT_PRODUCTS;
@@ -67,6 +80,18 @@ export type ScanProProductKey = keyof typeof SCAN_PRO_PLANS;
 
 export function isScanProProduct(value: unknown): value is ScanProProductKey {
   return typeof value === 'string' && Object.hasOwn(SCAN_PRO_PLANS, value);
+}
+
+/** The products that buy a listing package, and for how long. */
+export const LISTING_PACKAGE_PLANS = {
+  listing_pack_30d: { days: 30 },
+  listing_pack_test: { days: 1 },
+} as const satisfies Partial<Record<PaymentProductKey, { days: number }>>;
+
+export type ListingPackageProductKey = keyof typeof LISTING_PACKAGE_PLANS;
+
+export function isListingPackageProduct(value: unknown): value is ListingPackageProductKey {
+  return typeof value === 'string' && Object.hasOwn(LISTING_PACKAGE_PLANS, value);
 }
 
 export const PAYMENT_LIMITS = {

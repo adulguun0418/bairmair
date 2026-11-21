@@ -1,18 +1,19 @@
 'use client';
 
-import type { PublishRequirement } from '@bairmair/browse';
-import { daysLeftInSearch, LISTING_FRESHNESS } from '@bairmair/db';
+import { canPublishAnother, type PublishRequirement } from '@bairmair/browse';
+import { daysLeftInSearch, dbErrorKey, LISTING_FRESHNESS } from '@bairmair/db';
 import { createTranslator, localePath, type Locale } from '@bairmair/i18n';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useListingPlan } from '@/components/listing-package/use-listing-plan';
 import { confirmAvailable, setListingStatus, type MyListingRow } from '@/lib/my-listings';
 
 type Status = MyListingRow['status'];
 
 /**
  * Publishing: the checklist, the actions for the current status, and "still available" for
- * published listings. The database stays the judge (completeness, verified phone); the buttons
- * only offer what it would accept.
+ * published listings. The database stays the judge (completeness, verified phone, the listing
+ * limit); the buttons only offer what it would accept, and a full plan offers the package.
  */
 export function StatusSection({
   row,
@@ -34,6 +35,8 @@ export function StatusSection({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const { plan, reload: reloadPlan } = useListingPlan(row.owner_id);
+  const [limitHit, setLimitHit] = useState(false);
 
   const change = async (status: Status, question?: string) => {
     if (question && !window.confirm(question)) return;
@@ -41,10 +44,16 @@ export function StatusSection({
     setError(null);
     try {
       onRow(await setListingStatus(row.id, status));
-    } catch {
-      setError(t('listingStatus.refused'));
+      setLimitHit(false);
+    } catch (cause) {
+      if (dbErrorKey(cause as { message?: string }) === 'listing_limit_reached') {
+        setLimitHit(true);
+      } else {
+        setError(t('listingStatus.refused'));
+      }
     } finally {
       setBusy(false);
+      void reloadPlan();
     }
   };
 
@@ -68,7 +77,10 @@ export function StatusSection({
     'rounded-full border border-line-2 px-4 py-2 font-medium hover:bg-surface-2 disabled:opacity-50';
   const statusName = t(`listings.statuses.${row.status}`);
   const live = row.status === 'published';
-  const canPublish = missing.length === 0 && phoneVerified && !unsaved;
+  // The plan is full (as last loaded, or as the database just said): offer the package instead.
+  const full = limitHit || (plan !== null && !canPublishAnother(plan));
+  const canPublish = missing.length === 0 && phoneVerified && !unsaved && !full;
+  const paused = row.status === 'archived' && row.plan_paused_at !== null;
   const daysLeft = live ? daysLeftInSearch(row.last_confirmed_at, new Date()) : null;
 
   return (
@@ -98,6 +110,24 @@ export function StatusSection({
             </p>
           )}
           {unsaved && <p className="text-sm text-warning">{t('listingForm.unsaved')}</p>}
+          {paused && <p className="text-sm text-warning">{t('listingStatus.pausedNote')}</p>}
+          {full && (
+            <div className="space-y-2 rounded-2xl bg-surface-2 p-4 text-sm">
+              <p>
+                {plan?.packageUntil
+                  ? t('listingStatus.limitPackage', { limit: plan.limit })
+                  : t('listingStatus.limitFree', { limit: plan?.limit ?? 1 })}
+              </p>
+              {!plan?.packageUntil && (
+                <Link
+                  href={localePath(locale, '/my-listings/package')}
+                  className="inline-block rounded-full bg-primary px-4 py-2 font-medium text-on-primary hover:bg-primary-hover"
+                >
+                  {t('listingStatus.getPackage')}
+                </Link>
+              )}
+            </div>
+          )}
           <button
             type="button"
             disabled={busy || !canPublish}

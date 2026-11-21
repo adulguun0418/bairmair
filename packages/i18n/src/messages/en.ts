@@ -504,6 +504,8 @@ export const en: Messages = {
       needsPhoto: 'Publishing needs at least one photo.',
       incomplete: 'A field required for publishing is missing.',
       scanMissing: 'The scan was deleted from the server.',
+      needsPlan:
+        'You already have as many published listings as you can. Hide another listing or mark it as sold to publish this one.',
     },
     badge3d: '3D',
     notInSearch: 'Not shown in search. Open it and confirm the apartment is still available.',
@@ -678,6 +680,13 @@ export const en: Messages = {
     needsPhone: 'Verify your phone number to publish.',
     verifyPhone: 'Verify phone number',
     refused: 'The status could not be changed.',
+    limitFree:
+      'Your {{limit}} free listing is already published. Get a listing package to publish this one, or hide the other listing.',
+    limitPackage:
+      'All {{limit}} listings of your package are published. Hide one or mark it as sold to publish this one.',
+    getPackage: 'Get a listing package',
+    pausedNote:
+      'Your listing package ended, so this listing was hidden. It is published again as soon as you get a package.',
     tryAgain: 'Try again',
     cancelChange: 'Cancel the change',
     waitsForScan:
@@ -1171,6 +1180,41 @@ export const en: Messages = {
     },
     details: 'All details',
     callNumber: 'Call {{phone}}',
+  },
+  listingPackage: {
+    title: 'Listing package',
+    lead: 'One listing is free. To have more listings live at once, get a listing package.',
+    benefits: {
+      listings: 'Up to {{limit}} listings live at once for 30 days',
+      free: 'Without a package, {{free}} listing is free',
+      restore:
+        'When the package ends, your first-published listing stays and the others are hidden. A new package publishes them again at once',
+    },
+    current: 'Your plan',
+    currentFree: 'Free: {{live}} / {{limit}} listing published',
+    currentPackage: 'Listing package until {{date}}',
+    currentLive: '{{live}} / {{limit}} listings published',
+    paused: 'Hidden after the package ended: {{count}}. A package publishes them again at once.',
+    notEnforced: 'For now there is no limit: you can publish all your listings for free.',
+    plans: {
+      listing_pack_30d: { name: '20-listing package', period: '30 days' },
+      listing_pack_test: { name: 'Test', period: '1 day' },
+    },
+    buy: 'Pay',
+    extend: 'Extend',
+    extendNote: 'The new period starts when your current package ends.',
+    noRenewal: 'The package does not renew by itself: pay again when it ends.',
+    activated: 'Package active until {{date}}.',
+    choose: 'Back to the package',
+    notYet: 'Listing packages open soon. For now only testers can buy them.',
+    loadFailed: 'Your plan could not be loaded. Reload the page.',
+    backToListings: 'Back to my listings',
+    bannerFree: 'Free: {{live}} / {{limit}} listing published',
+    bannerPackage: 'Listing package until {{date}} · {{live}} / {{limit}} published',
+    bannerPaused: '{{count}} hidden after the package ended.',
+    bannerBuy: 'Get a package',
+    bannerExtend: 'Extend',
+    pausedTag: 'Package ended',
   },
   scanPro: {
     title: 'bairmair scan Pro',

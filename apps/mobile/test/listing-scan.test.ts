@@ -450,6 +450,9 @@ describe('server data', () => {
     expect(
       classifyPostgrestError({ code: 'P0001', message: 'publish_requires_photo' }, 400).key,
     ).toBe('needsPhoto');
+    expect(
+      classifyPostgrestError({ code: 'P0001', message: 'listing_limit_reached' }, 400),
+    ).toMatchObject({ kind: 'permanent', key: 'needsPlan' });
     const check = {
       code: '23514',
       message:
