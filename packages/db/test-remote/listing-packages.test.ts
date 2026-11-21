@@ -220,7 +220,7 @@ describe('package', () => {
     expect(current.listing_limit).toBe(20);
     expect(current.package_until).not.toBeNull();
 
-    for (const title of ['A', 'B', 'C']) {
+    for (const title of ['Багц нэг', 'Багц хоёр', 'Багц гурав']) {
       const id = await publishableDraft(alice, title);
       ids.push(id);
       expect((await setStatus(alice, id, 'published')).error).toBeNull();
