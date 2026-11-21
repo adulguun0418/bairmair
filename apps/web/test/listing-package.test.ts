@@ -64,9 +64,10 @@ describe('listing package fulfilments', () => {
     ) as (keyof typeof LISTING_PACKAGE_PLANS)[]) {
       expect(PAYMENT_PRODUCTS[product].testersOnly).toBe(true);
     }
-    expect(PAYMENT_PRODUCTS.listing_pack_30d.amount).toBe(29_900);
+    // Temporary test prices; 29,900₮ and 79,900₮ at launch.
+    expect(PAYMENT_PRODUCTS.listing_pack_30d.amount).toBe(100);
     expect(LISTING_PACKAGE_PLANS.listing_pack_30d.days).toBe(30);
-    expect(PAYMENT_PRODUCTS.listing_pack_90d.amount).toBe(79_900);
+    expect(PAYMENT_PRODUCTS.listing_pack_90d.amount).toBe(250);
     expect(LISTING_PACKAGE_PLANS.listing_pack_90d.days).toBe(90);
   });
 });

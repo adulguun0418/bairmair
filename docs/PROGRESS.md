@@ -500,6 +500,7 @@ Fix after going live: the Open Graph image returned 500 on Vercel (fonts read th
 - Front-door picker copy (`entrance` in `mn.ts`), e.g. "Автоматаар таамаглах", and `viewer.plainView` "Цэвэр харагдац".
 
 ## Next
+- **Listing package prices are temporary test prices (100₮ / 250₮, 2026-11-21)** in `packages/db/src/payments.ts`: set them back to 29,900₮ / 79,900₮ (and the test in `apps/web/test/listing-package.test.ts`) before anyone but testers can buy.
 - Listing paywall: merge the PR (Vercel deploys the website). Then test as a tester: `select public.set_listing_limit_tester('<your user id>', true);` in the SQL editor → publish a second listing on the website (refused, package offered) → `/my-listings/package?test=1` → pay 100₮ → publish more → after a day (or `update listing_packages set expires_at = now()` + `select public.enforce_listing_limits()`) the extras are hidden. Before everyone: terms/privacy for paid packages, e-barimt, Vercel Pro, `testersOnly: false`, then `insert into private.settings values ('listing_limit', 'on')`.
 - To do, remove the QPay test once payments are proven (before launch, or with the first real product):
   - Website: `app/[lang]/(site)/payments/test/` and `components/payments/PaymentTestView.tsx` (keep `QPayCheckout`).
