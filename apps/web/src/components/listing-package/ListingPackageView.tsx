@@ -6,17 +6,16 @@ import {
   LISTING_PACKAGE_LIMIT,
   PAYMENT_PRODUCTS,
   type ListingPackageProductKey,
-  type PaymentResponse,
 } from '@bairmair/db';
 import { createTranslator, formatMoney, localePath, type Locale } from '@bairmair/i18n';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { signInHref } from '@/components/auth/sign-in-href';
 import { QPayCheckout } from '@/components/payments/QPayCheckout';
-import { createPayment, paymentErrorKey, PaymentRequestError } from '@/lib/payments';
 import { useListingPlan } from './use-listing-plan';
+import { usePackagePurchase } from './use-package-purchase';
 
 const primary =
   'w-full rounded-full bg-primary px-5 py-2.5 font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50';
@@ -46,10 +45,10 @@ export function ListingPackageView({ locale }: { locale: Locale }) {
   const userId = session?.user.id ?? null;
   const showTest = useShowTest();
   const { plan, failed, reload } = useListingPlan(userId);
-  const [payment, setPayment] = useState<PaymentResponse | null>(null);
-  const [busy, setBusy] = useState<ListingPackageProductKey | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [notYet, setNotYet] = useState(false);
+  const { payment, busy, errorKey, notYet, buy, onPaymentChange, reset } = usePackagePurchase(
+    session?.access_token ?? null,
+    () => void reload(),
+  );
 
   useEffect(() => {
     if (ready && !userId) {
@@ -65,27 +64,6 @@ export function ListingPackageView({ locale }: { locale: Locale }) {
   const products: ListingPackageProductKey[] = showTest
     ? ['listing_pack_30d', 'listing_pack_test']
     : ['listing_pack_30d'];
-
-  const buy = async (product: ListingPackageProductKey) => {
-    setBusy(product);
-    setError(null);
-    try {
-      setPayment(await createPayment(session.access_token, { product }));
-    } catch (cause) {
-      if (cause instanceof PaymentRequestError && cause.key === 'payment_forbidden') {
-        setNotYet(true);
-      } else {
-        setError(t(paymentErrorKey(cause)));
-      }
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const onPaymentChange = (next: PaymentResponse) => {
-    setPayment(next);
-    if (next.status === 'paid') void reload();
-  };
 
   return (
     <div className="space-y-6">
@@ -158,7 +136,7 @@ export function ListingPackageView({ locale }: { locale: Locale }) {
           )}
           <div className="flex flex-wrap gap-2">
             {payment.status !== 'pending' && (
-              <button type="button" onClick={() => setPayment(null)} className={secondary}>
+              <button type="button" onClick={reset} className={secondary}>
                 {t('listingPackage.choose')}
               </button>
             )}
@@ -213,9 +191,9 @@ export function ListingPackageView({ locale }: { locale: Locale }) {
           {t('listingPackage.notYet')}
         </p>
       )}
-      {error && (
+      {errorKey && (
         <p role="alert" className="text-sm text-danger">
-          {error}
+          {t(errorKey)}
         </p>
       )}
     </div>

@@ -1208,6 +1208,7 @@ export const en: Messages = {
     choose: 'Back to the package',
     notYet: 'Listing packages open soon. For now only testers can buy them.',
     loadFailed: 'Your plan could not be loaded. Reload the page.',
+    details: 'Details',
     backToListings: 'Back to my listings',
     bannerFree: 'Free: {{live}} / {{limit}} listing published',
     bannerPackage: 'Listing package until {{date}} · {{live}} / {{limit}} published',
