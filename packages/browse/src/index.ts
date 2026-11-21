@@ -12,6 +12,7 @@ export * from './map-pins';
 export * from './map-style';
 export * from './payments';
 export * from './listing-plan';
+export * from './listing-promotion';
 export * from './scan-plan';
 export * from './phone';
 export * from './search-filters';

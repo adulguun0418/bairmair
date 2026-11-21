@@ -27,6 +27,7 @@ import {
   type MyPhoto,
 } from '@/lib/my-listings';
 import { PhotoSection } from './PhotoSection';
+import { PromotionSection } from './PromotionSection';
 import { ScanSection } from './ScanSection';
 import { StatusSection } from './StatusSection';
 
@@ -461,6 +462,16 @@ export function ListingEditor({ listingId, locale }: { listingId: string | null;
               setRow(next);
               setLoaded((current) => (current ? { ...current, row: next } : current));
             }}
+            locale={locale}
+          />
+        </Section>
+      )}
+
+      {row && (
+        <Section title={t('promotion.title')}>
+          <PromotionSection
+            listingId={row.id}
+            published={row.status === 'published'}
             locale={locale}
           />
         </Section>

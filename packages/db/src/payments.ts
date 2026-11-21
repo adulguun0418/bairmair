@@ -23,6 +23,11 @@ export interface PaymentProduct {
   invoiceDescription: string;
   /** Only for the user ids in the server's `PAYMENT_TESTERS` (e.g. a real-money test). */
   testersOnly: boolean;
+  /**
+   * What `subjectId` must name: `listing` = one of the payer's published listings (checked
+   * before the invoice is made). Absent: no subject.
+   */
+  subject?: 'listing';
 }
 
 export const PAYMENT_PRODUCTS = {
@@ -65,6 +70,33 @@ export const PAYMENT_PRODUCTS = {
     invoiceDescription: 'bairmair: зарын багц, туршилт, 1 өдөр',
     testersOnly: true,
   },
+  // Gold / Silver listings (LISTING_PROMOTION_PLANS): one published listing first in search.
+  // TEMPORARY test prices (2026-11-21): real prices Gold 15,000₮ / 25,000₮ (7 / 14 days),
+  // Silver 8,000₮ / 13,000₮. Restore before anyone but testers can buy.
+  listing_gold_7d: {
+    amount: 100,
+    invoiceDescription: 'bairmair: Алтан зар, 7 хоног',
+    testersOnly: true,
+    subject: 'listing',
+  },
+  listing_gold_14d: {
+    amount: 100,
+    invoiceDescription: 'bairmair: Алтан зар, 14 хоног',
+    testersOnly: true,
+    subject: 'listing',
+  },
+  listing_silver_7d: {
+    amount: 100,
+    invoiceDescription: 'bairmair: Мөнгөн зар, 7 хоног',
+    testersOnly: true,
+    subject: 'listing',
+  },
+  listing_silver_14d: {
+    amount: 100,
+    invoiceDescription: 'bairmair: Мөнгөн зар, 14 хоног',
+    testersOnly: true,
+    subject: 'listing',
+  },
 } as const satisfies Record<string, PaymentProduct>;
 
 export type PaymentProductKey = keyof typeof PAYMENT_PRODUCTS;
@@ -99,6 +131,24 @@ export type ListingPackageProductKey = keyof typeof LISTING_PACKAGE_PLANS;
 
 export function isListingPackageProduct(value: unknown): value is ListingPackageProductKey {
   return typeof value === 'string' && Object.hasOwn(LISTING_PACKAGE_PLANS, value);
+}
+
+export type ListingTier = 'gold' | 'silver';
+
+export const LISTING_TIERS = ['gold', 'silver'] as const satisfies readonly ListingTier[];
+
+/** The products that promote a listing, the tier and for how long. */
+export const LISTING_PROMOTION_PLANS = {
+  listing_gold_7d: { tier: 'gold', days: 7 },
+  listing_gold_14d: { tier: 'gold', days: 14 },
+  listing_silver_7d: { tier: 'silver', days: 7 },
+  listing_silver_14d: { tier: 'silver', days: 14 },
+} as const satisfies Partial<Record<PaymentProductKey, { tier: ListingTier; days: number }>>;
+
+export type ListingPromotionProductKey = keyof typeof LISTING_PROMOTION_PLANS;
+
+export function isListingPromotionProduct(value: unknown): value is ListingPromotionProductKey {
+  return typeof value === 'string' && Object.hasOwn(LISTING_PROMOTION_PLANS, value);
 }
 
 export const PAYMENT_LIMITS = {

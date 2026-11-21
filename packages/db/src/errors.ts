@@ -52,6 +52,8 @@ export const API_ERROR_KEYS = [
   'payment_rate_limited',
   /** Payments are not configured on this server, or QPay did not answer (HTTP 503). */
   'payment_unavailable',
+  /** The product needs one of the caller's published listings, and `subjectId` is not one (HTTP 409). */
+  'payment_listing_not_published',
   /**
    * Apple data that does not verify, is for another app, or is not a scan Pro product (HTTP 400).
    * Do not finish the transaction on 5xx; on this one there is nothing to retry.
