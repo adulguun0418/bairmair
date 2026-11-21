@@ -206,6 +206,54 @@ describe('createPayment', () => {
     });
   });
 
+  it('a listing product needs one of the payer’s published listings', async () => {
+    const LISTING = '44444444-4444-4444-8444-444444444444';
+    const checked: [string, string][] = [];
+    const { deps, qpay } = setup({
+      subjects: {
+        listing: async (userId, listingId) => {
+          checked.push([userId, listingId]);
+          return listingId === LISTING;
+        },
+      },
+    });
+    expect(await createPayment(deps, TESTER, { product: 'listing_gold_7d' })).toMatchObject({
+      status: 400,
+      error: 'payment_invalid',
+    });
+    expect(
+      await createPayment(deps, TESTER, { product: 'test', subjectId: LISTING }),
+    ).toMatchObject({ status: 400, error: 'payment_invalid' });
+    expect(
+      await createPayment(deps, OTHER, { product: 'listing_gold_7d', subjectId: LISTING }),
+    ).toMatchObject({ status: 403, error: 'payment_forbidden' });
+    expect(
+      await createPayment(deps, TESTER, {
+        product: 'listing_gold_7d',
+        subjectId: '55555555-5555-4555-8555-555555555555',
+      }),
+    ).toMatchObject({ status: 409, error: 'payment_listing_not_published' });
+    expect(qpay.created).toHaveLength(0);
+
+    const outcome = await createPayment(deps, TESTER, {
+      product: 'listing_silver_14d',
+      subjectId: LISTING,
+    });
+    expect(outcome).toMatchObject({ ok: true, status: 201 });
+    expect(outcome.ok && outcome.body.subjectId).toBe(LISTING);
+    expect(checked.at(-1)).toEqual([TESTER, LISTING]);
+  });
+
+  it('a listing product is unavailable without the listing check', async () => {
+    const { deps } = setup();
+    expect(
+      await createPayment(deps, TESTER, {
+        product: 'listing_gold_7d',
+        subjectId: '44444444-4444-4444-8444-444444444444',
+      }),
+    ).toMatchObject({ status: 503, error: 'payment_unavailable' });
+  });
+
   it('is unavailable without QPay', async () => {
     const { deps } = setup({ qpay: null });
     expect(await createPayment(deps, TESTER, { product: 'test' })).toMatchObject({

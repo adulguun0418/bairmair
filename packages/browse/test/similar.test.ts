@@ -35,6 +35,7 @@ function row(id: string, fields: Partial<SearchListingRow> = {}): SearchListingR
     cover_photo_id: null,
     published_at: '2026-11-01T00:00:00Z',
     last_confirmed_at: '2026-11-01T00:00:00Z',
+    promotion_tier: null,
     total_count: 1,
     ...fields,
   };

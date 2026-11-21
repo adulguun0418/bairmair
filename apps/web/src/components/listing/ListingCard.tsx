@@ -1,4 +1,4 @@
-import { districtById } from '@bairmair/db';
+import { districtById, type ListingTier } from '@bairmair/db';
 import {
   createTranslator,
   formatArea,
@@ -45,6 +45,7 @@ export function ListingCard({
       : null;
   const price = formatListingPrice(card.price, card.currency, card.type, locale);
   const href = localePath(locale, `/listings/${card.id}`);
+  const tier = card.promotion_tier ?? null;
 
   const photo = cover ? (
     <Photo
@@ -74,13 +75,14 @@ export function ListingCard({
     return (
       <Link
         href={href}
-        className="group/card flex w-full overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-line transition hover:shadow-md"
+        className={`group/card flex w-full overflow-hidden rounded-2xl bg-surface shadow-sm transition hover:shadow-md ${tier ? TIER_RING[tier] : 'ring-1 ring-line'}`}
       >
         <div className="relative w-32 shrink-0 overflow-hidden bg-surface-3">
           {photo}
-          {card.has_3d && (
-            <div className="absolute left-1.5 top-1.5">
-              <Badge3d label={t('listingCard.has3d')} />
+          {(card.has_3d || tier) && (
+            <div className="absolute left-1.5 top-1.5 flex flex-col items-start gap-1">
+              {tier && <TierBadge tier={tier} label={t(`listingCard.${tier}`)} />}
+              {card.has_3d && <Badge3d label={t('listingCard.has3d')} />}
             </div>
           )}
         </div>
@@ -106,7 +108,11 @@ export function ListingCard({
     <div className="group/card relative flex w-full" data-listing-id={card.id}>
       <Link
         href={href}
-        className="flex w-full flex-col rounded-3xl bg-surface p-2 ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:ring-line-2"
+        className={`flex w-full flex-col rounded-3xl p-2 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 ${
+          tier
+            ? `${TIER_RING[tier]} ${TIER_SURFACE[tier]}`
+            : 'bg-surface ring-1 ring-line hover:ring-line-2'
+        }`}
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-surface-3">
           {photo}
@@ -136,9 +142,10 @@ export function ListingCard({
               </div>
             </>
           )}
-          {card.has_3d && (
-            <div className="absolute left-2 top-2">
-              <Badge3d label={t('listingCard.has3d')} />
+          {(card.has_3d || tier) && (
+            <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
+              {tier && <TierBadge tier={tier} label={t(`listingCard.${tier}`)} />}
+              {card.has_3d && <Badge3d label={t('listingCard.has3d')} />}
             </div>
           )}
         </div>
@@ -182,6 +189,31 @@ export function ListingCard({
       </Link>
       <FavoriteButton listingId={card.id} locale={locale} className="absolute right-4 top-4" />
     </div>
+  );
+}
+
+/** Paid placement: a metal-coloured ring, and a faint wash of the same colour on wide cards. */
+const TIER_RING: Record<ListingTier, string> = {
+  gold: 'ring-2 ring-[#d9a21b]',
+  silver: 'ring-2 ring-[#9aa5b5]',
+};
+const TIER_SURFACE: Record<ListingTier, string> = {
+  gold: 'bg-[linear-gradient(180deg,rgba(245,200,76,0.14),transparent_45%)] bg-surface',
+  silver: 'bg-[linear-gradient(180deg,rgba(154,165,181,0.16),transparent_45%)] bg-surface',
+};
+
+function TierBadge({ tier, label }: { tier: ListingTier; label: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold shadow-sm ${
+        tier === 'gold'
+          ? 'bg-gradient-to-r from-[#f8d66d] to-[#d9a21b] text-[#3b2a05]'
+          : 'bg-gradient-to-r from-[#f1f4f8] to-[#b4bdca] text-[#1f2937]'
+      }`}
+    >
+      <span aria-hidden>★</span>
+      {label}
+    </span>
   );
 }
 

@@ -50,6 +50,8 @@ export interface SearchListingRow {
   cover_photo_id: string | null;
   published_at: string;
   last_confirmed_at: string;
+  /** Gold or Silver right now (paid placement: first in search), else null. */
+  promotion_tier: 'gold' | 'silver' | null;
   /** Matches before paging. */
   total_count: number;
 }

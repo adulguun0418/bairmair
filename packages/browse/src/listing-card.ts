@@ -23,7 +23,9 @@ export type ListingCardData = Pick<
   | 'has_3d'
   | 'scan_verified'
   | 'cover_photo_id'
->;
+> &
+  /** Gold / Silver (search results only; other sources leave it out). */
+  Partial<Pick<SearchListingRow, 'promotion_tier'>>;
 
 /** The cover photo's public URL, or null. */
 export function coverUrl(supabaseUrl: string, card: ListingCardData): string | null {

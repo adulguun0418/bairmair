@@ -8,7 +8,9 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { signInHref } from '@/components/auth/sign-in-href';
 import { PlanBanner } from '@/components/listing-package/PlanBanner';
 import { useListingPlan } from '@/components/listing-package/use-listing-plan';
+import { fetchListingPromotions, type PromotionStatus } from '@bairmair/browse';
 import { fetchMyListings, type MyListingSummary } from '@/lib/my-listings';
+import { browserClient } from '@/lib/supabase-browser';
 
 type State = { kind: 'loading' } | { kind: 'ready'; rows: MyListingSummary[] } | { kind: 'error' };
 
@@ -20,6 +22,7 @@ export function MyListings({ locale }: { locale: Locale }) {
   const userId = session?.user.id ?? null;
   const [state, setState] = useState<State>({ kind: 'loading' });
   const { plan } = useListingPlan(userId);
+  const [promotions, setPromotions] = useState<Map<string, PromotionStatus>>(new Map());
 
   useEffect(() => {
     if (ready && !userId) router.replace(signInHref(locale, localePath(locale, '/my-listings')));
@@ -29,7 +32,17 @@ export function MyListings({ locale }: { locale: Locale }) {
     if (!userId) return;
     let active = true;
     fetchMyListings(userId)
-      .then((rows) => active && setState({ kind: 'ready', rows }))
+      .then((rows) => {
+        if (!active) return;
+        setState({ kind: 'ready', rows });
+        // Gold / Silver tags; the list works without them.
+        fetchListingPromotions(
+          browserClient(),
+          rows.map((row) => row.id),
+        )
+          .then((map) => active && setPromotions(map))
+          .catch(() => undefined);
+      })
       .catch(() => active && setState({ kind: 'error' }));
     return () => {
       active = false;
@@ -77,6 +90,20 @@ export function MyListings({ locale }: { locale: Locale }) {
                       {t('listingPackage.pausedTag')}
                     </span>
                   )}
+                  {(() => {
+                    const tier = promotions.get(row.id)?.tier;
+                    return tier ? (
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${
+                          tier === 'gold'
+                            ? 'bg-[#f8d66d] text-[#3b2a05]'
+                            : 'bg-[#dfe4eb] text-[#1f2937]'
+                        }`}
+                      >
+                        ★ {t(`listingCard.${tier}`)}
+                      </span>
+                    ) : null;
+                  })()}
                   {row.has_3d && (
                     <span className="rounded-full bg-accent px-2 py-0.5 text-on-accent">3D</span>
                   )}

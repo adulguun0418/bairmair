@@ -3,10 +3,13 @@ import { reportServerError } from './error-reporting';
 import type { PaymentDeps } from './payments';
 import { qpayFromEnv } from './qpay';
 import { listingPackageFulfilments } from './listing-package';
+import { listingPromotionFulfilments } from './listing-promotion';
 import { scanProFulfilments } from './scan-pro';
 import {
   adminClient,
   supabaseAddListingPackagePeriod,
+  supabaseAddListingPromotionPeriod,
+  supabaseIsPublishedListingOf,
   supabaseAddScanProPeriod,
   supabasePaymentStore,
 } from './supabase';
@@ -35,11 +38,14 @@ export function paymentDeps(): PaymentDeps {
         .filter(Boolean),
     ),
     // What each product delivers once paid: scan Pro products add a Pro period, listing packages
-    // a package period (and republish paused listings); `test` nothing.
+    // a package period (and republish paused listings), Gold/Silver a promotion period of the
+    // listing; `test` nothing.
     fulfil: {
       ...scanProFulfilments(supabaseAddScanProPeriod(admin)),
       ...listingPackageFulfilments(supabaseAddListingPackagePeriod(admin)),
+      ...listingPromotionFulfilments(supabaseAddListingPromotionPeriod(admin)),
     },
+    subjects: { listing: supabaseIsPublishedListingOf(admin) },
     now: () => new Date(),
     newId: randomUUID,
     report: (error, context) => reportServerError(error, { route: 'payments', ...context }),

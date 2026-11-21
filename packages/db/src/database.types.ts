@@ -311,6 +311,70 @@ export type Database = {
           },
         ];
       };
+      listing_promotions: {
+        Row: {
+          created_at: string;
+          expires_at: string;
+          id: string;
+          listing_id: string;
+          payment_id: string;
+          product_id: string;
+          starts_at: string;
+          status: string;
+          tier: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          listing_id: string;
+          payment_id: string;
+          product_id: string;
+          starts_at: string;
+          status?: string;
+          tier: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          listing_id?: string;
+          payment_id?: string;
+          product_id?: string;
+          starts_at?: string;
+          status?: string;
+          tier?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'listing_promotions_listing_id_fkey';
+            columns: ['listing_id'];
+            isOneToOne: false;
+            referencedRelation: 'listings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'listing_promotions_payment_id_fkey';
+            columns: ['payment_id'];
+            isOneToOne: true;
+            referencedRelation: 'payments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'listing_promotions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       listing_views: {
         Row: {
           day: string;
@@ -893,6 +957,13 @@ export type Database = {
       };
     };
     Functions: {
+      active_listing_tiers: {
+        Args: never;
+        Returns: {
+          listing_id: string;
+          tier_rank: number;
+        }[];
+      };
       add_listing_package_period: {
         Args: {
           p_days: number;
@@ -914,6 +985,35 @@ export type Database = {
         SetofOptions: {
           from: '*';
           to: 'listing_packages';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      add_listing_promotion_period: {
+        Args: {
+          p_days: number;
+          p_listing_id: string;
+          p_payment_id: string;
+          p_product_id: string;
+          p_tier: string;
+          p_user_id: string;
+        };
+        Returns: {
+          created_at: string;
+          expires_at: string;
+          id: string;
+          listing_id: string;
+          payment_id: string;
+          product_id: string;
+          starts_at: string;
+          status: string;
+          tier: string;
+          updated_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'listing_promotions';
           isOneToOne: true;
           isSetofReturn: false;
         };
@@ -1054,6 +1154,7 @@ export type Database = {
           negotiable: boolean;
           owner_id: string;
           price: number;
+          promotion_tier: string;
           published_at: string;
           rooms: number;
           scan_verified: boolean;

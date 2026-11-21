@@ -1,5 +1,5 @@
 import { coverUrl, placeName, type ListingCardData } from '@bairmair/browse';
-import { districtById } from '@bairmair/db';
+import { districtById, type ListingTier } from '@bairmair/db';
 import { formatArea, formatListingPrice, formatPinPricePerArea } from '@bairmair/i18n';
 import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
@@ -48,6 +48,7 @@ export function ListingCard({
       ? formatPinPricePerArea(card.price / card.area_official_m2, card.currency, locale)
       : null;
   const area = card.area_official_m2 ?? card.area_scanned_m2;
+  const tier = card.promotion_tier ?? null;
   const district = districtById(card.district_id);
   const rooms: Spec = { icon: 'rooms', text: t('listingPage.roomsCount', { count: card.rooms }) };
   // The listing screen shows this photo at once while it loads (cover-cache.ts).
@@ -64,14 +65,16 @@ export function ListingCard({
         style={({ pressed }) => [
           styles.compact,
           { backgroundColor: colors.surface, boxShadow: `0 4px 14px ${colors.shadow}` },
+          tier && { borderWidth: 2, borderColor: TIER_COLORS[tier].ring },
           { transform: [{ scale: pressed ? 0.98 : 1 }] },
         ]}
       >
         <View style={[styles.thumb, { backgroundColor: colors.surface2 }]}>
           <Cover uri={cover} id={card.id} noPhoto={t('listingCard.noPhoto')} />
-          {card.has_3d && (
+          {(card.has_3d || tier) && (
             <View style={styles.badgeCorner}>
-              <Badge3d label={t('listingCard.has3d')} />
+              {tier && <TierBadge tier={tier} label={t(`listingCard.${tier}`)} />}
+              {card.has_3d && <Badge3d label={t('listingCard.has3d')} />}
             </View>
           )}
         </View>
@@ -103,6 +106,7 @@ export function ListingCard({
       style={({ pressed }) => [
         styles.card,
         { backgroundColor: colors.surface, boxShadow: `0 6px 20px ${colors.shadow}` },
+        tier && { borderWidth: 2, borderColor: TIER_COLORS[tier].ring },
         { transform: [{ scale: pressed ? 0.985 : 1 }] },
       ]}
     >
@@ -174,6 +178,9 @@ function FlipMedia({ card, cover }: { card: ListingCardData; cover: string | nul
       )}
 
       <View style={styles.badges} pointerEvents="none">
+        {card.promotion_tier && (
+          <TierBadge tier={card.promotion_tier} label={t(`listingCard.${card.promotion_tier}`)} />
+        )}
         {card.has_3d && <Badge3d label={t('listingCard.has3d')} />}
         {card.scan_verified && (
           <View style={[styles.chip, styles.chipLight]}>
@@ -268,6 +275,21 @@ function Cover({ uri, id, noPhoto }: { uri: string | null; id: string; noPhoto: 
 }
 
 /** The navy "3D" mark with a cube. */
+/** Paid placement (Gold / Silver): a metal-coloured border and badge, same in both themes. */
+const TIER_COLORS: Record<ListingTier, { ring: string; badge: string; text: string }> = {
+  gold: { ring: '#d9a21b', badge: '#f2c443', text: '#3b2a05' },
+  silver: { ring: '#9aa5b5', badge: '#dfe4eb', text: '#1f2937' },
+};
+
+function TierBadge({ tier, label }: { tier: ListingTier; label: string }) {
+  const { badge, text } = TIER_COLORS[tier];
+  return (
+    <View style={[styles.chip, { backgroundColor: badge }]}>
+      <Text style={[styles.chipText, { color: text, fontWeight: '700' }]}>★ {label}</Text>
+    </View>
+  );
+}
+
 export function Badge3d({ label }: { label: string }) {
   return (
     <View style={[styles.chip, styles.chip3d]}>
@@ -385,6 +407,6 @@ const styles = StyleSheet.create({
   small: { fontSize: 13, lineHeight: 18 },
   compact: { flexDirection: 'row', borderRadius: radius.lg, padding: 6, gap: 10 },
   thumb: { width: 108, minHeight: 100, borderRadius: radius.md, overflow: 'hidden' },
-  badgeCorner: { position: 'absolute', left: 6, top: 6 },
+  badgeCorner: { position: 'absolute', left: 6, top: 6, gap: 4, alignItems: 'flex-start' },
   compactBody: { flex: 1, paddingVertical: 4, paddingRight: 6, gap: 4, justifyContent: 'center' },
 });

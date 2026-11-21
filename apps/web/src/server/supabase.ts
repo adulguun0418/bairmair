@@ -15,6 +15,7 @@ import type { AccountStore } from './delete-account';
 import type { PaymentRecord, PaymentStore } from './payments';
 import type { ScanStore } from './process-scan';
 import type { AddListingPackagePeriod } from './listing-package';
+import type { AddListingPromotionPeriod } from './listing-promotion';
 import type { AddScanProPeriod } from './scan-pro';
 import type { SharedScanSource } from './shared-scan';
 
@@ -240,6 +241,39 @@ export function supabaseAddListingPackagePeriod(
       p_days: days,
     });
     if (error) throw error;
+  };
+}
+
+export function supabaseAddListingPromotionPeriod(
+  client: TypedSupabaseClient,
+): AddListingPromotionPeriod {
+  return async ({ userId, listingId, paymentId, product, tier, days }) => {
+    const { error } = await client.rpc('add_listing_promotion_period', {
+      p_user_id: userId,
+      p_listing_id: listingId,
+      p_payment_id: paymentId,
+      p_product_id: product,
+      p_tier: tier,
+      p_days: days,
+    });
+    if (error) throw error;
+  };
+}
+
+/** Whether the listing is published and the user's (a Gold/Silver purchase's subject). */
+export function supabaseIsPublishedListingOf(
+  client: TypedSupabaseClient,
+): (userId: string, listingId: string) => Promise<boolean> {
+  return async (userId, listingId) => {
+    const { data, error } = await client
+      .from('listings')
+      .select('id')
+      .eq('id', listingId)
+      .eq('owner_id', userId)
+      .eq('status', 'published')
+      .maybeSingle();
+    if (error) throw error;
+    return data !== null;
   };
 }
 

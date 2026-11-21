@@ -61,7 +61,12 @@ export function paymentsApi(apiBase: string, fetcher: typeof fetch = fetch): Pay
   };
 }
 
-const SHOWN_ERRORS = ['payment_forbidden', 'payment_unavailable', 'payment_rate_limited'] as const;
+const SHOWN_ERRORS = [
+  'payment_forbidden',
+  'payment_unavailable',
+  'payment_rate_limited',
+  'payment_listing_not_published',
+] as const;
 type ShownError = (typeof SHOWN_ERRORS)[number];
 
 /** Text key (`payments.errors.*`) for a failed payment request. */

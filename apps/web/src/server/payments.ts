@@ -5,6 +5,7 @@ import {
   PAYMENT_PRODUCTS,
   type ApiErrorKey,
   type PaymentCheckout,
+  type PaymentProduct,
   type PaymentProductKey,
   type PaymentResponse,
   type PaymentStatus,
@@ -91,6 +92,11 @@ export interface PaymentDeps {
   /** User ids allowed to buy `testersOnly` products. */
   testers: ReadonlySet<string>;
   fulfil: Partial<Record<string, Fulfilment>>;
+  /**
+   * Checks a product's subject before the invoice is made (`PaymentProduct.subject`). `listing`:
+   * whether the listing is published and the user's. Missing → such products answer 503.
+   */
+  subjects?: { listing?: (userId: string, listingId: string) => Promise<boolean> };
   now: () => Date;
   newId: () => string;
   /** Errors that must not fail the request (a delivery that will be retried). */
@@ -99,7 +105,7 @@ export interface PaymentDeps {
 
 export type PaymentOutcome =
   | { ok: true; status: 200 | 201; body: PaymentResponse }
-  | { ok: false; status: 400 | 403 | 404 | 429 | 503; error: ApiErrorKey };
+  | { ok: false; status: 400 | 403 | 404 | 409 | 429 | 503; error: ApiErrorKey };
 
 export const CALLBACK_PATH = '/api/qpay/callback';
 
@@ -171,7 +177,7 @@ function ok(status: 200 | 201, record: PaymentRecord): PaymentOutcome {
   return { ok: true, status, body: toPaymentResponse(record) };
 }
 
-function fail(status: 400 | 403 | 404 | 429 | 503, error: ApiErrorKey): PaymentOutcome {
+function fail(status: 400 | 403 | 404 | 409 | 429 | 503, error: ApiErrorKey): PaymentOutcome {
   return { ok: false, status, error };
 }
 
@@ -183,8 +189,16 @@ export async function createPayment(
   const request = parseCreateRequest(body);
   if (!request) return fail(400, 'payment_invalid');
   if (!deps.qpay) return fail(503, 'payment_unavailable');
-  const product = PAYMENT_PRODUCTS[request.product];
+  const product: PaymentProduct = PAYMENT_PRODUCTS[request.product];
+  if (product.subject && !request.subjectId) return fail(400, 'payment_invalid');
+  if (!product.subject && request.subjectId) return fail(400, 'payment_invalid');
   if (product.testersOnly && !deps.testers.has(userId)) return fail(403, 'payment_forbidden');
+  if (product.subject === 'listing') {
+    const check = deps.subjects?.listing;
+    if (!check) return fail(503, 'payment_unavailable');
+    if (!(await check(userId, request.subjectId!)))
+      return fail(409, 'payment_listing_not_published');
+  }
 
   const now = deps.now();
   const open = await deps.store.findOpen(
