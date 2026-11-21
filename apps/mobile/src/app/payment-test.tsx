@@ -29,7 +29,7 @@ function clockTime(iso: string): string {
 
 /**
  * QPay test with real money (temporary, like the website's `/payments/test`): pay the `test`
- * product (100₮) from a bank app, watch it turn paid, see recent payments. The server allows only
+ * product (50₮) from a bank app, watch it turn paid, see recent payments. The server allows only
  * the user ids in `PAYMENT_TESTERS`; others see "testers only" with their id. JS only: bank apps
  * open through `Linking.openURL`, which needs no URL-scheme list in the build.
  */

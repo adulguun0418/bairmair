@@ -76,7 +76,9 @@ describe('listing promotion fulfilments', () => {
       expect(PAYMENT_PRODUCTS[product].subject).toBe('listing');
       expect(PAYMENT_PRODUCTS[product].testersOnly).toBe(true);
       // Temporary test prices; Gold 15,000₮ / 25,000₮, Silver 8,000₮ / 13,000₮ at launch.
-      expect(PAYMENT_PRODUCTS[product].amount).toBe(100);
+      expect(PAYMENT_PRODUCTS[product].amount).toBe(
+        LISTING_PROMOTION_PLANS[product].days === 7 ? 50 : 100,
+      );
     }
   });
 });

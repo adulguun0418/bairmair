@@ -32,7 +32,7 @@ export interface PaymentProduct {
 
 export const PAYMENT_PRODUCTS = {
   /** A small real payment to check the whole QPay flow on production. */
-  test: { amount: 100, invoiceDescription: 'bairmair: туршилтын төлбөр', testersOnly: true },
+  test: { amount: 50, invoiceDescription: 'bairmair: туршилтын төлбөр', testersOnly: true },
   // bairmair scan Pro, prepaid periods (QPay has no automatic renewal; see SCAN_PRO_PLANS).
   // Testers only until the release step: terms, privacy and hosting are not ready for sales.
   scan_pro_30d: {
@@ -53,14 +53,15 @@ export const PAYMENT_PRODUCTS = {
   },
   // Listing package: 30 days with up to 20 live listings (LISTING_PACKAGE_PLANS). Testers only
   // until the limit is switched on for everyone (private.settings `listing_limit`).
-  // TEMPORARY test prices (2026-11-21): real prices 29,900₮ and 79,900₮. Restore before launch.
+  // TEMPORARY test prices (2026-11-21: 50₮ / 100₮, QPay payments under ~50₮ are refused by the
+  // banks): real prices 29,900₮ and 79,900₮. Restore before launch.
   listing_pack_30d: {
-    amount: 100,
+    amount: 50,
     invoiceDescription: 'bairmair: 20 зарын багц, 30 хоног',
     testersOnly: true,
   },
   listing_pack_90d: {
-    amount: 250,
+    amount: 100,
     invoiceDescription: 'bairmair: 20 зарын багц, 90 хоног',
     testersOnly: true,
   },
@@ -71,10 +72,10 @@ export const PAYMENT_PRODUCTS = {
     testersOnly: true,
   },
   // Gold / Silver listings (LISTING_PROMOTION_PLANS): one published listing first in search.
-  // TEMPORARY test prices (2026-11-21): real prices Gold 15,000₮ / 25,000₮ (7 / 14 days),
+  // TEMPORARY test prices (2026-11-21: 50₮ / 100₮): real prices Gold 15,000₮ / 25,000₮ (7 / 14 days),
   // Silver 8,000₮ / 13,000₮. Restore before anyone but testers can buy.
   listing_gold_7d: {
-    amount: 100,
+    amount: 50,
     invoiceDescription: 'bairmair: Алтан зар, 7 хоног',
     testersOnly: true,
     subject: 'listing',
@@ -86,7 +87,7 @@ export const PAYMENT_PRODUCTS = {
     subject: 'listing',
   },
   listing_silver_7d: {
-    amount: 100,
+    amount: 50,
     invoiceDescription: 'bairmair: Мөнгөн зар, 7 хоног',
     testersOnly: true,
     subject: 'listing',

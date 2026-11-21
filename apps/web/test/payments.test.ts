@@ -178,7 +178,7 @@ describe('createPayment', () => {
       expiresAt: new Date(T0 + PAYMENT_LIMITS.ttlMinutes * 60_000).toISOString(),
     });
     const id = outcome.body.id;
-    expect(qpay.created[0]).toMatchObject({ senderInvoiceNo: id, amount: 100 });
+    expect(qpay.created[0]).toMatchObject({ senderInvoiceNo: id, amount: 50 });
     expect(qpay.created[0]!.callbackUrl).toBe(
       `https://site.test/api/qpay/callback?id=${id}&sig=${callbackSignature(SECRET, id)}`,
     );
@@ -187,7 +187,7 @@ describe('createPayment', () => {
   it('ignores an amount in the request', async () => {
     const { deps, qpay } = setup();
     await createPayment(deps, TESTER, { product: 'test', amount: 1 });
-    expect(qpay.created[0]!.amount).toBe(100);
+    expect(qpay.created[0]!.amount).toBe(50);
   });
 
   it('refuses unknown products, bad subjects and non-testers', async () => {
@@ -262,6 +262,19 @@ describe('createPayment', () => {
     });
   });
 
+  it('does not reuse an open invoice made at an older price', async () => {
+    const { deps, store, qpay } = setup();
+    const first = await created(deps);
+    // As if the price was different when this invoice was made.
+    store.rows.get(first.body.id)!.amount = PAYMENT_PRODUCTS.test.amount + 1;
+    const second = await createPayment(deps, TESTER, { product: 'test' });
+    expect(second).toMatchObject({ ok: true, status: 201 });
+    expect(second.ok && second.body.id).not.toBe(first.body.id);
+    expect(second.ok && second.body.amount).toBe(PAYMENT_PRODUCTS.test.amount);
+    expect(store.rows.get(first.body.id)!.status).toBe('cancelled');
+    expect(qpay.invoices.get('inv-1')!.status).toBe('CANCELED');
+  });
+
   it('returns the open invoice when asked again soon, a new one later', async () => {
     const { deps, qpay } = setup();
     const first = await created(deps);
@@ -303,12 +316,12 @@ describe('getPayment', () => {
     const { body } = await created(deps);
     expect((await getPayment(deps, TESTER, body.id, { check: true })).ok).toBe(true);
 
-    qpay.pay('inv-1', 50);
+    qpay.pay('inv-1', 5);
     clock.now += 10_000;
     const partly = await getPayment(deps, TESTER, body.id, { check: true });
     expect(partly).toMatchObject({ body: { status: 'pending' } });
 
-    qpay.pay('inv-1', 100);
+    qpay.pay('inv-1', 50);
     clock.now += 10_000;
     const paid = await getPayment(deps, TESTER, body.id, { check: true });
     expect(paid).toMatchObject({
@@ -323,7 +336,7 @@ describe('getPayment', () => {
     const { deps, qpay } = setup();
     const { body } = await created(deps);
     await getPayment(deps, TESTER, body.id, { check: true });
-    qpay.pay('inv-1', 100);
+    qpay.pay('inv-1', 50);
     clock.now += 1000;
     expect(await getPayment(deps, TESTER, body.id, { check: true })).toMatchObject({
       body: { status: 'pending' },
@@ -337,7 +350,7 @@ describe('getPayment', () => {
   it('does not ask QPay without check', async () => {
     const { deps, qpay } = setup();
     const { body } = await created(deps);
-    qpay.pay('inv-1', 100);
+    qpay.pay('inv-1', 50);
     expect(await getPayment(deps, TESTER, body.id, { check: false })).toMatchObject({
       body: { status: 'pending' },
     });
@@ -387,7 +400,7 @@ describe('getPayment', () => {
       },
     });
     const { body } = await created(deps);
-    qpay.pay('inv-1', 100);
+    qpay.pay('inv-1', 50);
     expect(await getPayment(deps, TESTER, body.id, { check: true })).toMatchObject({
       body: { status: 'paid' },
     });
@@ -411,7 +424,7 @@ describe('cancelPayment', () => {
   it('keeps a payment that was paid meanwhile', async () => {
     const { deps, qpay } = setup();
     const { body } = await created(deps);
-    qpay.pay('inv-1', 100);
+    qpay.pay('inv-1', 50);
     expect(await cancelPayment(deps, TESTER, body.id)).toMatchObject({ body: { status: 'paid' } });
     expect(qpay.invoices.get('inv-1')!.status).toBe('PAID');
   });
@@ -427,7 +440,7 @@ describe('handleCallback', () => {
   it('checks the payment when the signature matches', async () => {
     const { deps, qpay } = setup();
     const { body } = await created(deps);
-    qpay.pay('inv-1', 100);
+    qpay.pay('inv-1', 50);
     const url = new URL(callbackUrl(deps.callback, body.id));
     expect(
       await handleCallback(deps, url.searchParams.get('id'), url.searchParams.get('sig')),
@@ -437,7 +450,7 @@ describe('handleCallback', () => {
   it('refuses a wrong or missing signature without asking QPay', async () => {
     const { deps, qpay } = setup();
     const { body } = await created(deps);
-    qpay.pay('inv-1', 100);
+    qpay.pay('inv-1', 50);
     expect(await handleCallback(deps, body.id, 'forged')).toEqual({ ok: false });
     expect(await handleCallback(deps, body.id, null)).toEqual({ ok: false });
     expect(await handleCallback(deps, 'not-a-uuid', 'x')).toEqual({ ok: false });
